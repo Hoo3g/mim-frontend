@@ -8,7 +8,7 @@ import { RouterModule } from '@angular/router';
   imports: [CommonModule, RouterModule],
   template: `
     <header class="bg-white border-b border-gray-200 font-sans sticky top-0 z-50">
-      <!-- Top Bar: Brand Accented -->
+      <!-- Top Bar -->
       <div class="bg-hus-blue text-white text-[10px] uppercase tracking-widest py-1.5 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex justify-between items-center font-bold">
           <div class="flex space-x-6">
@@ -26,7 +26,7 @@ import { RouterModule } from '@angular/router';
       <!-- Main Navbar -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
-          <!-- Logo Section -->
+          <!-- Logo -->
           <a routerLink="/" class="flex items-center gap-3 group">
             <img src="assets/logo.png" alt="Logo" class="h-10 w-auto transition-transform group-hover:scale-110">
             <div class="flex flex-col border-l-2 border-hus-blue pl-3">
@@ -35,7 +35,7 @@ import { RouterModule } from '@angular/router';
             </div>
           </a>
 
-          <!-- Navigation Links -->
+          <!-- Nav Links -->
           <div class="hidden md:flex space-x-6 h-full items-center">
             <a routerLink="/" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-500 hover:text-hus-blue font-bold text-[11px] uppercase tracking-widest h-full flex items-center border-b-[3px] border-transparent transition-all">
               NGHIÊN CỨU
@@ -50,12 +50,9 @@ import { RouterModule } from '@angular/router';
               TIN TỨC
             </a>
             
-            <!-- Profile Avatar & Dropdown -->
+            <!-- Profile -->
             <div *ngIf="isLoggedIn" class="relative ml-4 pl-4 border-l border-gray-100 flex items-center h-full">
-              <div 
-                (click)="toggleProfileMenu($event)"
-                class="flex items-center gap-2 group cursor-pointer"
-              >
+              <div (click)="toggleProfileMenu($event)" class="flex items-center gap-2 group cursor-pointer">
                 <div class="w-8 h-8 rounded-full bg-hus-blue/5 p-0.5 border border-hus-blue/10 group-hover:border-hus-blue/30 transition-all duration-300 relative">
                   <div class="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
                     <img *ngIf="user.avatar" [src]="user.avatar" class="w-full h-full object-cover">
@@ -68,39 +65,39 @@ import { RouterModule } from '@angular/router';
                 </svg>
               </div>
 
-              <!-- Profile Dropdown Menu -->
+              <!-- Dropdown -->
               <div *ngIf="showProfileMenu" class="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-100 shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div class="px-4 py-3 border-b border-gray-50">
                   <p class="text-[9px] font-black text-hus-blue uppercase tracking-widest mb-0.5">Xin chào,</p>
                   <p class="text-[11px] font-bold text-gray-900 uppercase tracking-tight">{{ user.name }}</p>
                 </div>
                 
-                  <a *ngIf="user.role === 'ADMIN'" routerLink="/admin" (click)="showProfileMenu = false" class="flex items-center gap-3 px-4 py-2.5 text-hus-blue bg-blue-50/50 hover:bg-blue-50 transition-colors group text-[10px] font-black uppercase tracking-widest border-l-4 border-hus-blue">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                    </svg>
-                    Hệ thống Quản trị
-                  </a>
-                  <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Thông tin cá nhân
-                  </a>
-                  <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Bài viết của tôi
-                  </a>
-                  <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                    </svg>
-                    Đã lưu
-                  </a>
-                </div>
-
+                <a *ngIf="user.role === 'ADMIN'" routerLink="/admin" (click)="showProfileMenu = false" class="flex items-center gap-3 px-4 py-2.5 text-hus-blue bg-blue-50/50 hover:bg-blue-50 transition-colors group text-[10px] font-black uppercase tracking-widest border-l-4 border-hus-blue">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                  Hệ thống Quản trị
+                </a>
+                
+                <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Thông tin cá nhân
+                </a>
+                
+                <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Bài viết của tôi
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                  Đã lưu
+                </a>
                 <div class="mt-1 pt-1 border-t border-gray-50">
                   <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-red-500 hover:bg-red-50 transition-colors group text-[10px] font-black uppercase tracking-widest">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
