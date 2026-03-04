@@ -8,6 +8,7 @@ import { MOCK_POSTS } from '../../infrastructure/mock/data';
 })
 export class PostService {
     getPosts(): Observable<Post[]> {
+        console.log('PostService: Fetching mock posts...');
         return of(MOCK_POSTS);
     }
 

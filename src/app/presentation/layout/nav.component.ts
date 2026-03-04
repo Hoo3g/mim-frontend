@@ -1,6 +1,7 @@
-import { Component, HostListener, ElementRef, inject } from '@angular/core';
+import { Component, HostListener, ElementRef, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { authSignal } from '../../core/signals/auth.signal';
 
 @Component({
   selector: 'app-nav',
@@ -51,12 +52,14 @@ import { RouterModule } from '@angular/router';
             </a>
             
             <!-- Profile -->
-            <div *ngIf="isLoggedIn" class="relative ml-4 pl-4 border-l border-gray-100 flex items-center h-full">
+            <div *ngIf="isAuth()" class="relative ml-4 pl-4 border-l border-gray-100 flex items-center h-full">
               <div (click)="toggleProfileMenu($event)" class="flex items-center gap-2 group cursor-pointer">
                 <div class="w-8 h-8 rounded-full bg-hus-blue/5 p-0.5 border border-hus-blue/10 group-hover:border-hus-blue/30 transition-all duration-300 relative">
                   <div class="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                    <img *ngIf="user.avatar" [src]="user.avatar" class="w-full h-full object-cover">
-                    <span *ngIf="!user.avatar" class="text-[10px] font-black text-hus-blue uppercase">HM</span>
+                    <img *ngIf="currentUser()?.avatarUrl" [src]="currentUser()?.avatarUrl" class="w-full h-full object-cover">
+                    <span *ngIf="!currentUser()?.avatarUrl" class="text-[10px] font-black text-hus-blue uppercase">
+                      {{ (currentUser()?.fullName?.charAt(0) || 'U') }}
+                    </span>
                   </div>
                   <div class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
                 </div>
@@ -69,10 +72,10 @@ import { RouterModule } from '@angular/router';
               <div *ngIf="showProfileMenu" class="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-100 shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div class="px-4 py-3 border-b border-gray-50">
                   <p class="text-[9px] font-black text-hus-blue uppercase tracking-widest mb-0.5">Xin chào,</p>
-                  <p class="text-[11px] font-bold text-gray-900 uppercase tracking-tight">{{ user.name }}</p>
+                  <p class="text-[11px] font-bold text-gray-900 uppercase tracking-tight">{{ currentUser()?.fullName }}</p>
                 </div>
                 
-                <a *ngIf="user.role === 'ADMIN'" routerLink="/admin" (click)="showProfileMenu = false" class="flex items-center gap-3 px-4 py-2.5 text-hus-blue bg-blue-50/50 hover:bg-blue-50 transition-colors group text-[10px] font-black uppercase tracking-widest border-l-4 border-hus-blue">
+                <a *ngIf="isAdmin()" routerLink="/admin" (click)="showProfileMenu = false" class="flex items-center gap-3 px-4 py-2.5 text-hus-blue bg-blue-50/50 hover:bg-blue-50 transition-colors group text-[10px] font-black uppercase tracking-widest border-l-4 border-hus-blue">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                   </svg>
@@ -99,12 +102,12 @@ import { RouterModule } from '@angular/router';
                   Đã lưu
                 </a>
                 <div class="mt-1 pt-1 border-t border-gray-50">
-                  <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-red-500 hover:bg-red-50 transition-colors group text-[10px] font-black uppercase tracking-widest">
+                  <button (click)="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-red-500 hover:bg-red-50 transition-colors group text-[10px] font-black uppercase tracking-widest">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                     Đăng xuất
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -117,13 +120,12 @@ import { RouterModule } from '@angular/router';
 export class NavComponent {
   private el = inject(ElementRef);
 
-  isLoggedIn = true;
+  // Use signals for better reactivity
+  isAuth = authSignal.isAuth;
+  isAdmin = authSignal.isAdmin;
+  currentUser = authSignal.user;
+
   showProfileMenu = false;
-  user = {
-    name: 'Nguyễn Hồng Minh',
-    role: 'ADMIN',
-    avatar: '' // Leaving empty to show initials HM
-  };
 
   toggleProfileMenu(event: Event): void {
     event.stopPropagation();
@@ -135,5 +137,12 @@ export class NavComponent {
     if (!this.el.nativeElement.contains(event.target)) {
       this.showProfileMenu = false;
     }
+  }
+
+  logout(): void {
+    authSignal.clearAuth();
+    this.showProfileMenu = false;
+    // Window reload to clear all states for this mock demo
+    window.location.href = '/';
   }
 }

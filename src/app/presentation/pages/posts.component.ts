@@ -38,8 +38,8 @@ import { PostDetailComponent } from './post-detail.component';
                 <h3 class="text-[10px] font-bold text-gray-900 uppercase tracking-widest mb-4">Tìm kiếm</h3>
                 <div class="relative">
                   <input type="text" 
-                         [ngModel]="searchTerm$ | async"
-                         (ngModelChange)="searchTerm$.next($event)"
+                         [ngModel]="searchTerm"
+                         (ngModelChange)="onSearchChange($event)"
                          placeholder="Tên công việc, vị trí..."
                          class="w-full bg-gray-50 border border-gray-200 px-3 py-2 text-xs focus:ring-1 focus:ring-hus-blue focus:border-hus-blue outline-none transition-all font-medium">
                 </div>
@@ -260,7 +260,7 @@ import { PostDetailComponent } from './post-detail.component';
 export class PostsComponent implements OnInit {
   private postService = inject(PostService);
 
-  searchTerm$ = new BehaviorSubject<string>('');
+  searchTerm = '';
   filterTypeSelected$ = new BehaviorSubject<'COMPANY' | 'STUDENT'>('COMPANY');
   subFilterSelected$ = new BehaviorSubject<string>('ALL');
 
@@ -270,16 +270,21 @@ export class PostsComponent implements OnInit {
   selectedPost: Post | null = null;
 
   ngOnInit(): void {
+    console.log('PostsComponent: Initializing...');
+
     this.filteredPosts$ = combineLatest([
       this.postService.getPosts(),
-      this.searchTerm$.pipe(startWith('')),
-      this.filterTypeSelected$.pipe(startWith('COMPANY')),
-      this.subFilterSelected$.pipe(startWith('ALL'))
+      this.filterTypeSelected$,
+      this.subFilterSelected$
     ]).pipe(
-      map(([posts, term, type, sub]) => {
-        return posts.filter(post => {
-          const matchesSearch = post.title.toLowerCase().includes(term.toLowerCase()) ||
-            post.description.toLowerCase().includes(term.toLowerCase());
+      map(([posts, type, sub]) => {
+        console.log(`PostsComponent: Filtering posts. Total: ${posts.length}, Type: ${type}, Sub: ${sub}`);
+
+        const filtered = posts.filter(post => {
+          const term = this.searchTerm.toLowerCase();
+          const matchesSearch = !term ||
+            post.title.toLowerCase().includes(term) ||
+            post.description.toLowerCase().includes(term);
 
           const matchesType = (type === 'COMPANY' && post.postType.includes('COMPANY')) ||
             (type === 'STUDENT' && !post.postType.includes('COMPANY'));
@@ -291,11 +296,20 @@ export class PostsComponent implements OnInit {
 
           return matchesSearch && matchesType && matchesSub;
         });
+
+        console.log(`PostsComponent: Filtered size: ${filtered.length}`);
+        return filtered;
       })
     );
   }
 
+  onSearchChange(val: string): void {
+    this.searchTerm = val;
+    this.filterTypeSelected$.next(this.filterType); // Trigger re-filter
+  }
+
   setFilter(type: 'COMPANY' | 'STUDENT'): void {
+    console.log('PostsComponent: Setting filter type:', type);
     this.filterType = type;
     this.subFilter = 'ALL';
     this.filterTypeSelected$.next(type);
@@ -303,6 +317,7 @@ export class PostsComponent implements OnInit {
   }
 
   setSubFilter(sub: string): void {
+    console.log('PostsComponent: Setting sub filter:', sub);
     this.subFilter = sub;
     this.subFilterSelected$.next(sub);
   }
