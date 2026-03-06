@@ -1,21 +1,58 @@
-import { HttpInterceptorFn } from '@angular/common/http';
-import { catchError, throwError } from 'rxjs';
+import { HttpContextToken, HttpInterceptorFn } from '@angular/common/http';
+import { catchError, switchMap, throwError } from 'rxjs';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { authSignal } from '../signals/auth.signal';
 import { ROUTES } from '../constants/route.const';
+import { AuthRefreshCoordinatorService } from '../services/auth-refresh-coordinator.service';
 
-/** Xử lý lỗi HTTP toàn cục: 401 → logout, 403 → redirect */
+const HAS_RETRIED = new HttpContextToken<boolean>(() => false);
+
+/** Xử lý lỗi HTTP toàn cục: 401 -> refresh once -> retry -> logout */
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     const router = inject(Router);
+    const refreshCoordinator = inject(AuthRefreshCoordinatorService);
 
     return next(req).pipe(
         catchError(err => {
-            if (err.status === 401) {
+            if (err.status !== 401) {
+                return throwError(() => err);
+            }
+
+            const isAuthEndpoint = req.url.includes('/api/v1/auth/');
+            const isRefreshEndpoint = req.url.includes('/api/v1/auth/refresh-token');
+            const alreadyRetried = req.context.get(HAS_RETRIED);
+
+            if (isRefreshEndpoint || alreadyRetried) {
                 authSignal.clearAuth();
                 router.navigateByUrl(ROUTES.AUTH.LOGIN);
+                return throwError(() => err);
             }
-            return throwError(() => err);
+
+            // Do not auto-refresh on login/register/google endpoints.
+            if (isAuthEndpoint) {
+                return throwError(() => err);
+            }
+
+            if (!authSignal.token()) {
+                authSignal.clearAuth();
+                router.navigateByUrl(ROUTES.AUTH.LOGIN);
+                return throwError(() => err);
+            }
+
+            return refreshCoordinator.requestRefresh().pipe(
+                switchMap((refreshed) => {
+                    if (!refreshed) {
+                        authSignal.clearAuth();
+                        router.navigateByUrl(ROUTES.AUTH.LOGIN);
+                        return throwError(() => err);
+                    }
+                    const retriedRequest = req.clone({
+                        context: req.context.set(HAS_RETRIED, true)
+                    });
+                    return next(retriedRequest);
+                })
+            );
         })
     );
 };

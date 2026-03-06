@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { authSignal } from './core/signals/auth.signal';
-import { Role } from './core/enums/role.enum';
 
 @Component({
   selector: 'app-root',
@@ -20,14 +19,6 @@ import { Role } from './core/enums/role.enum';
 })
 export class AppComponent implements OnInit {
   ngOnInit(): void {
-    // Mock login state for development/demo
-    authSignal.setAuth({
-      id: 'admin-1',
-      email: 'admin@mim.hus.edu.vn',
-      fullName: 'Nguyễn Hồng Minh',
-      role: Role.ADMIN
-    }, 'mock-jwt-token');
-
-    console.log('AppComponent: Mock Auth initialized');
+    authSignal.restoreFromStorage();
   }
 }

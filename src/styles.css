@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import 'quill/dist/quill.snow.css';
 
 @tailwind base;
 @tailwind components;
@@ -20,4 +21,25 @@ body {
 .input,
 .tag {
     @apply rounded-none;
+}
+
+.research-quill .ql-toolbar.ql-snow {
+    border: 0;
+    border-bottom: 1px solid rgb(229 231 235);
+    background: rgb(249 250 251);
+}
+
+.research-quill .ql-container.ql-snow {
+    border: 0;
+    font-size: 0.95rem;
+}
+
+.research-quill .ql-editor {
+    line-height: 1.8;
+    color: rgb(17 24 39);
+}
+
+.research-quill .ql-editor.ql-blank::before {
+    font-style: normal;
+    color: rgb(156 163 175);
 }

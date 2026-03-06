@@ -1,7 +1,9 @@
-import { Component, HostListener, ElementRef, inject, computed } from '@angular/core';
+import { Component, HostListener, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { authSignal } from '../../core/signals/auth.signal';
+import { AuthService } from '../../core/services/auth.service';
+import { ROUTES } from '../../core/constants/route.const';
 
 @Component({
   selector: 'app-nav',
@@ -50,6 +52,15 @@ import { authSignal } from '../../core/signals/auth.signal';
             <a href="#" class="text-gray-500 hover:text-hus-blue font-bold text-[11px] uppercase tracking-widest h-full flex items-center border-b-[3px] border-transparent transition-all">
               TIN TỨC
             </a>
+
+            <div *ngIf="!isAuth()" class="ml-4 pl-4 border-l border-gray-100 flex items-center gap-4 h-full">
+              <a [routerLink]="ROUTES.AUTH.LOGIN" class="text-gray-600 hover:text-hus-blue font-bold text-[11px] uppercase tracking-widest transition-colors">
+                Đăng nhập
+              </a>
+              <a [routerLink]="ROUTES.AUTH.REGISTER" class="text-white bg-hus-blue hover:bg-hus-dark px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors">
+                Đăng ký
+              </a>
+            </div>
             
             <!-- Profile -->
             <div *ngIf="isAuth()" class="relative ml-4 pl-4 border-l border-gray-100 flex items-center h-full">
@@ -89,7 +100,9 @@ import { authSignal } from '../../core/signals/auth.signal';
                   Thông tin cá nhân
                 </a>
                 
-                <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
+                <a [routerLink]="ROUTES.RESEARCH_MY_PAPERS"
+                   (click)="showProfileMenu = false"
+                   class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
@@ -119,11 +132,13 @@ import { authSignal } from '../../core/signals/auth.signal';
 })
 export class NavComponent {
   private el = inject(ElementRef);
+  private authService = inject(AuthService);
 
   // Use signals for better reactivity
   isAuth = authSignal.isAuth;
   isAdmin = authSignal.isAdmin;
   currentUser = authSignal.user;
+  protected readonly ROUTES = ROUTES;
 
   showProfileMenu = false;
 
@@ -140,9 +155,7 @@ export class NavComponent {
   }
 
   logout(): void {
-    authSignal.clearAuth();
     this.showProfileMenu = false;
-    // Window reload to clear all states for this mock demo
-    window.location.href = '/';
+    this.authService.logout().subscribe();
   }
 }

@@ -11,7 +11,9 @@ export const routes: Routes = [
         loadComponent: () => import('./layouts/public-layout/public-layout.component').then(m => m.PublicLayoutComponent),
         children: [
             { path: '', loadChildren: () => import('./features/research/research.routes').then(m => m.researchRoutes), pathMatch: 'full' },
+            { path: 'research', loadChildren: () => import('./features/research/research.routes').then(m => m.researchRoutes) },
             { path: 'paper', loadChildren: () => import('./features/research/research.routes').then(m => m.researchRoutes) },
+            { path: 'posts', loadChildren: () => import('./features/recruitment/recruitment.routes').then(m => m.recruitmentRoutes) },
             { path: 'recruitment', loadChildren: () => import('./features/recruitment/recruitment.routes').then(m => m.recruitmentRoutes) },
             { path: 'auth', loadChildren: () => import('./features/auth/auth.routes').then(m => m.authRoutes) },
         ]

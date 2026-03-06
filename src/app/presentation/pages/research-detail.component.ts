@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
-import { ResearchPaper } from '../../core/models/research-paper.model';
 import { switchMap } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
@@ -63,9 +62,8 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
               <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] mb-6 inline-block border-b-4 border-hus-blue pb-1">
                 Tóm tắt Nghiên cứu
               </h2>
-              <p class="text-lg text-gray-700 leading-relaxed text-justify font-light">
-                {{ paper.abstract }}
-              </p>
+              <div class="text-lg text-gray-700 leading-relaxed text-justify font-light whitespace-pre-line"
+                   [innerHTML]="paper.abstract"></div>
             </section>
 
             <!-- Document View -->
@@ -74,12 +72,18 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
                 <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] inline-block border-b-4 border-hus-blue pb-1">
                   Văn bản chi tiết (PDF)
                 </h2>
-                <a [href]="paper.pdfUrl" target="_blank" class="text-[10px] font-bold text-hus-blue hover:text-hus-dark transition uppercase tracking-widest underline underline-offset-4">
-                  Mở tab mới &nearr;
-                </a>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  Xem trực tiếp trên trang
+                </span>
               </div>
               <div class="aspect-[1.414/1] w-full bg-gray-50 border-2 border-hus-blue/10">
-                <iframe [src]="getSafeUrl(paper.pdfUrl)" class="w-full h-full" frameborder="0"></iframe>
+                <iframe
+                  [src]="getSafePdfViewerUrl(paper.pdfUrl)"
+                  class="w-full h-full"
+                  frameborder="0"
+                  referrerpolicy="no-referrer"
+                  loading="lazy">
+                </iframe>
               </div>
             </section>
 
@@ -87,9 +91,14 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
           <!-- Footer Actions -->
           <footer class="mt-20 pt-12 border-t border-gray-100 flex flex-col sm:flex-row justify-center gap-8">
-            <button class="bg-hus-blue text-white text-[11px] font-bold uppercase tracking-[0.2em] px-10 py-4 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20">
+            <a
+              [href]="paper.pdfUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+              class="inline-flex items-center justify-center bg-hus-blue text-white text-[11px] font-bold uppercase tracking-[0.2em] px-10 py-4 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20">
               Tải xuống tài liệu (.PDF)
-            </button>
+            </a>
             <button class="border-2 border-hus-blue text-hus-blue text-[11px] font-bold uppercase tracking-[0.2em] px-10 py-4 hover:bg-hus-blue hover:text-white transition">
               Liên hệ tác giả
             </button>
@@ -109,7 +118,15 @@ export class ResearchDetailComponent {
         switchMap(params => this.paperService.getPaperById(params.get('id')!))
     );
 
-    getSafeUrl(url: string): SafeResourceUrl {
-        return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    getSafePdfViewerUrl(url: string): SafeResourceUrl {
+        return this.sanitizer.bypassSecurityTrustResourceUrl(this.buildPdfViewerUrl(url));
+    }
+
+    private buildPdfViewerUrl(url: string): string {
+        if (!url) {
+            return '';
+        }
+        const delimiter = url.includes('#') ? '&' : '#';
+        return `${url}${delimiter}toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH`;
     }
 }
