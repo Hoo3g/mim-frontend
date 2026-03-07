@@ -9,12 +9,24 @@ import { AdminModerationService } from '../../../core/services/admin-moderation.
 import { AdminContentService } from '../../../core/services/admin-content.service';
 import { ContentService } from '../../../core/services/content.service';
 import { AdminRbacService } from '../../../core/services/admin-rbac.service';
+import { AdminResearchCategoryService } from '../../../core/services/admin-research-category.service';
+import { AdminSpecializationService } from '../../../core/services/admin-specialization.service';
 import { ModerationPaperItem, ModerationPostItem } from '../../../core/models/admin-moderation.model';
 import {
     PermissionOverrideDraftEffect,
     RbacPermissionDefinition,
     RbacUserAssignment
 } from '../../../core/models/rbac.model';
+import { ResearchCategory } from '../../../core/models/research-category.model';
+
+type AdminTabKey = 'POSTS' | 'PAPERS' | 'HERO' | 'RBAC' | 'SPECIALIZATIONS' | 'PAPER_CATEGORIES';
+
+interface AdminTabConfig {
+    key: AdminTabKey;
+    label: string;
+    helper: string;
+    permission: string;
+}
 
 @Component({
     selector: 'app-admin-dashboard',
@@ -39,51 +51,47 @@ import {
         </div>
       </div>
 
-      <div class="border-b border-gray-200 bg-white sticky top-16 z-10 transition-all">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex gap-8 overflow-x-auto">
-            <button *ngIf="can('MODERATION_POSTS_VIEW')"
-                    (click)="currentTab = 'POSTS'"
-                    [class.border-hus-blue]="currentTab === 'POSTS'"
-                    [class.text-hus-blue]="currentTab === 'POSTS'"
-                    class="py-4 text-[11px] font-bold uppercase tracking-widest border-b-2 border-transparent transition-all whitespace-nowrap">
-              Tin Tuyển dụng ({{ pendingPosts.length }})
-            </button>
-            <button *ngIf="can('MODERATION_PAPERS_VIEW')"
-                    (click)="currentTab = 'PAPERS'"
-                    [class.border-hus-blue]="currentTab === 'PAPERS'"
-                    [class.text-hus-blue]="currentTab === 'PAPERS'"
-                    class="py-4 text-[11px] font-bold uppercase tracking-widest border-b-2 border-transparent transition-all whitespace-nowrap">
-              Bài báo khoa học ({{ pendingPapers.length }})
-            </button>
-            <button *ngIf="can('RESEARCH_HERO_EDIT')"
-                    (click)="currentTab = 'HERO'"
-                    [class.border-hus-blue]="currentTab === 'HERO'"
-                    [class.text-hus-blue]="currentTab === 'HERO'"
-                    class="py-4 text-[11px] font-bold uppercase tracking-widest border-b-2 border-transparent transition-all whitespace-nowrap">
-              Trang Nghiên cứu
-            </button>
-            <button *ngIf="can('RBAC_MANAGE')"
-                    (click)="currentTab = 'RBAC'"
-                    [class.border-hus-blue]="currentTab === 'RBAC'"
-                    [class.text-hus-blue]="currentTab === 'RBAC'"
-                    class="py-4 text-[11px] font-bold uppercase tracking-widest border-b-2 border-transparent transition-all whitespace-nowrap">
-              Phân quyền RBAC
-            </button>
-          </div>
-        </div>
-      </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-6 items-start">
+          <aside class="bg-white border border-gray-100 p-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+            <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Danh mục quản trị</p>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div *ngIf="errorMessage" class="mb-6 border border-red-200 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-widest px-4 py-3">
-          {{ errorMessage }}
-        </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
+              <button *ngFor="let tab of visibleTabs"
+                      type="button"
+                      (click)="selectTab(tab.key)"
+                      [class.border-hus-blue]="currentTab === tab.key"
+                      [class.bg-blue-50]="currentTab === tab.key"
+                      [class.text-hus-blue]="currentTab === tab.key"
+                      class="w-full border border-gray-200 px-3 py-3 text-left hover:border-hus-blue/40 transition-colors">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-[10px] font-black uppercase tracking-widest">{{ tab.label }}</span>
+                  <span *ngIf="tabBadge(tab.key) !== null"
+                        [class.bg-hus-blue]="currentTab === tab.key"
+                        [class.text-white]="currentTab === tab.key"
+                        [class.bg-gray-100]="currentTab !== tab.key"
+                        [class.text-gray-500]="currentTab !== tab.key"
+                        class="min-w-6 h-6 px-2 inline-flex items-center justify-center rounded-full text-[10px] font-black tabular-nums">
+                    {{ tabBadge(tab.key) }}
+                  </span>
+                </div>
+                <p class="mt-1 text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                  {{ tab.helper }}
+                </p>
+              </button>
+            </div>
+          </aside>
 
-        <div *ngIf="!hasAnyTabAccess()" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-200">
-          Tài khoản này chưa được cấp quyền thao tác trong trang quản trị.
-        </div>
+          <div class="min-w-0">
+            <div *ngIf="errorMessage" class="mb-6 border border-red-200 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-widest px-4 py-3">
+              {{ errorMessage }}
+            </div>
 
-        <div *ngIf="currentTab === 'POSTS' && can('MODERATION_POSTS_VIEW')" class="space-y-4">
+            <div *ngIf="!hasAnyTabAccess()" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-200">
+              Tài khoản này chưa được cấp quyền thao tác trong trang quản trị.
+            </div>
+
+            <div *ngIf="currentTab === 'POSTS' && can('MODERATION_POSTS_VIEW')" class="space-y-4">
           <div *ngFor="let post of pendingPosts" class="bg-white border border-gray-100 p-6 space-y-4 group hover:border-hus-blue transition-all">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div class="flex-grow">
@@ -216,6 +224,212 @@ import {
           </div>
         </div>
 
+        <div *ngIf="currentTab === 'SPECIALIZATIONS' && can('RESEARCH_CATEGORY_MANAGE')" class="bg-white border border-gray-100 p-6 md:p-8 space-y-6">
+          <div>
+            <h2 class="text-lg font-black text-gray-900 uppercase tracking-widest">Quản lý chuyên ngành dùng chung</h2>
+            <p class="mt-2 text-[11px] text-gray-500">Danh mục chuyên ngành dùng chung cho filter hệ thống, hồ sơ sinh viên và bài tuyển dụng.</p>
+          </div>
+
+          <div *ngIf="specializationNotice" class="border border-hus-blue/20 bg-blue-50 text-hus-blue text-[10px] font-bold uppercase tracking-widest px-4 py-3">
+            {{ specializationNotice }}
+          </div>
+
+          <div class="grid lg:grid-cols-[360px_1fr] gap-6">
+            <div class="border border-gray-100 p-4 space-y-4">
+              <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                {{ editingSpecializationId ? 'Cập nhật chuyên ngành' : 'Thêm chuyên ngành mới' }}
+              </p>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tên chuyên ngành</label>
+                <input
+                  [(ngModel)]="specializationForm.name"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="text"
+                  maxlength="120"
+                  placeholder="Ví dụ: Khoa học dữ liệu"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Thứ tự hiển thị</label>
+                <input
+                  [(ngModel)]="specializationForm.sortOrder"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="number"
+                  min="0"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Trạng thái</label>
+                <select
+                  [(ngModel)]="specializationForm.active"
+                  [ngModelOptions]="{ standalone: true }"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-700 focus:outline-none focus:border-hus-blue">
+                  <option [ngValue]="true">Đang hoạt động</option>
+                  <option [ngValue]="false">Tạm ẩn</option>
+                </select>
+              </div>
+
+              <div class="flex gap-3 pt-2">
+                <button
+                  (click)="saveSpecialization()"
+                  [disabled]="isSavingSpecialization"
+                  class="px-5 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors disabled:opacity-50">
+                  {{ isSavingSpecialization ? 'Đang lưu...' : (editingSpecializationId ? 'Cập nhật' : 'Thêm chuyên ngành') }}
+                </button>
+                <button
+                  (click)="startCreateSpecialization()"
+                  type="button"
+                  class="px-5 py-2 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-colors">
+                  Làm mới
+                </button>
+              </div>
+            </div>
+
+            <div class="border border-gray-100">
+              <div *ngIf="specializations.length === 0"
+                   class="py-12 text-center text-[11px] text-gray-400 uppercase tracking-widest">
+                Chưa có chuyên ngành dùng chung.
+              </div>
+
+              <div *ngFor="let specialization of specializations"
+                   class="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <p class="text-[12px] font-black uppercase tracking-tight text-gray-900">{{ specialization.name }}</p>
+                    <span class="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5"
+                          [class.bg-blue-50]="specialization.active"
+                          [class.text-hus-blue]="specialization.active"
+                          [class.bg-gray-100]="!specialization.active"
+                          [class.text-gray-500]="!specialization.active">
+                      {{ specialization.active ? 'ACTIVE' : 'INACTIVE' }}
+                    </span>
+                  </div>
+                  <p class="mt-1 text-[10px] text-gray-400 uppercase tracking-widest">Sort: {{ specialization.sortOrder }}</p>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    (click)="editSpecialization(specialization)"
+                    class="px-4 py-2 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50 transition-colors">
+                    Sửa
+                  </button>
+                  <button
+                    (click)="deactivateSpecialization(specialization.id)"
+                    [disabled]="!specialization.active"
+                    class="px-4 py-2 border border-red-200 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Ẩn
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="currentTab === 'PAPER_CATEGORIES' && can('RESEARCH_CATEGORY_MANAGE')" class="bg-white border border-gray-100 p-6 md:p-8 space-y-6">
+          <div>
+            <h2 class="text-lg font-black text-gray-900 uppercase tracking-widest">Quản lý phân loại bài nghiên cứu</h2>
+            <p class="mt-2 text-[11px] text-gray-500">Danh mục này dùng khi user soạn thảo bài nghiên cứu và ở phần filter trang nghiên cứu.</p>
+          </div>
+
+          <div *ngIf="paperCategoryNotice" class="border border-hus-blue/20 bg-blue-50 text-hus-blue text-[10px] font-bold uppercase tracking-widest px-4 py-3">
+            {{ paperCategoryNotice }}
+          </div>
+
+          <div class="grid lg:grid-cols-[360px_1fr] gap-6">
+            <div class="border border-gray-100 p-4 space-y-4">
+              <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                {{ editingPaperCategoryId ? 'Cập nhật phân loại' : 'Thêm phân loại mới' }}
+              </p>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tên phân loại</label>
+                <input
+                  [(ngModel)]="paperCategoryForm.name"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="text"
+                  maxlength="120"
+                  placeholder="Ví dụ: Trí tuệ nhân tạo"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Thứ tự hiển thị</label>
+                <input
+                  [(ngModel)]="paperCategoryForm.sortOrder"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="number"
+                  min="0"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Trạng thái</label>
+                <select
+                  [(ngModel)]="paperCategoryForm.active"
+                  [ngModelOptions]="{ standalone: true }"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-700 focus:outline-none focus:border-hus-blue">
+                  <option [ngValue]="true">Đang hoạt động</option>
+                  <option [ngValue]="false">Tạm ẩn</option>
+                </select>
+              </div>
+
+              <div class="flex gap-3 pt-2">
+                <button
+                  (click)="savePaperCategory()"
+                  [disabled]="isSavingPaperCategory"
+                  class="px-5 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors disabled:opacity-50">
+                  {{ isSavingPaperCategory ? 'Đang lưu...' : (editingPaperCategoryId ? 'Cập nhật' : 'Thêm phân loại') }}
+                </button>
+                <button
+                  (click)="startCreatePaperCategory()"
+                  type="button"
+                  class="px-5 py-2 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-colors">
+                  Làm mới
+                </button>
+              </div>
+            </div>
+
+            <div class="border border-gray-100">
+              <div *ngIf="researchCategories.length === 0"
+                   class="py-12 text-center text-[11px] text-gray-400 uppercase tracking-widest">
+                Chưa có phân loại bài nghiên cứu.
+              </div>
+
+              <div *ngFor="let category of researchCategories"
+                   class="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <p class="text-[12px] font-black uppercase tracking-tight text-gray-900">{{ category.name }}</p>
+                    <span class="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5"
+                          [class.bg-blue-50]="category.active"
+                          [class.text-hus-blue]="category.active"
+                          [class.bg-gray-100]="!category.active"
+                          [class.text-gray-500]="!category.active">
+                      {{ category.active ? 'ACTIVE' : 'INACTIVE' }}
+                    </span>
+                  </div>
+                  <p class="mt-1 text-[10px] text-gray-400 uppercase tracking-widest">Sort: {{ category.sortOrder }}</p>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    (click)="editPaperCategory(category)"
+                    class="px-4 py-2 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50 transition-colors">
+                    Sửa
+                  </button>
+                  <button
+                    (click)="deactivatePaperCategory(category.id)"
+                    [disabled]="!category.active"
+                    class="px-4 py-2 border border-red-200 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Ẩn
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div *ngIf="currentTab === 'RBAC' && can('RBAC_MANAGE')" class="bg-white border border-gray-100 p-6 md:p-8 space-y-6">
           <div>
             <h2 class="text-lg font-black text-gray-900 uppercase tracking-widest">Phân quyền tài khoản thấp hơn</h2>
@@ -327,6 +541,8 @@ import {
             </ng-template>
           </div>
         </div>
+          </div>
+        </div>
       </div>
     </div>
   `,
@@ -337,8 +553,48 @@ export class AdminDashboardComponent implements OnInit {
     private readonly contentService = inject(ContentService);
     private readonly adminContentService = inject(AdminContentService);
     private readonly adminRbacService = inject(AdminRbacService);
+    private readonly adminResearchCategoryService = inject(AdminResearchCategoryService);
+    private readonly adminSpecializationService = inject(AdminSpecializationService);
 
-    currentTab: 'POSTS' | 'PAPERS' | 'HERO' | 'RBAC' = 'POSTS';
+    currentTab: AdminTabKey = 'POSTS';
+    readonly adminTabs: AdminTabConfig[] = [
+        {
+            key: 'POSTS',
+            label: 'Tin tuyển dụng',
+            helper: 'Duyệt nội dung tuyển dụng',
+            permission: 'MODERATION_POSTS_VIEW'
+        },
+        {
+            key: 'PAPERS',
+            label: 'Bài báo khoa học',
+            helper: 'Duyệt bài nghiên cứu',
+            permission: 'MODERATION_PAPERS_VIEW'
+        },
+        {
+            key: 'HERO',
+            label: 'Trang nghiên cứu',
+            helper: 'Chỉnh hero trang research',
+            permission: 'RESEARCH_HERO_EDIT'
+        },
+        {
+            key: 'SPECIALIZATIONS',
+            label: 'Chuyên ngành chung',
+            helper: 'Quản lý chuyên ngành hệ thống',
+            permission: 'RESEARCH_CATEGORY_MANAGE'
+        },
+        {
+            key: 'PAPER_CATEGORIES',
+            label: 'Phân loại bài viết',
+            helper: 'Danh mục research categories',
+            permission: 'RESEARCH_CATEGORY_MANAGE'
+        },
+        {
+            key: 'RBAC',
+            label: 'Phân quyền RBAC',
+            helper: 'Cấp quyền thao tác nâng cao',
+            permission: 'RBAC_MANAGE'
+        }
+    ];
 
     pendingPosts: ModerationPostItem[] = [];
     pendingPapers: ModerationPaperItem[] = [];
@@ -362,6 +618,26 @@ export class AdminDashboardComponent implements OnInit {
     selectedRbacUserId: string | null = null;
     permissionToAdd = '';
 
+    specializations: ResearchCategory[] = [];
+    specializationForm = {
+        name: '',
+        sortOrder: 0,
+        active: true
+    };
+    editingSpecializationId: string | null = null;
+    isSavingSpecialization = false;
+    specializationNotice = '';
+
+    researchCategories: ResearchCategory[] = [];
+    paperCategoryForm = {
+        name: '',
+        sortOrder: 0,
+        active: true
+    };
+    editingPaperCategoryId: string | null = null;
+    isSavingPaperCategory = false;
+    paperCategoryNotice = '';
+
     heroNotice = '';
     rbacNotice = '';
     errorMessage = '';
@@ -370,6 +646,8 @@ export class AdminDashboardComponent implements OnInit {
         this.currentTab = this.resolveInitialTab();
         this.loadPendingModeration();
         this.loadHeroContent();
+        this.loadSpecializations();
+        this.loadResearchCategories();
         this.loadRbacData();
     }
 
@@ -377,11 +655,27 @@ export class AdminDashboardComponent implements OnInit {
         return authSignal.hasPermission(permission);
     }
 
+    get visibleTabs(): AdminTabConfig[] {
+        return this.adminTabs.filter((tab) => this.can(tab.permission));
+    }
+
     hasAnyTabAccess(): boolean {
-        return this.can('MODERATION_POSTS_VIEW')
-            || this.can('MODERATION_PAPERS_VIEW')
-            || this.can('RESEARCH_HERO_EDIT')
-            || this.can('RBAC_MANAGE');
+        return this.visibleTabs.length > 0;
+    }
+
+    selectTab(tab: AdminTabKey): void {
+        this.currentTab = tab;
+        this.errorMessage = '';
+    }
+
+    tabBadge(tab: AdminTabKey): number | null {
+        if (tab === 'POSTS') {
+            return this.pendingPosts.length;
+        }
+        if (tab === 'PAPERS') {
+            return this.pendingPapers.length;
+        }
+        return null;
     }
 
     approvePost(id: string): void {
@@ -486,6 +780,168 @@ export class AdminDashboardComponent implements OnInit {
                 imageUrl: saved.imageUrl
             };
             this.heroNotice = 'Đã cập nhật hero trang nghiên cứu.';
+        });
+    }
+
+    startCreateSpecialization(): void {
+        this.editingSpecializationId = null;
+        this.specializationForm = {
+            name: '',
+            sortOrder: 0,
+            active: true
+        };
+        this.errorMessage = '';
+        this.specializationNotice = '';
+    }
+
+    editSpecialization(specialization: ResearchCategory): void {
+        this.editingSpecializationId = specialization.id;
+        this.specializationForm = {
+            name: specialization.name,
+            sortOrder: specialization.sortOrder,
+            active: specialization.active
+        };
+        this.errorMessage = '';
+        this.specializationNotice = '';
+    }
+
+    saveSpecialization(): void {
+        const payload = {
+            name: this.specializationForm.name.trim(),
+            sortOrder: Number(this.specializationForm.sortOrder),
+            active: this.specializationForm.active
+        };
+
+        if (!payload.name) {
+            this.errorMessage = 'Vui lòng nhập tên chuyên ngành.';
+            return;
+        }
+        if (!Number.isFinite(payload.sortOrder) || payload.sortOrder < 0) {
+            this.errorMessage = 'Thứ tự hiển thị phải là số không âm.';
+            return;
+        }
+
+        this.errorMessage = '';
+        this.specializationNotice = '';
+        this.isSavingSpecialization = true;
+
+        const request$ = this.editingSpecializationId
+            ? this.adminSpecializationService.update(this.editingSpecializationId, payload)
+            : this.adminSpecializationService.create(payload);
+
+        request$.pipe(
+            finalize(() => {
+                this.isSavingSpecialization = false;
+            })
+        ).subscribe((saved) => {
+            if (!saved) {
+                this.errorMessage = this.editingSpecializationId
+                    ? 'Không thể cập nhật chuyên ngành.'
+                    : 'Không thể tạo chuyên ngành.';
+                return;
+            }
+
+            const notice = this.editingSpecializationId
+                ? 'Đã cập nhật chuyên ngành.'
+                : 'Đã thêm chuyên ngành mới.';
+            this.startCreateSpecialization();
+            this.specializationNotice = notice;
+            this.loadSpecializations();
+        });
+    }
+
+    deactivateSpecialization(specializationId: string): void {
+        this.errorMessage = '';
+        this.specializationNotice = '';
+
+        this.adminSpecializationService.deactivate(specializationId).subscribe((ok) => {
+            if (!ok) {
+                this.errorMessage = 'Không thể ẩn chuyên ngành đã chọn.';
+                return;
+            }
+            this.specializationNotice = 'Đã ẩn chuyên ngành.';
+            this.loadSpecializations();
+        });
+    }
+
+    startCreatePaperCategory(): void {
+        this.editingPaperCategoryId = null;
+        this.paperCategoryForm = {
+            name: '',
+            sortOrder: 0,
+            active: true
+        };
+        this.errorMessage = '';
+        this.paperCategoryNotice = '';
+    }
+
+    editPaperCategory(category: ResearchCategory): void {
+        this.editingPaperCategoryId = category.id;
+        this.paperCategoryForm = {
+            name: category.name,
+            sortOrder: category.sortOrder,
+            active: category.active
+        };
+        this.errorMessage = '';
+        this.paperCategoryNotice = '';
+    }
+
+    savePaperCategory(): void {
+        const payload = {
+            name: this.paperCategoryForm.name.trim(),
+            sortOrder: Number(this.paperCategoryForm.sortOrder),
+            active: this.paperCategoryForm.active
+        };
+
+        if (!payload.name) {
+            this.errorMessage = 'Vui lòng nhập tên phân loại bài nghiên cứu.';
+            return;
+        }
+        if (!Number.isFinite(payload.sortOrder) || payload.sortOrder < 0) {
+            this.errorMessage = 'Thứ tự hiển thị phải là số không âm.';
+            return;
+        }
+
+        this.errorMessage = '';
+        this.paperCategoryNotice = '';
+        this.isSavingPaperCategory = true;
+
+        const request$ = this.editingPaperCategoryId
+            ? this.adminResearchCategoryService.update(this.editingPaperCategoryId, payload)
+            : this.adminResearchCategoryService.create(payload);
+
+        request$.pipe(
+            finalize(() => {
+                this.isSavingPaperCategory = false;
+            })
+        ).subscribe((saved) => {
+            if (!saved) {
+                this.errorMessage = this.editingPaperCategoryId
+                    ? 'Không thể cập nhật phân loại bài nghiên cứu.'
+                    : 'Không thể tạo phân loại bài nghiên cứu.';
+                return;
+            }
+
+            const notice = this.editingPaperCategoryId
+                ? 'Đã cập nhật phân loại bài nghiên cứu.'
+                : 'Đã thêm phân loại bài nghiên cứu mới.';
+            this.startCreatePaperCategory();
+            this.paperCategoryNotice = notice;
+            this.loadResearchCategories();
+        });
+    }
+
+    deactivatePaperCategory(categoryId: string): void {
+        this.errorMessage = '';
+        this.paperCategoryNotice = '';
+
+        this.adminResearchCategoryService.deactivate(categoryId).subscribe((ok) => {
+            if (!ok) {
+                this.errorMessage = 'Không thể ẩn phân loại bài nghiên cứu đã chọn.';
+                return;
+            }
+            this.paperCategoryNotice = 'Đã ẩn phân loại bài nghiên cứu.';
+            this.loadResearchCategories();
         });
     }
 
@@ -611,25 +1067,16 @@ export class AdminDashboardComponent implements OnInit {
                 return 'Duyệt hoặc từ chối tin tuyển dụng';
             case 'RESEARCH_HERO_EDIT':
                 return 'Chỉnh nội dung hero trang nghiên cứu';
+            case 'RESEARCH_CATEGORY_MANAGE':
+                return 'Quản lý danh mục dùng chung';
             default:
                 return permissionName;
         }
     }
 
-    private resolveInitialTab(): 'POSTS' | 'PAPERS' | 'HERO' | 'RBAC' {
-        if (this.can('MODERATION_POSTS_VIEW')) {
-            return 'POSTS';
-        }
-        if (this.can('MODERATION_PAPERS_VIEW')) {
-            return 'PAPERS';
-        }
-        if (this.can('RESEARCH_HERO_EDIT')) {
-            return 'HERO';
-        }
-        if (this.can('RBAC_MANAGE')) {
-            return 'RBAC';
-        }
-        return 'POSTS';
+    private resolveInitialTab(): AdminTabKey {
+        const firstAccessibleTab = this.adminTabs.find((tab) => this.can(tab.permission));
+        return firstAccessibleTab?.key ?? 'POSTS';
     }
 
     private loadPendingModeration(): void {
@@ -662,6 +1109,28 @@ export class AdminDashboardComponent implements OnInit {
                 subtitle: hero.subtitle,
                 imageUrl: hero.imageUrl
             };
+        });
+    }
+
+    private loadSpecializations(): void {
+        if (!this.can('RESEARCH_CATEGORY_MANAGE')) {
+            this.specializations = [];
+            return;
+        }
+
+        this.adminSpecializationService.getAll().subscribe((items) => {
+            this.specializations = items;
+        });
+    }
+
+    private loadResearchCategories(): void {
+        if (!this.can('RESEARCH_CATEGORY_MANAGE')) {
+            this.researchCategories = [];
+            return;
+        }
+
+        this.adminResearchCategoryService.getAll().subscribe((categories) => {
+            this.researchCategories = categories;
         });
     }
 

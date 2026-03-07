@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { authSignal } from './core/signals/auth.signal';
+import { AuthService } from './core/services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -18,7 +19,10 @@ import { authSignal } from './core/signals/auth.signal';
   `
 })
 export class AppComponent implements OnInit {
+  private readonly authService = inject(AuthService);
+
   ngOnInit(): void {
     authSignal.restoreFromStorage();
+    this.authService.syncProfileFromBackend();
   }
 }

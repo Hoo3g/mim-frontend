@@ -1,4 +1,6 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth.guard';
+import { ProfileComponent } from './presentation/pages/profile.component';
 
 /**
  * Root routes — sử dụng lazy loading cho từng feature.
@@ -16,6 +18,11 @@ export const routes: Routes = [
             { path: 'posts', loadChildren: () => import('./features/recruitment/recruitment.routes').then(m => m.recruitmentRoutes) },
             { path: 'recruitment', loadChildren: () => import('./features/recruitment/recruitment.routes').then(m => m.recruitmentRoutes) },
             { path: 'auth', loadChildren: () => import('./features/auth/auth.routes').then(m => m.authRoutes) },
+            {
+                path: 'profile',
+                canActivate: [authGuard],
+                component: ProfileComponent
+            },
         ]
     },
     // ─── Admin layout (không có Nav bar public) ─────────────

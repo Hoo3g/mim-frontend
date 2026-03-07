@@ -16,6 +16,7 @@ export interface ResearchPaper {
     category: 'LECTURER' | 'STUDENT';
     approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
     moderationComment?: string;
+    isBookmarked?: boolean;
     authors: PaperAuthor[];
     createdAt: Date;
     updatedAt: Date;

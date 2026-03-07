@@ -5,6 +5,7 @@ import { Post } from '../models/post.model';
 import { MOCK_POSTS } from '../../infrastructure/mock/data';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
+import { PendingApplicantResponse, PendingApplicationResponse } from '../models/profile.model';
 
 interface ApiResearchPaperLink {
     id?: string;
@@ -39,6 +40,42 @@ interface ApiPostModel {
     updatedAt?: string | Date;
 }
 
+interface ApiApplyResponse {
+    id?: string;
+    postId?: string;
+    status?: string;
+    message?: string;
+    cvUrl?: string;
+    createdAt?: string | Date;
+}
+
+interface ApplyPayload {
+    message?: string;
+    cvUrl?: string;
+}
+
+interface ApiPendingApplication {
+    applicationId?: string;
+    postId?: string;
+    postTitle?: string;
+    companyName?: string;
+    postType?: string;
+    location?: string;
+    status?: string;
+    appliedAt?: string | Date;
+}
+
+interface ApiPendingApplicant {
+    applicationId?: string;
+    postId?: string;
+    postTitle?: string;
+    applicantId?: string;
+    applicantName?: string;
+    message?: string;
+    cvUrl?: string;
+    appliedAt?: string | Date;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -66,6 +103,30 @@ export class PostService {
                 return this.toPostModel(response.data);
             }),
             catchError(() => of(MOCK_POSTS.find((post) => post.id === id)))
+        );
+    }
+
+    applyToPost(postId: string, payload: ApplyPayload): Observable<ApiApplyResponse> {
+        return this.http.post<ApiResponse<ApiApplyResponse>>(API_ENDPOINTS.RECRUITMENT.APPLY(postId), payload).pipe(
+            map((response) => this.unwrap(response))
+        );
+    }
+
+    getMyPendingApplications(): Observable<PendingApplicationResponse[]> {
+        return this.http.get<ApiResponse<ApiPendingApplication[]>>(
+            `${API_ENDPOINTS.RECRUITMENT.APPLICATIONS_MY}?status=PENDING`
+        ).pipe(
+            map((response) => this.unwrapList(response).map((item) => this.toPendingApplication(item))),
+            catchError(() => of([]))
+        );
+    }
+
+    getReceivedPendingApplications(): Observable<PendingApplicantResponse[]> {
+        return this.http.get<ApiResponse<ApiPendingApplicant[]>>(
+            `${API_ENDPOINTS.RECRUITMENT.APPLICATIONS_RECEIVED}?status=PENDING`
+        ).pipe(
+            map((response) => this.unwrapList(response).map((item) => this.toPendingApplicant(item))),
+            catchError(() => of([]))
         );
     }
 
@@ -114,6 +175,59 @@ export class PostService {
             }
         }
         return new Date(fallback);
+    }
+
+    private unwrap<T>(response: ApiResponse<T>): T {
+        if (!response.success || response.data === null) {
+            throw new Error(response.message || 'Request failed');
+        }
+        return response.data;
+    }
+
+    private unwrapList<T>(response: ApiResponse<T[]>): T[] {
+        if (!response.success || response.data === null) {
+            return [];
+        }
+        return response.data;
+    }
+
+    private toPendingApplication(item: ApiPendingApplication): PendingApplicationResponse {
+        return {
+            applicationId: item.applicationId ?? '',
+            postId: item.postId ?? '',
+            postTitle: item.postTitle ?? '',
+            companyName: item.companyName ?? '',
+            postType: item.postType ?? '',
+            location: item.location ?? '',
+            status: item.status ?? 'PENDING',
+            appliedAt: this.toIsoDate(item.appliedAt)
+        };
+    }
+
+    private toPendingApplicant(item: ApiPendingApplicant): PendingApplicantResponse {
+        return {
+            applicationId: item.applicationId ?? '',
+            postId: item.postId ?? '',
+            postTitle: item.postTitle ?? '',
+            applicantId: item.applicantId ?? '',
+            applicantName: item.applicantName ?? '',
+            message: item.message ?? '',
+            cvUrl: item.cvUrl ?? '',
+            appliedAt: this.toIsoDate(item.appliedAt)
+        };
+    }
+
+    private toIsoDate(value?: string | Date): string | null {
+        if (value instanceof Date) {
+            return value.toISOString();
+        }
+        if (typeof value === 'string') {
+            const parsed = new Date(value);
+            if (!Number.isNaN(parsed.getTime())) {
+                return parsed.toISOString();
+            }
+        }
+        return null;
     }
 
     private clonePost(post: Post): Post {

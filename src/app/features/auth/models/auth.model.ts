@@ -24,6 +24,8 @@ export interface AuthApiUser {
     id: string;
     email: string;
     status: string;
+    fullName?: string | null;
+    avatarUrl?: string | null;
     roles: string[];
     permissions?: string[];
 }

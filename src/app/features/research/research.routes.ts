@@ -7,6 +7,10 @@ export const researchRoutes: Routes = [
         loadComponent: () => import('../../presentation/pages/research.component').then(m => m.ResearchComponent)
     },
     {
+        path: 'filter',
+        loadComponent: () => import('../../presentation/pages/research-filter.component').then(m => m.ResearchFilterComponent)
+    },
+    {
         path: 'my-papers',
         canActivate: [authGuard],
         loadComponent: () => import('../../presentation/pages/my-research-papers.component').then(m => m.MyResearchPapersComponent)

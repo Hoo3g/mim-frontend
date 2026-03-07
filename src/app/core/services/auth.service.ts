@@ -14,6 +14,7 @@ import {
 import { authSignal } from '../signals/auth.signal';
 import { Role } from '../enums/role.enum';
 import { ROUTES } from '../constants/route.const';
+import { ProfileMeResponse } from '../models/profile.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -73,7 +74,7 @@ export class AuthService {
                 .filter((permission) => !!permission))]
             : [];
         const primaryRole = this.pickRole(roles);
-        const fullName = this.buildDisplayName(auth.user.email);
+        const fullName = this.buildDisplayName(auth.user.email, auth.user.fullName ?? undefined);
 
         authSignal.setAuth(
             {
@@ -81,11 +82,13 @@ export class AuthService {
                 email: auth.user.email,
                 fullName,
                 role: primaryRole,
-                permissions
+                permissions,
+                avatarUrl: auth.user.avatarUrl ?? undefined
             },
             auth.accessToken
         );
 
+        this.syncProfileFromBackend();
         return auth;
     }
 
@@ -100,8 +103,52 @@ export class AuthService {
         return Role.STUDENT;
     }
 
-    private buildDisplayName(email: string): string {
+    syncProfileFromBackend(): void {
+        if (!authSignal.isAuth() || !authSignal.token()) {
+            return;
+        }
+
+        this.http.get<ApiResponse<ProfileMeResponse>>(API_ENDPOINTS.PROFILE.ME).pipe(
+            map((response) => this.unwrap(response)),
+            catchError(() => of(null))
+        ).subscribe((profile) => {
+            if (!profile) {
+                return;
+            }
+
+            authSignal.updateUserInfo({
+                fullName: this.buildDisplayNameFromProfile(profile),
+                avatarUrl: profile.avatarUrl ?? undefined
+            });
+        });
+    }
+
+    private buildDisplayName(email: string, fullName?: string): string {
+        if (fullName && fullName.trim()) {
+            return fullName.trim();
+        }
         const localPart = email.split('@')[0]?.trim();
         return localPart ? localPart : email;
+    }
+
+    private buildDisplayNameFromProfile(profile: ProfileMeResponse): string {
+        const emailFallback = profile.email?.split('@')[0] || profile.email || 'User';
+
+        if (profile.role === 'COMPANY') {
+            const companyName = profile.company?.name?.trim();
+            return companyName || emailFallback;
+        }
+
+        if (profile.role === 'STUDENT') {
+            const fullName = `${profile.student?.firstName || ''} ${profile.student?.lastName || ''}`.trim();
+            return fullName || emailFallback;
+        }
+
+        if (profile.role === 'LECTURER') {
+            const fullName = `${profile.lecturer?.firstName || ''} ${profile.lecturer?.lastName || ''}`.trim();
+            return fullName || emailFallback;
+        }
+
+        return emailFallback;
     }
 }

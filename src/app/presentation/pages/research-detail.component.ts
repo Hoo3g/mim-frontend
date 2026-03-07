@@ -2,8 +2,10 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
-import { switchMap } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { ResearchPaper } from '../../core/models/research-paper.model';
+import { authSignal } from '../../core/signals/auth.signal';
 
 @Component({
     selector: 'app-research-detail',
@@ -26,10 +28,16 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
           
           <!-- Header -->
           <header class="mb-12 border-b-2 border-hus-blue pb-12">
-             <div class="flex items-center gap-3 mb-6 text-[11px] font-bold uppercase tracking-tighter">
+            <div class="flex items-center gap-3 mb-6 text-[11px] font-bold uppercase tracking-tighter">
               <span class="bg-hus-blue text-white px-3 py-1">{{ paper.category === 'LECTURER' ? 'GIẢNG VIÊN' : 'SINH VIÊN' }}</span>
               <span class="text-gray-300">|</span>
               <span class="text-hus-blue">{{ paper.publicationYear }}</span>
+              <button *ngIf="isAuth()"
+                      (click)="toggleBookmark(paper)"
+                      class="ml-auto px-3 py-1 border text-[10px] font-black uppercase tracking-widest transition-colors"
+                      [ngClass]="paper.isBookmarked ? 'border-hus-blue bg-hus-blue text-white' : 'border-gray-200 text-gray-400 hover:border-hus-blue hover:text-hus-blue'">
+                {{ paper.isBookmarked ? 'Đã lưu' : 'Lưu bài' }}
+              </button>
             </div>
             
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-8">
@@ -113,10 +121,25 @@ export class ResearchDetailComponent {
     private route = inject(ActivatedRoute);
     private paperService = inject(ResearchPaperService);
     private sanitizer = inject(DomSanitizer);
+    isAuth = authSignal.isAuth;
 
-    paper$ = this.route.paramMap.pipe(
+    paper$: Observable<ResearchPaper | undefined> = this.route.paramMap.pipe(
         switchMap(params => this.paperService.getPaperById(params.get('id')!))
     );
+
+    toggleBookmark(paper: ResearchPaper): void {
+        const request$ = paper.isBookmarked
+            ? this.paperService.unbookmarkPaper(paper.id)
+            : this.paperService.bookmarkPaper(paper.id);
+
+        request$.subscribe({
+            next: () => {
+                this.paper$ = this.route.paramMap.pipe(
+                    switchMap(params => this.paperService.getPaperById(params.get('id')!))
+                );
+            }
+        });
+    }
 
     getSafePdfViewerUrl(url: string): SafeResourceUrl {
         return this.sanitizer.bypassSecurityTrustResourceUrl(this.buildPdfViewerUrl(url));

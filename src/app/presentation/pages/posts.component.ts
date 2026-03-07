@@ -5,6 +5,8 @@ import { Post } from '../../core/models/post.model';
 import { Observable, BehaviorSubject, combineLatest, map, startWith } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { PostDetailComponent } from './post-detail.component';
+import { SpecializationService } from '../../core/services/specialization.service';
+import { ResearchCategory } from '../../core/models/research-category.model';
 
 @Component({
   selector: 'app-posts',
@@ -65,20 +67,11 @@ import { PostDetailComponent } from './post-detail.component';
                               class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
                         ▪ Tất cả
                       </button>
-                      <button (click)="setSubFilter('WEB')" 
-                              [class.text-hus-blue]="subFilter === 'WEB'"
+                      <button *ngFor="let specialization of specializations"
+                              (click)="setSubFilter(specialization.name)" 
+                              [class.text-hus-blue]="subFilter === specialization.name"
                               class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
-                        ▪ Lập trình Web
-                      </button>
-                      <button (click)="setSubFilter('MOBILE')" 
-                              [class.text-hus-blue]="subFilter === 'MOBILE'"
-                              class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
-                        ▪ Mobile App
-                      </button>
-                      <button (click)="setSubFilter('AI')" 
-                              [class.text-hus-blue]="subFilter === 'AI'"
-                              class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
-                        ▪ Trí tuệ nhân tạo (AI)
+                        ▪ {{ specialization.name }}
                       </button>
                     </div>
                   </div>
@@ -99,25 +92,11 @@ import { PostDetailComponent } from './post-detail.component';
                               class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
                         ▪ Tất cả
                       </button>
-                      <button (click)="setSubFilter('KHDL')" 
-                              [class.text-hus-blue]="subFilter === 'KHDL'"
+                      <button *ngFor="let specialization of specializations"
+                              (click)="setSubFilter(specialization.name)" 
+                              [class.text-hus-blue]="subFilter === specialization.name"
                               class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
-                        ▪ Khoa học Dữ liệu
-                      </button>
-                      <button (click)="setSubFilter('KHMT')" 
-                              [class.text-hus-blue]="subFilter === 'KHMT'"
-                              class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
-                        ▪ Khoa học Máy tính
-                      </button>
-                      <button (click)="setSubFilter('TKT')" 
-                              [class.text-hus-blue]="subFilter === 'TKT'"
-                              class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
-                        ▪ Toán kinh tế
-                      </button>
-                      <button (click)="setSubFilter('GPA > 3.5')" 
-                              [class.text-hus-blue]="subFilter === 'GPA > 3.5'"
-                              class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
-                        ▪ GPA xuất sắc (>3.5)
+                        ▪ {{ specialization.name }}
                       </button>
                     </div>
                   </div>
@@ -259,10 +238,20 @@ import { PostDetailComponent } from './post-detail.component';
 })
 export class PostsComponent implements OnInit {
   private postService = inject(PostService);
+  private specializationService = inject(SpecializationService);
+
+  private readonly specializationAliasMap: Record<string, string[]> = {
+    'tri tue nhan tao': ['ai', 'artificial intelligence'],
+    'khoa hoc du lieu': ['khdl', 'data science'],
+    'khoa hoc may tinh': ['khmt', 'computer science'],
+    'toan kinh te': ['tkt', 'actuary'],
+    'an ninh mang': ['cybersecurity', 'security']
+  };
 
   searchTerm = '';
   filterTypeSelected$ = new BehaviorSubject<'COMPANY' | 'STUDENT'>('COMPANY');
   subFilterSelected$ = new BehaviorSubject<string>('ALL');
+  specializations: ResearchCategory[] = [];
 
   filteredPosts$!: Observable<Post[]>;
   filterType: 'COMPANY' | 'STUDENT' = 'COMPANY';
@@ -270,7 +259,7 @@ export class PostsComponent implements OnInit {
   selectedPost: Post | null = null;
 
   ngOnInit(): void {
-    console.log('PostsComponent: Initializing...');
+    this.loadSpecializations();
 
     this.filteredPosts$ = combineLatest([
       this.postService.getPosts(),
@@ -278,8 +267,6 @@ export class PostsComponent implements OnInit {
       this.subFilterSelected$
     ]).pipe(
       map(([posts, type, sub]) => {
-        console.log(`PostsComponent: Filtering posts. Total: ${posts.length}, Type: ${type}, Sub: ${sub}`);
-
         const filtered = posts.filter(post => {
           const term = this.searchTerm.toLowerCase();
           const matchesSearch = !term ||
@@ -291,13 +278,11 @@ export class PostsComponent implements OnInit {
 
           let matchesSub = true;
           if (sub !== 'ALL') {
-            matchesSub = !!post.tags?.includes(sub);
+            matchesSub = this.matchesSpecialization(post, sub);
           }
 
           return matchesSearch && matchesType && matchesSub;
         });
-
-        console.log(`PostsComponent: Filtered size: ${filtered.length}`);
         return filtered;
       })
     );
@@ -309,7 +294,6 @@ export class PostsComponent implements OnInit {
   }
 
   setFilter(type: 'COMPANY' | 'STUDENT'): void {
-    console.log('PostsComponent: Setting filter type:', type);
     this.filterType = type;
     this.subFilter = 'ALL';
     this.filterTypeSelected$.next(type);
@@ -317,7 +301,6 @@ export class PostsComponent implements OnInit {
   }
 
   setSubFilter(sub: string): void {
-    console.log('PostsComponent: Setting sub filter:', sub);
     this.subFilter = sub;
     this.subFilterSelected$.next(sub);
   }
@@ -330,5 +313,38 @@ export class PostsComponent implements OnInit {
   closeDetail(): void {
     this.selectedPost = null;
     document.body.style.overflow = 'auto';
+  }
+
+  private loadSpecializations(): void {
+    this.specializationService.getActiveSpecializations().subscribe((items) => {
+      this.specializations = items;
+    });
+  }
+
+  private matchesSpecialization(post: Post, specializationName: string): boolean {
+    const tags = (post.tags ?? [])
+      .map((item) => this.normalize(item))
+      .filter((item) => !!item);
+    if (tags.length === 0) {
+      return false;
+    }
+
+    const normalizedSpecialization = this.normalize(specializationName);
+    const aliases = this.specializationAliasMap[normalizedSpecialization] ?? [];
+    const candidates = [normalizedSpecialization, ...aliases.map((item) => this.normalize(item))]
+      .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
+
+    return tags.some((tag) =>
+      candidates.some((candidate) =>
+        tag === candidate || tag.includes(candidate) || candidate.includes(tag)));
+  }
+
+  private normalize(value: string): string {
+    return (value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ');
   }
 }

@@ -1,16 +1,18 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { catchError, map, Observable, of } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of } from 'rxjs';
 import { PaperAuthor, ResearchPaper } from '../models/research-paper.model';
 import { MOCK_NEWS, MOCK_PAPERS } from '../../infrastructure/mock/data';
 import type { AuthUser } from '../signals/auth.signal';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
+import { authSignal } from '../signals/auth.signal';
 
 export interface ResearchEditorPayload {
     id?: string;
     title: string;
     abstract: string;
+    researchArea: string;
     pdfUrl?: string;
 }
 
@@ -43,6 +45,10 @@ interface ResearchPaperApiModel {
     updatedAt?: string | Date;
 }
 
+interface ResearchBookmarkApiModel {
+    paperId?: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -54,18 +60,37 @@ export class ResearchPaperService {
         ?? 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
 
     getPapers(): Observable<ResearchPaper[]> {
-        return this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.LIST).pipe(
+        const papers$ = this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.LIST).pipe(
             map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
             catchError(() => of(this.mockPapers.map((paper) => this.clonePaper(paper))))
+        );
+
+        return forkJoin([papers$, this.getBookmarkedPaperIds()]).pipe(
+            map(([papers, bookmarkedIds]) => papers.map((paper) => ({
+                ...paper,
+                isBookmarked: bookmarkedIds.has(paper.id)
+            })))
         );
     }
 
     getPaperById(id: string): Observable<ResearchPaper | undefined> {
-        return this.http.get<ApiResponse<ResearchPaperApiModel>>(API_ENDPOINTS.RESEARCH.DETAIL(id)).pipe(
+        const paper$ = this.http.get<ApiResponse<ResearchPaperApiModel>>(API_ENDPOINTS.RESEARCH.DETAIL(id)).pipe(
             map((response) => this.toPaperModel(this.unwrap(response))),
             catchError(() => {
                 const fallback = this.mockPapers.find((paper) => paper.id === id);
                 return of(fallback ? this.clonePaper(fallback) : undefined);
+            })
+        );
+
+        return forkJoin([paper$, this.getBookmarkedPaperIds()]).pipe(
+            map(([paper, bookmarkedIds]) => {
+                if (!paper) {
+                    return undefined;
+                }
+                return {
+                    ...paper,
+                    isBookmarked: bookmarkedIds.has(paper.id)
+                };
             })
         );
     }
@@ -106,13 +131,15 @@ export class ResearchPaperService {
     saveFromEditor(payload: ResearchEditorPayload, _currentUser: AuthUser): Observable<ResearchPaper | null> {
         const title = payload.title.trim();
         const abstract = payload.abstract.trim();
-        if (!title || !abstract) {
+        const researchArea = payload.researchArea?.trim();
+        if (!title || !abstract || !researchArea) {
             return of(null);
         }
 
         const requestBody = {
             title,
             abstract,
+            researchArea,
             pdfUrl: payload.pdfUrl
         };
 
@@ -128,6 +155,38 @@ export class ResearchPaperService {
 
     getNews(): Observable<any[]> {
         return of(MOCK_NEWS);
+    }
+
+    getBookmarkedPaperIds(): Observable<Set<string>> {
+        if (!authSignal.isAuth()) {
+            return of(new Set<string>());
+        }
+
+        return this.http.get<ApiResponse<ResearchBookmarkApiModel[]>>(API_ENDPOINTS.RESEARCH.BOOKMARKS_MY).pipe(
+            map((response) => this.unwrapList(response)),
+            map((items) => {
+                const ids = new Set<string>();
+                items.forEach((item) => {
+                    if (item.paperId) {
+                        ids.add(item.paperId);
+                    }
+                });
+                return ids;
+            }),
+            catchError(() => of(new Set<string>()))
+        );
+    }
+
+    bookmarkPaper(paperId: string): Observable<void> {
+        return this.http.post<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.BOOKMARK(paperId), {}).pipe(
+            map(() => void 0)
+        );
+    }
+
+    unbookmarkPaper(paperId: string): Observable<void> {
+        return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.BOOKMARK(paperId)).pipe(
+            map(() => void 0)
+        );
     }
 
     uploadPdfToMinio(file: File): Observable<string> {

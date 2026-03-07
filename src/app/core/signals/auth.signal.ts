@@ -20,6 +20,7 @@ const ADMIN_UI_PERMISSIONS = [
     'MODERATION_PAPERS_VIEW',
     'MODERATION_PAPERS_ACTION',
     'RESEARCH_HERO_EDIT',
+    'RESEARCH_CATEGORY_MANAGE',
     'RBAC_MANAGE'
 ] as const;
 
@@ -72,6 +73,34 @@ export const authSignal = {
         _token.set(null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+    },
+
+    updateAvatar(avatarUrl?: string | null): void {
+        const current = _user();
+        if (!current) {
+            return;
+        }
+        const updated = {
+            ...current,
+            avatarUrl: avatarUrl || undefined
+        };
+        _user.set(updated);
+        localStorage.setItem('user', JSON.stringify(updated));
+    },
+
+    updateUserInfo(payload: { fullName?: string | null; avatarUrl?: string | null }): void {
+        const current = _user();
+        if (!current) {
+            return;
+        }
+
+        const updated = {
+            ...current,
+            fullName: payload.fullName?.trim() ? payload.fullName.trim() : current.fullName,
+            avatarUrl: payload.avatarUrl || undefined
+        };
+        _user.set(updated);
+        localStorage.setItem('user', JSON.stringify(updated));
     },
 
     restoreFromStorage(): void {

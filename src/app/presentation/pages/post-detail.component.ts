@@ -2,12 +2,16 @@ import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Post } from '../../core/models/post.model';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { PostService } from '../../core/services/post.service';
+import { authSignal } from '../../core/signals/auth.signal';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
     selector: 'app-post-detail',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule, RouterModule],
     template: `
     <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-10">
       <!-- Backdrop -->
@@ -199,10 +203,32 @@ import { Router } from '@angular/router';
             </section>
           </div>
 
+          <div *ngIf="post.postType.includes('COMPANY') && isAuth()" class="px-8 pt-6 bg-gray-50/50 border-t border-gray-100">
+            <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
+              Lời nhắn ứng tuyển (tuỳ chọn)
+            </label>
+            <textarea [(ngModel)]="applyMessage"
+                      rows="3"
+                      class="w-full border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-hus-blue"
+                      placeholder="Ví dụ: Em mong muốn trao đổi thêm về yêu cầu vị trí..."></textarea>
+            <p *ngIf="applyFeedback"
+               class="mt-2 text-[10px] font-bold uppercase tracking-widest"
+               [ngClass]="applyError ? 'text-red-500' : 'text-emerald-600'">
+              {{ applyFeedback }}
+            </p>
+            <a *ngIf="missingDefaultCv"
+               [routerLink]="['/profile']"
+               (click)="handleClose()"
+               class="mt-2 inline-block text-[10px] font-black uppercase tracking-widest text-hus-blue hover:underline">
+              Tải CV mặc định tại Profile
+            </a>
+          </div>
+
           <!-- Footer Actions -->
           <div class="p-8 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row gap-4">
-            <button class="flex-grow py-4 bg-gray-900 text-white text-[11px] font-black uppercase tracking-widest hover:bg-hus-blue transition-all duration-300 transform active:scale-95 shadow-lg shadow-gray-900/10">
-              {{ post.postType.includes('COMPANY') ? 'Ứng tuyển ngay' : 'Liên hệ hợp tác' }}
+            <button (click)="handlePrimaryAction()"
+                    class="flex-grow py-4 bg-gray-900 text-white text-[11px] font-black uppercase tracking-widest hover:bg-hus-blue transition-all duration-300 transform active:scale-95 shadow-lg shadow-gray-900/10">
+              {{ post.postType.includes('COMPANY') ? (isAuth() ? 'Ứng tuyển ngay' : 'Đăng nhập để ứng tuyển') : 'Liên hệ hợp tác' }}
             </button>
             <button class="px-8 py-4 bg-white border border-gray-200 text-gray-500 text-[11px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-all duration-300">
               Lưu tin
@@ -264,12 +290,18 @@ import { Router } from '@angular/router';
 export class PostDetailComponent {
     private sanitizer = inject(DomSanitizer);
     private router = inject(Router);
+    private postService = inject(PostService);
 
     @Input({ required: true }) post!: Post;
     @Output() close = new EventEmitter<void>();
 
+    isAuth = authSignal.isAuth;
     showCv = false;
     cvSafeUrl?: SafeResourceUrl;
+    applyMessage = '';
+    applyFeedback = '';
+    applyError = false;
+    missingDefaultCv = false;
 
     openCv(): void {
         if (this.post.studentCvUrl) {
@@ -288,5 +320,36 @@ export class PostDetailComponent {
     handleClose(): void {
         this.showCv = false;
         this.close.emit();
+    }
+
+    handlePrimaryAction(): void {
+        if (!this.post.postType.includes('COMPANY')) {
+            return;
+        }
+
+        if (!this.isAuth()) {
+            this.close.emit();
+            this.router.navigate(['/auth/login']);
+            return;
+        }
+
+        this.applyFeedback = '';
+        this.applyError = false;
+        this.missingDefaultCv = false;
+
+        this.postService.applyToPost(this.post.id, { message: this.applyMessage }).subscribe({
+            next: () => {
+                this.applyFeedback = 'Ứng tuyển thành công';
+                this.applyMessage = '';
+                this.applyError = false;
+                this.missingDefaultCv = false;
+            },
+            error: (error: HttpErrorResponse) => {
+                const message = error.error?.message || 'Ứng tuyển thất bại';
+                this.applyFeedback = String(message);
+                this.applyError = true;
+                this.missingDefaultCv = String(message).toLowerCase().includes('default cv');
+            }
+        });
     }
 }

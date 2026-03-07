@@ -9,6 +9,8 @@ import { QuillModules } from 'ngx-quill/config';
 import { ROUTES } from '../../core/constants/route.const';
 import { authSignal } from '../../core/signals/auth.signal';
 import { ResearchEditorPayload, ResearchPaperService } from '../../core/services/research-paper.service';
+import { ResearchCategoryService } from '../../core/services/research-category.service';
+import { ResearchCategory } from '../../core/models/research-category.model';
 
 @Component({
     selector: 'app-research-editor',
@@ -32,7 +34,7 @@ import { ResearchEditorPayload, ResearchPaperService } from '../../core/services
             {{ isEditMode ? 'Chỉnh sửa bài viết nghiên cứu' : 'Soạn thảo bài viết nghiên cứu' }}
           </h1>
           <p class="mt-4 text-sm text-gray-400 font-bold uppercase tracking-widest">
-            Điền thông tin cơ bản cho bài viết: tên đề tài và phần tóm tắt.
+            Điền thông tin cơ bản cho bài viết: tên đề tài, lĩnh vực nghiên cứu và phần tóm tắt.
           </p>
 
           <form class="mt-8 space-y-6" (ngSubmit)="save()">
@@ -48,6 +50,32 @@ import { ResearchEditorPayload, ResearchPaperService } from '../../core/services
                      required
                      class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
                      placeholder="Nhập tên đề tài nghiên cứu">
+            </div>
+
+            <div>
+              <label for="researchArea" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                Phân loại bài viết
+              </label>
+              <select id="researchArea"
+                      name="researchArea"
+                      [(ngModel)]="selectedResearchArea"
+                      required
+                      class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors">
+                <option value="" disabled>
+                  {{ isLoadingCategories ? 'Đang tải danh mục...' : 'Chọn phân loại' }}
+                </option>
+                <option *ngFor="let category of researchCategories" [value]="category.name">
+                  {{ category.name }}
+                </option>
+                <option *ngIf="selectedResearchArea && !isKnownResearchArea(selectedResearchArea)"
+                        [value]="selectedResearchArea">
+                  {{ selectedResearchArea }} (không còn hoạt động)
+                </option>
+              </select>
+              <p *ngIf="!isLoadingCategories && researchCategories.length === 0"
+                 class="mt-2 text-[10px] font-bold uppercase tracking-widest text-amber-600">
+                Chưa có phân loại bài nghiên cứu. Liên hệ admin để thêm danh mục trước khi đăng bài.
+              </p>
             </div>
 
             <div>
@@ -129,6 +157,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly paperService = inject(ResearchPaperService);
+    private readonly researchCategoryService = inject(ResearchCategoryService);
 
     protected readonly ROUTES = ROUTES;
     protected readonly quillModules: QuillModules = {
@@ -145,6 +174,10 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
 
     isEditMode = false;
     editingPaperId: string | null = null;
+
+    researchCategories: ResearchCategory[] = [];
+    isLoadingCategories = false;
+    selectedResearchArea = '';
 
     title = '';
     abstract = '';
@@ -166,6 +199,8 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             return;
         }
 
+        this.loadResearchCategories();
+
         const paperId = this.route.snapshot.paramMap.get('id');
         if (!paperId) {
             return;
@@ -183,6 +218,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             this.title = paper.title;
             this.abstract = this.normalizeToEditorHtml(paper.abstract);
             this.existingPdfUrl = paper.pdfUrl;
+            this.selectedResearchArea = paper.researchArea ?? '';
         });
     }
 
@@ -196,9 +232,10 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
         const trimmedTitle = this.title.trim();
         const abstractHtml = (this.abstract ?? '').trim();
         const abstractPlainText = this.toPlainText(abstractHtml);
+        const trimmedResearchArea = this.selectedResearchArea.trim();
 
-        if (!trimmedTitle || !abstractPlainText) {
-            this.errorMessage = 'Vui lòng nhập đầy đủ tên đề tài và tóm tắt.';
+        if (!trimmedTitle || !trimmedResearchArea || !abstractPlainText) {
+            this.errorMessage = 'Vui lòng nhập đầy đủ tên đề tài, lĩnh vực và tóm tắt.';
             return;
         }
 
@@ -216,6 +253,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
                         id: this.editingPaperId ?? undefined,
                         title: trimmedTitle,
                         abstract: abstractHtml,
+                        researchArea: trimmedResearchArea,
                         pdfUrl: uploadedPdfUrl ?? undefined
                     };
                     return this.paperService.saveFromEditor(payload, currentUser);
@@ -326,5 +364,24 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             URL.revokeObjectURL(this.selectedPdfPreviewUrl);
         }
         this.selectedPdfPreviewUrl = null;
+    }
+
+    private loadResearchCategories(): void {
+        this.isLoadingCategories = true;
+        this.researchCategoryService.getActiveCategories()
+            .pipe(
+                take(1),
+                finalize(() => (this.isLoadingCategories = false))
+            )
+            .subscribe((categories) => {
+                this.researchCategories = categories;
+                if (!this.selectedResearchArea && categories.length > 0) {
+                    this.selectedResearchArea = categories[0].name;
+                }
+            });
+    }
+
+    isKnownResearchArea(name: string): boolean {
+        return this.researchCategories.some((category) => category.name === name);
     }
 }
