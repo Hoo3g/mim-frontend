@@ -4,6 +4,8 @@ import { RouterModule, Router } from '@angular/router';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
 import { ResearchPaper } from '../../core/models/research-paper.model';
 import { Observable, map } from 'rxjs';
+import { ContentService } from '../../core/services/content.service';
+import { ResearchHeroContent } from '../../core/models/content.model';
 
 @Component({
   selector: 'app-research',
@@ -15,15 +17,15 @@ import { Observable, map } from 'rxjs';
       <!-- Hero Banner Section -->
       <div class="bg-gray-50 border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-          <div class="relative overflow-hidden border-2 border-hus-blue/10 bg-white">
+          <div *ngIf="hero$ | async as hero" class="relative overflow-hidden border-2 border-hus-blue/10 bg-white">
             <div class="grid grid-cols-1 md:grid-cols-2 items-center">
               <div class="p-8 md:p-12">
                 <h1 class="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4 uppercase tracking-tighter">
-                  Nghiên cứu <br/>
-                  <span class="text-hus-blue">Đổi mới</span> & <span class="text-hus-blue">Sáng tạo</span>
+                  {{ hero.titlePrefix }} <br/>
+                  <span class="text-hus-blue">{{ hero.titleHighlight }}</span>
                 </h1>
                 <p class="text-sm text-gray-400 font-bold uppercase tracking-widest max-w-sm mb-8">
-                  Nơi hội tụ những công trình nghiên cứu khoa học tiên phong của Khoa Toán - Cơ - Tin học.
+                  {{ hero.subtitle }}
                 </p>
                 <div class="flex gap-4">
                   <div class="h-10 w-1 bg-hus-blue"></div>
@@ -34,7 +36,7 @@ import { Observable, map } from 'rxjs';
                 </div>
               </div>
               <div class="h-64 md:h-full relative overflow-hidden bg-gray-100">
-                <img src="assets/faculty_building.png" alt="MIM Faculty Building" class="w-full h-full object-cover grayscale-0 hover:scale-105 transition-transform duration-700">
+                <img [src]="hero.imageUrl" alt="MIM Faculty Building" class="w-full h-full object-cover grayscale-0 hover:scale-105 transition-transform duration-700">
               </div>
             </div>
           </div>
@@ -162,14 +164,17 @@ import { Observable, map } from 'rxjs';
 })
 export class ResearchComponent implements OnInit {
   private paperService = inject(ResearchPaperService);
+  private contentService = inject(ContentService);
   private router = inject(Router);
 
   allPapers$!: Observable<ResearchPaper[]>;
   filteredPapers$!: Observable<ResearchPaper[]>;
   news$!: Observable<any[]>;
+  hero$!: Observable<ResearchHeroContent>;
   currentFilter: 'ALL' | 'LECTURER' | 'STUDENT' = 'ALL';
 
   ngOnInit(): void {
+    this.hero$ = this.contentService.getResearchHeroContent();
     this.allPapers$ = this.paperService.getPapers();
     this.news$ = this.paperService.getNews();
     this.updateFilter();

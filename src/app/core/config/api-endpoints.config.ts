@@ -18,6 +18,9 @@ export const API_ENDPOINTS = {
         DETAIL: (id: string) => `${API_CONFIG.PREFIX}/posts/${id}`,
         APPLY: (id: string) => `${API_CONFIG.PREFIX}/posts/${id}/apply`,
     },
+    CONTENT: {
+        RESEARCH_HERO: `${API_CONFIG.PREFIX}/content/research-hero`,
+    },
     NEWS: {
         LIST: `${API_CONFIG.PREFIX}/news`,
     },
@@ -28,10 +31,18 @@ export const API_ENDPOINTS = {
     },
     STORAGE: {
         RESEARCH_PDF_UPLOAD: `${API_CONFIG.PREFIX}/storage/research-pdfs`,
+        RESEARCH_HERO_IMAGE_UPLOAD: `${API_CONFIG.PREFIX}/admin/storage/research-hero-images`,
     },
     ADMIN: {
         USERS: `${API_CONFIG.PREFIX}/admin/users`,
         MODERATION: `${API_CONFIG.PREFIX}/admin/moderation`,
+        MODERATION_POSTS: `${API_CONFIG.PREFIX}/admin/moderation/posts`,
+        MODERATION_PAPERS: `${API_CONFIG.PREFIX}/admin/moderation/papers`,
+        CONTENT_RESEARCH_HERO: `${API_CONFIG.PREFIX}/admin/content/research-hero`,
+        RBAC_PERMISSIONS: `${API_CONFIG.PREFIX}/admin/rbac/permissions`,
+        RBAC_ROLES: `${API_CONFIG.PREFIX}/admin/rbac/roles`,
+        RBAC_USERS: `${API_CONFIG.PREFIX}/admin/rbac/users`,
+        RBAC_USER_OVERRIDES: (id: string) => `${API_CONFIG.PREFIX}/admin/rbac/users/${id}/overrides`,
         NEWS: `${API_CONFIG.PREFIX}/admin/news`,
     },
 } as const;

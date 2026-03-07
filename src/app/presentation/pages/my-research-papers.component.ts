@@ -65,6 +65,10 @@ import { authSignal } from '../../core/signals/auth.signal';
                 <span class="text-gray-400 tabular-nums">{{ paper.publicationYear }}</span>
                 <span class="text-gray-300">|</span>
                 <span class="text-gray-400">{{ paper.category === 'LECTURER' ? 'Giảng viên' : 'Sinh viên' }}</span>
+                <span class="text-gray-300">|</span>
+                <span [ngClass]="statusClass(paper.approvalStatus)">
+                  {{ statusLabel(paper.approvalStatus) }}
+                </span>
               </div>
 
               <h3 class="text-xl font-bold text-gray-900 leading-tight group-hover:text-hus-blue transition-colors">
@@ -73,6 +77,11 @@ import { authSignal } from '../../core/signals/auth.signal';
 
               <p class="mt-3 text-[12px] text-gray-500 leading-relaxed line-clamp-2">
                 {{ toPlainText(paper.abstract) }}
+              </p>
+
+              <p *ngIf="paper.approvalStatus === 'REJECTED' && paper.moderationComment"
+                 class="mt-3 text-[10px] font-bold uppercase tracking-widest text-red-500">
+                Lý do từ chối: {{ paper.moderationComment }}
               </p>
 
               <div class="mt-4 flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
@@ -129,5 +138,17 @@ export class MyResearchPapersComponent implements OnInit {
         const wrapper = document.createElement('div');
         wrapper.innerHTML = html ?? '';
         return (wrapper.textContent ?? '').replace(/\u00A0/g, ' ').trim();
+    }
+
+    statusLabel(status?: string): string {
+        if (status === 'PENDING') return 'Chờ duyệt';
+        if (status === 'REJECTED') return 'Bị từ chối';
+        return 'Đã duyệt';
+    }
+
+    statusClass(status?: string): string {
+        if (status === 'PENDING') return 'text-amber-600';
+        if (status === 'REJECTED') return 'text-red-500';
+        return 'text-emerald-600';
     }
 }

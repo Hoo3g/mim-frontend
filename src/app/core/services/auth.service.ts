@@ -67,6 +67,11 @@ export class AuthService {
 
     private persistAuth(auth: AuthResponse): AuthResponse {
         const roles = Array.isArray(auth.user.roles) ? auth.user.roles : [];
+        const permissions = Array.isArray(auth.user.permissions)
+            ? [...new Set(auth.user.permissions
+                .map((permission) => (permission ?? '').toString().trim().toUpperCase())
+                .filter((permission) => !!permission))]
+            : [];
         const primaryRole = this.pickRole(roles);
         const fullName = this.buildDisplayName(auth.user.email);
 
@@ -75,7 +80,8 @@ export class AuthService {
                 id: auth.user.id,
                 email: auth.user.email,
                 fullName,
-                role: primaryRole
+                role: primaryRole,
+                permissions
             },
             auth.accessToken
         );
@@ -84,10 +90,13 @@ export class AuthService {
     }
 
     private pickRole(roles: string[]): Role {
-        const role = roles[0]?.toUpperCase();
-        if (role === Role.ADMIN) return Role.ADMIN;
-        if (role === Role.LECTURER) return Role.LECTURER;
-        if (role === Role.COMPANY) return Role.COMPANY;
+        const normalizedRoles = roles
+            .map((role) => role?.toUpperCase?.() ?? '')
+            .filter((role) => !!role);
+
+        if (normalizedRoles.includes(Role.ADMIN)) return Role.ADMIN;
+        if (normalizedRoles.includes(Role.LECTURER)) return Role.LECTURER;
+        if (normalizedRoles.includes(Role.COMPANY)) return Role.COMPANY;
         return Role.STUDENT;
     }
 

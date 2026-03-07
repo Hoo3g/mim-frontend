@@ -14,6 +14,8 @@ export interface ResearchPaper {
     journalConference?: string;
     researchArea: string;
     category: 'LECTURER' | 'STUDENT';
+    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    moderationComment?: string;
     authors: PaperAuthor[];
     createdAt: Date;
     updatedAt: Date;

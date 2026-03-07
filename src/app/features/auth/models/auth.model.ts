@@ -25,6 +25,7 @@ export interface AuthApiUser {
     email: string;
     status: string;
     roles: string[];
+    permissions?: string[];
 }
 
 export interface AuthResponse {

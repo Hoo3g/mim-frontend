@@ -174,8 +174,8 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
         this.isEditMode = true;
         this.editingPaperId = paperId;
 
-        this.paperService.getPaperById(paperId).pipe(take(1)).subscribe((paper) => {
-            if (!paper || !this.paperService.isOwnedByUser(paper, currentUser)) {
+        this.paperService.getMyPaperById(paperId, currentUser).pipe(take(1)).subscribe((paper) => {
+            if (!paper) {
                 this.redirectToMyPapers('Bài viết không tồn tại hoặc bạn không có quyền chỉnh sửa.');
                 return;
             }
@@ -234,7 +234,9 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
                     }
 
                     const notice = this.isEditMode
-                        ? 'Đã cập nhật bài viết nghiên cứu.'
+                        ? (savedPaper.approvalStatus === 'PENDING'
+                            ? 'Đã cập nhật bài viết nghiên cứu và gửi lại duyệt.'
+                            : 'Đã cập nhật bài viết nghiên cứu.')
                         : 'Đã tạo bài viết nghiên cứu mới.';
                     this.router.navigateByUrl(ROUTES.RESEARCH_MY_PAPERS, { state: { notice } });
                 },

@@ -36,6 +36,8 @@ interface ResearchPaperApiModel {
     journalConference?: string;
     researchArea?: string;
     category?: 'LECTURER' | 'STUDENT';
+    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    moderationComment?: string;
     authors?: ResearchPaperApiAuthor[];
     createdAt?: string | Date;
     updatedAt?: string | Date;
@@ -53,23 +55,24 @@ export class ResearchPaperService {
 
     getPapers(): Observable<ResearchPaper[]> {
         return this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.LIST).pipe(
-            map((response) => {
-                const remotePapers = this.unwrapList(response).map((paper) => this.toPaperModel(paper));
-                return this.mergeWithMockPapers(remotePapers);
-            }),
+            map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
             catchError(() => of(this.mockPapers.map((paper) => this.clonePaper(paper))))
         );
     }
 
     getPaperById(id: string): Observable<ResearchPaper | undefined> {
-        const localMock = this.mockPapers.find((paper) => paper.id === id);
-        if (localMock) {
-            return of(this.clonePaper(localMock));
-        }
-
         return this.http.get<ApiResponse<ResearchPaperApiModel>>(API_ENDPOINTS.RESEARCH.DETAIL(id)).pipe(
             map((response) => this.toPaperModel(this.unwrap(response))),
-            catchError(() => of(undefined))
+            catchError(() => {
+                const fallback = this.mockPapers.find((paper) => paper.id === id);
+                return of(fallback ? this.clonePaper(fallback) : undefined);
+            })
+        );
+    }
+
+    getMyPaperById(id: string, currentUser: AuthUser): Observable<ResearchPaper | undefined> {
+        return this.getMyPapers(currentUser).pipe(
+            map((papers) => papers.find((paper) => paper.id === id))
         );
     }
 
@@ -159,14 +162,6 @@ export class ResearchPaperService {
         return response.data;
     }
 
-    private mergeWithMockPapers(remotePapers: ResearchPaper[]): ResearchPaper[] {
-        const remoteIds = new Set(remotePapers.map((paper) => paper.id));
-        const remainingMocks = this.mockPapers
-            .filter((paper) => !remoteIds.has(paper.id))
-            .map((paper) => this.clonePaper(paper));
-        return [...remotePapers, ...remainingMocks];
-    }
-
     private toPaperModel(apiPaper: ResearchPaperApiModel): ResearchPaper {
         const authors = Array.isArray(apiPaper.authors) ? apiPaper.authors : [];
         const mappedAuthors: PaperAuthor[] = authors.map((author, index) => ({
@@ -185,6 +180,8 @@ export class ResearchPaperService {
             journalConference: apiPaper.journalConference ?? 'MIM Draft',
             researchArea: apiPaper.researchArea ?? 'Chưa phân loại',
             category: apiPaper.category === 'LECTURER' ? 'LECTURER' : 'STUDENT',
+            approvalStatus: apiPaper.approvalStatus,
+            moderationComment: apiPaper.moderationComment,
             authors: mappedAuthors,
             createdAt: this.toDate(apiPaper.createdAt),
             updatedAt: this.toDate(apiPaper.updatedAt)

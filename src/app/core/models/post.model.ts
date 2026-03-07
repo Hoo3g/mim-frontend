@@ -33,6 +33,8 @@ export interface Post {
     location?: string;
     salaryRange?: string;
     status: 'OPEN' | 'CLOSED' | 'DRAFT';
+    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    moderationComment?: string;
     createdAt: Date;
     updatedAt: Date;
 }

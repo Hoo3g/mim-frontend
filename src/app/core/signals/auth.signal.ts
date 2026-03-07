@@ -6,24 +6,65 @@ export interface AuthUser {
     email: string;
     fullName: string;
     role: Role;
+    permissions: string[];
     avatarUrl?: string;
 }
 
 // ─── Auth Signal ────────────────────────────────────────────
 const _user = signal<AuthUser | null>(null);
 const _token = signal<string | null>(null);
+const ADMIN_UI_PERMISSIONS = [
+    'ADMIN_DASHBOARD_VIEW',
+    'MODERATION_POSTS_VIEW',
+    'MODERATION_POSTS_ACTION',
+    'MODERATION_PAPERS_VIEW',
+    'MODERATION_PAPERS_ACTION',
+    'RESEARCH_HERO_EDIT',
+    'RBAC_MANAGE'
+] as const;
 
 export const authSignal = {
     user: _user.asReadonly(),
     token: _token.asReadonly(),
     isAuth: computed(() => _user() !== null),
     isAdmin: computed(() => _user()?.role === Role.ADMIN),
+    canAccessAdmin: computed(() => {
+        const user = _user();
+        if (!user) {
+            return false;
+        }
+        if (user.role === Role.ADMIN) {
+            return true;
+        }
+        return ADMIN_UI_PERMISSIONS.some((permission) => user.permissions.includes(permission));
+    }),
 
     setAuth(user: AuthUser, token: string): void {
         _user.set(user);
         _token.set(token);
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
+    },
+
+    hasPermission(permission: string): boolean {
+        const user = _user();
+        if (!user) {
+            return false;
+        }
+        if (user.role === Role.ADMIN) {
+            return true;
+        }
+        if (user.permissions.includes(permission)) {
+            return true;
+        }
+        // Approve/Reject permission implies viewing the queue.
+        if (permission === 'MODERATION_POSTS_VIEW' && user.permissions.includes('MODERATION_POSTS_ACTION')) {
+            return true;
+        }
+        if (permission === 'MODERATION_PAPERS_VIEW' && user.permissions.includes('MODERATION_PAPERS_ACTION')) {
+            return true;
+        }
+        return false;
     },
 
     clearAuth(): void {
@@ -37,8 +78,23 @@ export const authSignal = {
         const token = localStorage.getItem('token');
         const userJson = localStorage.getItem('user');
         if (token && userJson) {
+            const parsed = JSON.parse(userJson) as Partial<AuthUser>;
+            if (!parsed?.id || !parsed?.email || !parsed?.fullName || !parsed?.role) {
+                this.clearAuth();
+                return;
+            }
+
             _token.set(token);
-            _user.set(JSON.parse(userJson));
+            _user.set({
+                id: parsed.id,
+                email: parsed.email,
+                fullName: parsed.fullName,
+                role: parsed.role,
+                avatarUrl: parsed.avatarUrl,
+                permissions: Array.isArray(parsed.permissions)
+                    ? parsed.permissions.map((item) => String(item).toUpperCase())
+                    : []
+            });
         }
     }
 };
