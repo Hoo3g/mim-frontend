@@ -1,7 +1,9 @@
-// API configuration — update when backend URL changes
+import { runtimeConfig } from './runtime-config';
+
+// API configuration is resolved at runtime so one image can serve many envs.
 export const API_CONFIG = {
-    BASE_URL: 'http://localhost:8080',
+    BASE_URL: runtimeConfig.apiBaseUrl,
     VERSION: 'v1',
-    GOOGLE_CLIENT_ID: '983439776863-h1dbo93cbt93bpcnq5q15940cpk4a22o.apps.googleusercontent.com',
+    GOOGLE_CLIENT_ID: runtimeConfig.googleClientId,
     get PREFIX() { return `${this.BASE_URL}/api/${this.VERSION}`; }
 } as const;
