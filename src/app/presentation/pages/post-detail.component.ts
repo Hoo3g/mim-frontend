@@ -115,22 +115,62 @@ import { HttpErrorResponse } from '@angular/common/http';
               </p>
             </section>
 
-            <!-- Requirements/Achievements -->
-            <section *ngIf="post.requirements || post.achievements">
+            <section *ngIf="!post.postType.includes('COMPANY')" class="space-y-6">
               <h3 class="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                 <span class="w-1.5 h-1.5 bg-gray-900"></span>
-                {{ post.postType.includes('COMPANY') ? 'Yêu cầu & Kỹ năng' : 'Thành tích nổi bật' }}
+                Thông tin hồ sơ sinh viên
+              </h3>
+              <div class="grid sm:grid-cols-2 gap-4 bg-gray-50 p-5 border border-gray-100">
+                <div>
+                  <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Trường</p>
+                  <p class="text-sm font-bold text-gray-900 mt-1">{{ studentInfoValue('studentUniversity') }}</p>
+                </div>
+                <div>
+                  <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Chuyên ngành</p>
+                  <p class="text-sm font-bold text-gray-900 mt-1">{{ studentInfoValue('studentMajor') }}</p>
+                </div>
+                <div>
+                  <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Loại sinh viên</p>
+                  <p class="text-sm font-bold text-gray-900 mt-1">{{ studentInfoValue('studentType') }}</p>
+                </div>
+                <div>
+                  <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Vị trí mong muốn</p>
+                  <p class="text-sm font-bold text-gray-900 mt-1">{{ studentInfoValue('studentDesiredPosition') }}</p>
+                </div>
+              </div>
+
+              <div>
+                <h4 class="text-[10px] font-black text-gray-900 uppercase tracking-[0.18em] mb-3">Giới thiệu</h4>
+                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                  {{ studentInfoValue('studentBio') }}
+                </p>
+              </div>
+
+              <div>
+                <h4 class="text-[10px] font-black text-hus-blue uppercase tracking-[0.18em] mb-3">Thành tích</h4>
+                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                  {{ studentInfoValue('studentAchievements') }}
+                </p>
+              </div>
+
+              <div>
+                <h4 class="text-[10px] font-black text-gray-900 uppercase tracking-[0.18em] mb-3">Mong muốn nghề nghiệp</h4>
+                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                  {{ studentInfoValue('studentCareerGoal') }}
+                </p>
+              </div>
+            </section>
+
+            <!-- Requirements (Company) -->
+            <section *ngIf="post.postType.includes('COMPANY') && post.requirements">
+              <h3 class="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <span class="w-1.5 h-1.5 bg-gray-900"></span>
+                Yêu cầu & Kỹ năng
               </h3>
               <div class="bg-gray-50 p-6 border-l-4 border-gray-900">
-                <p *ngIf="post.postType.includes('COMPANY')" class="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
                   {{ post.requirements }}
                 </p>
-                <ul *ngIf="!post.postType.includes('COMPANY')" class="space-y-3">
-                  <li *ngFor="let item of post.achievements?.split(';')" class="flex items-start gap-3">
-                    <span class="text-hus-blue font-bold">▪</span>
-                    <span class="text-sm text-gray-700 font-medium">{{ item.trim() }}</span>
-                  </li>
-                </ul>
               </div>
             </section>
 
@@ -303,6 +343,29 @@ export class PostDetailComponent {
     applyError = false;
     missingDefaultCv = false;
 
+    studentInfoValue(key: string): string {
+        const fromDisplayInfo = this.readDisplayInfo(key);
+        if (fromDisplayInfo) {
+            return fromDisplayInfo;
+        }
+
+        if (key === 'studentBio') {
+            const fallbackBio = (this.post.description ?? '').trim();
+            if (fallbackBio) {
+                return fallbackBio;
+            }
+        }
+
+        if (key === 'studentAchievements') {
+            const fallback = (this.post.achievements ?? '').trim();
+            if (fallback) {
+                return fallback;
+            }
+        }
+
+        return 'Chưa cập nhật';
+    }
+
     openCv(): void {
         if (this.post.studentCvUrl) {
             this.cvSafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.post.studentCvUrl);
@@ -351,5 +414,10 @@ export class PostDetailComponent {
                 this.missingDefaultCv = String(message).toLowerCase().includes('default cv');
             }
         });
+    }
+
+    private readDisplayInfo(key: string): string {
+        const value = this.post.displayInfo?.[key];
+        return typeof value === 'string' ? value.trim() : '';
     }
 }

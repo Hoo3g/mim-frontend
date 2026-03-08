@@ -12,6 +12,20 @@ export enum JobType {
     INTERNSHIP = 'INTERNSHIP'
 }
 
+export interface StudentPostDisplayInfo {
+    studentUniversity?: string;
+    studentMajor?: string;
+    studentType?: string;
+    studentDesiredPosition?: string;
+    studentBio?: string;
+    studentCareerGoal?: string;
+    studentAchievements?: string;
+}
+
+export interface PostDisplayInfo extends StudentPostDisplayInfo {
+    [key: string]: unknown;
+}
+
 export interface Post {
     id: string;
     authorId: string;
@@ -29,7 +43,7 @@ export interface Post {
     contactEmail?: string;
     contactPhone?: string;
     researchPaperLinks?: { title: string, url: string, id?: string }[];
-    displayInfo?: any;
+    displayInfo?: PostDisplayInfo;
     location?: string;
     salaryRange?: string;
     status: 'OPEN' | 'CLOSED' | 'DRAFT';

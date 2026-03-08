@@ -1,5 +1,5 @@
-import { Component, HostListener, ElementRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, HostListener, ElementRef, OnInit, inject } from '@angular/core';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { authSignal } from '../../core/signals/auth.signal';
 import { AuthService } from '../../core/services/auth.service';
@@ -10,7 +10,8 @@ import { ROUTES } from '../../core/constants/route.const';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <header class="bg-white border-b border-gray-200 font-sans sticky top-0 z-50">
+    <header class="font-sans sticky top-0 z-50 transition-shadow duration-300"
+            [class.shadow-sm]="isCondensed">
       <!-- Top Bar -->
       <div class="bg-hus-blue text-white text-[10px] uppercase tracking-widest py-1.5 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex justify-between items-center font-bold">
@@ -27,14 +28,23 @@ import { ROUTES } from '../../core/constants/route.const';
       </div>
 
       <!-- Main Navbar -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
+      <div class="bg-white border-b border-gray-200 transition-all duration-300"
+           [class.overflow-hidden]="isCondensed"
+           [style.maxHeight.px]="isCondensed ? 0 : 64"
+           [style.opacity]="isCondensed ? 0 : 1"
+           [style.pointerEvents]="isCondensed ? 'none' : 'auto'">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex justify-between items-center h-16">
           <!-- Logo -->
           <a routerLink="/" class="flex items-center gap-3 group">
             <img src="assets/logo.png" alt="Logo" class="h-10 w-auto transition-transform group-hover:scale-110">
             <div class="flex flex-col border-l-2 border-hus-blue pl-3">
-              <span class="text-gray-900 font-bold text-sm uppercase tracking-tighter leading-none group-hover:text-hus-blue transition-colors">Khoa Toán - Cơ - Tin học</span>
-              <span class="text-hus-blue text-[9px] uppercase tracking-tight font-black mt-0.5">Faculty of Mathematics - Mechanics - Informatics</span>
+              <span class="text-gray-900 font-bold text-sm uppercase tracking-tighter leading-none group-hover:text-hus-blue transition-colors">
+                Khoa Toán - Cơ - Tin học
+              </span>
+              <span class="text-hus-blue text-[9px] uppercase tracking-tight font-black mt-0.5">
+                Faculty of Mathematics - Mechanics - Informatics
+              </span>
             </div>
           </a>
 
@@ -108,7 +118,17 @@ import { ROUTES } from '../../core/constants/route.const';
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  Bài viết của tôi
+                  Bài nghiên cứu của tôi
+                </a>
+
+                <a *ngIf="canManageRecruitmentPosts()"
+                   [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
+                   (click)="showProfileMenu = false"
+                   class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H5a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293H19a2 2 0 012 2v10a2 2 0 01-2 2z" />
+                  </svg>
+                  Bài tuyển dụng của tôi
                 </a>
                 <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -128,12 +148,14 @@ import { ROUTES } from '../../core/constants/route.const';
             </div>
           </div>
         </div>
+        </div>
       </div>
     </header>
   `
 })
-export class NavComponent {
+export class NavComponent implements OnInit {
   private el = inject(ElementRef);
+  private readonly document = inject(DOCUMENT);
   private authService = inject(AuthService);
 
   // Use signals for better reactivity
@@ -144,10 +166,40 @@ export class NavComponent {
   protected readonly ROUTES = ROUTES;
 
   showProfileMenu = false;
+  isCondensed = false;
+  private lastScrollY = 0;
+  private readonly expandedNavOffset = 92;
+  private readonly condensedNavOffset = 28;
+  private readonly sidebarGap = 32;
+
+  ngOnInit(): void {
+    this.lastScrollY = this.document.defaultView?.scrollY ?? 0;
+    this.applyStickyOffsets();
+  }
 
   toggleProfileMenu(event: Event): void {
     event.stopPropagation();
     this.showProfileMenu = !this.showProfileMenu;
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    const currentScrollY = this.document.defaultView?.scrollY ?? 0;
+    const delta = currentScrollY - this.lastScrollY;
+
+    if (currentScrollY <= 24) {
+      this.setCondensed(false);
+      this.lastScrollY = currentScrollY;
+      return;
+    }
+
+    if (delta > 8 && currentScrollY > 96) {
+      this.setCondensed(true);
+    } else if (delta < -8) {
+      this.setCondensed(false);
+    }
+
+    this.lastScrollY = currentScrollY;
   }
 
   @HostListener('document:click', ['$event'])
@@ -160,5 +212,26 @@ export class NavComponent {
   logout(): void {
     this.showProfileMenu = false;
     this.authService.logout().subscribe();
+  }
+
+  canManageRecruitmentPosts(): boolean {
+    const role = this.currentUser()?.role;
+    return role === 'STUDENT' || role === 'COMPANY';
+  }
+
+  private setCondensed(value: boolean): void {
+    if (this.isCondensed === value) {
+      return;
+    }
+
+    this.isCondensed = value;
+    this.applyStickyOffsets();
+  }
+
+  private applyStickyOffsets(): void {
+    const rootStyle = this.document.documentElement.style;
+    const navOffset = this.isCondensed ? this.condensedNavOffset : this.expandedNavOffset;
+    rootStyle.setProperty('--app-nav-offset', `${navOffset}px`);
+    rootStyle.setProperty('--app-nav-sidebar-offset', `${navOffset + this.sidebarGap}px`);
   }
 }

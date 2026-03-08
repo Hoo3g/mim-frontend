@@ -56,8 +56,6 @@ export class ResearchPaperService {
     private readonly http = inject(HttpClient);
 
     private readonly mockPapers = MOCK_PAPERS.map((paper) => this.clonePaper(paper));
-    private readonly defaultPdfUrl = MOCK_PAPERS[0]?.pdfUrl
-        ?? 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
 
     getPapers(): Observable<ResearchPaper[]> {
         const papers$ = this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.LIST).pipe(
@@ -234,7 +232,7 @@ export class ResearchPaperService {
             id: apiPaper.id,
             title: apiPaper.title ?? 'Untitled',
             abstract: apiPaper.abstract ?? '',
-            pdfUrl: apiPaper.pdfUrl || this.defaultPdfUrl,
+            pdfUrl: apiPaper.pdfUrl ?? '',
             publicationYear: apiPaper.publicationYear ?? new Date().getFullYear(),
             journalConference: apiPaper.journalConference ?? 'MIM Draft',
             researchArea: apiPaper.researchArea ?? 'Chưa phân loại',

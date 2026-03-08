@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -9,250 +9,445 @@ import { ResearchCategoryService } from '../../core/services/research-category.s
 import { ResearchPaperService } from '../../core/services/research-paper.service';
 
 @Component({
-    selector: 'app-research-filter',
-    standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule],
-    template: `
-    <div class="min-h-screen bg-white">
-      <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-          <a routerLink="/research" class="text-hus-blue hover:text-hus-dark transition">Cổng nghiên cứu</a>
-          <span class="text-gray-300">/</span>
-          <span class="text-hus-blue opacity-70">Tìm kiếm nâng cao</span>
+  selector: 'app-research-filter',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule],
+  template: `
+    <div class="bg-white min-h-screen">
+      <div class="border-b border-gray-100 bg-blue-50/10 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h1 class="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-1 flex items-center gap-2">
+                <span class="w-1 h-6 bg-hus-blue"></span>
+                Tìm kiếm nghiên cứu nâng cao
+              </h1>
+              <p class="text-[10px] font-bold text-hus-blue uppercase tracking-widest pl-3">
+                Lọc bài nghiên cứu theo đối tượng, phân loại và từ khóa
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="grid lg:grid-cols-[320px_minmax(0,1fr)] gap-8">
-          <aside class="space-y-8">
-            <section class="space-y-3">
-              <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-900">Tìm kiếm</h2>
-              <input
-                [(ngModel)]="searchKeyword"
-                type="text"
-                placeholder="Tên bài viết, tác giả..."
-                class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-hus-blue">
-            </section>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="flex flex-col lg:flex-row gap-10">
 
-            <section class="space-y-3">
-              <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-900">Phân loại</h2>
-              <button
-                type="button"
-                (click)="toggleCategoryPanel()"
-                class="w-full bg-blue-50 border border-blue-100 px-4 py-3 flex items-center justify-between text-left">
-                <span class="text-[11px] font-black uppercase tracking-widest text-hus-blue">Bài nghiên cứu</span>
-                <span class="text-hus-blue font-black">{{ categoryPanelExpanded ? '-' : '+' }}</span>
-              </button>
+          <aside class="lg:w-64 flex-shrink-0">
+            <div class="sticky space-y-8"
+                 [style.top]="'var(--app-nav-sidebar-offset, 124px)'">
 
-              <div *ngIf="categoryPanelExpanded" class="space-y-2 pl-4">
-                <button
-                  type="button"
-                  (click)="setSpecializationFilter('ALL')"
-                  class="block text-left text-[11px] font-bold uppercase tracking-wide transition-colors"
-                  [class.text-hus-blue]="selectedSpecialization === 'ALL'"
-                  [class.text-gray-800]="selectedSpecialization !== 'ALL'">
-                  ▪ Tất cả
-                </button>
-                <button
-                  type="button"
-                  *ngFor="let category of specializations"
-                  (click)="setSpecializationFilter(category.name)"
-                  class="block text-left text-[11px] font-bold uppercase tracking-wide transition-colors"
-                  [class.text-hus-blue]="selectedSpecialization === category.name"
-                  [class.text-gray-800]="selectedSpecialization !== category.name">
-                  ▪ {{ category.name }}
-                </button>
-              </div>
-            </section>
+              <section>
+                <h3 class="text-[10px] font-bold text-gray-900 uppercase tracking-widest mb-4">Tìm kiếm</h3>
+                <div class="relative">
+                  <input
+                    [(ngModel)]="searchKeyword"
+                    (ngModelChange)="onSearchKeywordChange($event)"
+                    type="text"
+                    placeholder="Tên bài viết, tác giả..."
+                    class="w-full bg-gray-50 border border-gray-200 px-3 py-2 text-xs focus:ring-1 focus:ring-hus-blue focus:border-hus-blue outline-none transition-all font-medium">
+                </div>
+              </section>
 
-            <section class="space-y-3">
-              <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-900">Đối tượng</h2>
-              <div class="space-y-2 pl-4">
-                <button
-                  type="button"
-                  (click)="setRoleFilter('ALL')"
-                  class="block text-left text-[11px] font-bold uppercase tracking-wide transition-colors"
-                  [class.text-hus-blue]="roleFilter === 'ALL'"
-                  [class.text-gray-800]="roleFilter !== 'ALL'">
-                  ▪ Tất cả
-                </button>
-                <button
-                  type="button"
-                  (click)="setRoleFilter('LECTURER')"
-                  class="block text-left text-[11px] font-bold uppercase tracking-wide transition-colors"
-                  [class.text-hus-blue]="roleFilter === 'LECTURER'"
-                  [class.text-gray-800]="roleFilter !== 'LECTURER'">
-                  ▪ Giảng viên
-                </button>
-                <button
-                  type="button"
-                  (click)="setRoleFilter('STUDENT')"
-                  class="block text-left text-[11px] font-bold uppercase tracking-wide transition-colors"
-                  [class.text-hus-blue]="roleFilter === 'STUDENT'"
-                  [class.text-gray-800]="roleFilter !== 'STUDENT'">
-                  ▪ Sinh viên
-                </button>
-              </div>
-            </section>
+              <section>
+                <h3 class="text-[10px] font-bold text-gray-900 uppercase tracking-widest mb-4">Phân loại</h3>
+                <div *ngIf="isLoadingSpecializations" class="space-y-2">
+                  <div *ngFor="let item of [1, 2, 3, 4]"
+                       class="h-9 border border-gray-100 bg-gray-50 animate-pulse">
+                  </div>
+                </div>
 
-            <section class="pt-6 border-t border-gray-100 space-y-3">
-              <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-400">Thao tác</h2>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  (click)="clearFilters()"
-                  class="px-4 py-2 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors">
-                  Xóa lọc
-                </button>
-                <button
-                  type="button"
-                  (click)="applyFilters()"
-                  class="px-4 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">
-                  Áp dụng về trang chính
-                </button>
-              </div>
-            </section>
+                <div *ngIf="!isLoadingSpecializations" class="space-y-2">
+                  <button
+                    type="button"
+                    *ngFor="let category of specializations"
+                    (click)="toggleSpecializationFilter(category.name)"
+                    [class.text-hus-blue]="isSpecializationSelected(category.name)"
+                    [class.bg-blue-50]="isSpecializationSelected(category.name)"
+                    class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
+                    <span class="w-3.5 h-3.5 border transition-colors flex items-center justify-center"
+                          [ngClass]="isSpecializationSelected(category.name) ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+                      <svg *ngIf="isSpecializationSelected(category.name)"
+                           viewBox="0 0 12 12"
+                           class="w-2.5 h-2.5 text-white"
+                           fill="none"
+                           stroke="currentColor"
+                           stroke-width="2"
+                           aria-hidden="true">
+                        <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                      </svg>
+                    </span>
+                    <span>{{ category.name }}</span>
+                  </button>
+                  <div *ngIf="specializations.length === 0"
+                       class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-300 border border-dashed border-gray-100">
+                    Chưa có phân loại
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h3 class="text-[10px] font-bold text-gray-900 uppercase tracking-widest mb-4">Đối tượng</h3>
+                <div class="space-y-2">
+                  <button
+                    type="button"
+                    (click)="setRoleFilter('ALL')"
+                    [class.text-hus-blue]="roleFilter === 'ALL'"
+                    [class.bg-blue-50]="roleFilter === 'ALL'"
+                    class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
+                    <span class="w-3.5 h-3.5 rounded-full border transition-colors flex items-center justify-center"
+                          [ngClass]="roleFilter === 'ALL' ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+                      <svg *ngIf="roleFilter === 'ALL'"
+                           viewBox="0 0 12 12"
+                           class="w-2.5 h-2.5 text-white"
+                           fill="none"
+                           stroke="currentColor"
+                           stroke-width="2"
+                           aria-hidden="true">
+                        <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                      </svg>
+                    </span>
+                    <span>Tất cả</span>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="setRoleFilter('LECTURER')"
+                    [class.text-hus-blue]="roleFilter === 'LECTURER'"
+                    [class.bg-blue-50]="roleFilter === 'LECTURER'"
+                    class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
+                    <span class="w-3.5 h-3.5 rounded-full border transition-colors flex items-center justify-center"
+                          [ngClass]="roleFilter === 'LECTURER' ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+                      <svg *ngIf="roleFilter === 'LECTURER'"
+                           viewBox="0 0 12 12"
+                           class="w-2.5 h-2.5 text-white"
+                           fill="none"
+                           stroke="currentColor"
+                           stroke-width="2"
+                           aria-hidden="true">
+                        <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                      </svg>
+                    </span>
+                    <span>Giảng viên</span>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="setRoleFilter('STUDENT')"
+                    [class.text-hus-blue]="roleFilter === 'STUDENT'"
+                    [class.bg-blue-50]="roleFilter === 'STUDENT'"
+                    class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
+                    <span class="w-3.5 h-3.5 rounded-full border transition-colors flex items-center justify-center"
+                          [ngClass]="roleFilter === 'STUDENT' ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+                      <svg *ngIf="roleFilter === 'STUDENT'"
+                           viewBox="0 0 12 12"
+                           class="w-2.5 h-2.5 text-white"
+                           fill="none"
+                           stroke="currentColor"
+                           stroke-width="2"
+                           aria-hidden="true">
+                        <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                      </svg>
+                    </span>
+                    <span>Sinh viên</span>
+                  </button>
+                </div>
+              </section>
+
+              <section *ngIf="shouldShowFilterActions" class="pt-4 border-t border-gray-100">
+                <div class="flex justify-center">
+                  <button
+                    type="button"
+                    (click)="clearFilters()"
+                    class="px-4 py-2 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors">
+                    Xóa lọc
+                  </button>
+                </div>
+              </section>
+            </div>
           </aside>
 
-          <section class="min-w-0 space-y-4">
-            <div class="flex items-center justify-between gap-3">
-              <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                Kết quả: <span class="text-hus-blue">{{ filteredPapers.length }}</span> bài nghiên cứu
-              </p>
-              <button
-                type="button"
-                (click)="backToResearch()"
-                class="text-[10px] font-bold uppercase tracking-widest text-hus-blue hover:text-hus-dark transition-colors">
-                Quay lại danh sách
-              </button>
+          <div class="flex-grow">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Kết quả lọc</p>
+                <h2 class="text font-black text-gray-900 uppercase tracking-tight">
+                  {{ filteredPapers.length }} bài nghiên cứu phù hợp
+                </h2>
+              </div>
             </div>
 
             <div *ngIf="filteredPapers.length === 0"
-                 class="min-h-[220px] border border-dashed border-gray-200 flex items-center justify-center">
-              <p class="text-gray-400 text-2xl font-light uppercase tracking-widest">
-                Không tìm thấy thông tin phù hợp.
-              </p>
+                 class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
+              Không tìm thấy thông tin phù hợp.
             </div>
 
-            <div *ngIf="filteredPapers.length > 0" class="border border-gray-100 divide-y divide-gray-100">
+            <div *ngIf="filteredPapers.length > 0" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <button
                 type="button"
                 *ngFor="let paper of filteredPapers"
                 (click)="openPaperDetail(paper.id)"
-                class="w-full text-left p-5 hover:bg-blue-50/40 transition-colors">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                  {{ paper.category === 'LECTURER' ? 'Giảng viên' : 'Sinh viên' }} · {{ paper.researchArea }} · {{ paper.publicationYear }}
+                class="bg-white border border-gray-100 p-6 hover:border-hus-blue hover:shadow-lg transition-all duration-300 group flex flex-col h-full relative cursor-pointer text-left">
+
+                <div class="flex items-start justify-between mb-6">
+                  <div class="flex items-center gap-4 min-w-0">
+                    <div class="relative">
+                      <div class="w-11 h-11 flex-shrink-0 border-2 border-gray-50 shadow-sm overflow-hidden group-hover:border-hus-blue/20 transition-all duration-500 transform group-hover:scale-105"
+                           [ngClass]="paper.category === 'LECTURER' ? 'bg-hus-blue' : 'bg-hus-gold'">
+                        <div class="w-full h-full flex items-center justify-center text-[12px] font-black text-white uppercase">
+                          {{ getAuthorInitials(getMainAuthorName(paper)) }}
+                        </div>
+                      </div>
+                      <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-white flex items-center justify-center border border-gray-50 shadow-sm">
+                        <div class="w-1.5 h-1.5"
+                             [ngClass]="paper.category === 'LECTURER' ? 'bg-hus-blue' : 'bg-hus-gold'"></div>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-col min-w-0">
+                      <div class="text-[13px] font-black text-gray-900 leading-tight mb-0.5 group-hover:text-hus-blue transition-colors truncate">
+                        {{ getMainAuthorName(paper) }}
+                      </div>
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-[7.5px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5"
+                              [ngClass]="paper.category === 'LECTURER' ? 'text-hus-blue bg-blue-50/50' : 'text-hus-gold bg-amber-50'">
+                          {{ paper.category === 'LECTURER' ? 'Giảng viên' : 'Sinh viên' }}
+                        </span>
+                        <span class="text-[8px] font-bold uppercase tracking-widest text-gray-300">
+                          {{ paper.researchArea || 'Chưa phân loại' }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col items-end gap-1">
+                    <span class="text-[9px] font-bold text-gray-300 uppercase tabular-nums">{{ paper.publicationYear }}</span>
+                    <div class="w-4 h-0.5 bg-gray-100 group-hover:bg-hus-blue/30 transition-colors"></div>
+                  </div>
+                </div>
+
+                <h3 class="text-base font-bold text-gray-900 mb-2 leading-tight group-hover:translate-x-1 transition-all duration-300 line-clamp-2 min-h-[2.5rem]">
+                  {{ paper.title }}
+                </h3>
+
+                <p class="text-[11px] text-gray-500 font-light leading-relaxed mb-4 line-clamp-3">
+                  {{ paper.abstract || 'Bài nghiên cứu chưa có phần tóm tắt.' }}
                 </p>
-                <h3 class="mt-2 text-lg font-bold text-gray-900 leading-snug">{{ paper.title }}</h3>
-                <p class="mt-1 text-[11px] font-bold uppercase tracking-widest text-gray-500">
-                  {{ getMainAuthorName(paper) }}
-                </p>
+
+                <div class="space-y-4 mb-2 flex-grow">
+                  <div class="pt-3 border-t border-gray-50">
+                    <h4 class="text-[8px] font-bold text-hus-blue uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                      <span class="w-1 h-1 bg-hus-blue"></span>
+                      Tác giả tham gia
+                    </h4>
+                    <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-2">
+                      {{ paper.authors.length }} tác giả · {{ getSecondaryAuthorSummary(paper) }}
+                    </p>
+                  </div>
+
+                  <div *ngIf="paper.journalConference" class="pt-3 border-t border-gray-50">
+                    <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                      <span class="w-1 h-1 bg-gray-900"></span>
+                      Nơi công bố
+                    </h4>
+                    <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-2">
+                      {{ paper.journalConference }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-1 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-6 4h10M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
+                      </svg>
+                      <span>{{ paper.researchArea || 'Chưa phân loại' }}</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-[9px] font-bold text-hus-blue uppercase tracking-widest">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z" />
+                      </svg>
+                      <span>{{ paper.publicationYear }}</span>
+                    </div>
+                  </div>
+                  <div class="text-[8px] font-black text-gray-200 uppercase tracking-widest group-hover:text-hus-blue transition-colors">Chi tiết</div>
+                </div>
               </button>
             </div>
-          </section>
+          </div>
         </div>
       </div>
     </div>
   `
 })
 export class ResearchFilterComponent implements OnInit {
-    private readonly route = inject(ActivatedRoute);
-    private readonly router = inject(Router);
-    private readonly researchCategoryService = inject(ResearchCategoryService);
-    private readonly researchPaperService = inject(ResearchPaperService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly researchCategoryService = inject(ResearchCategoryService);
+  private readonly researchPaperService = inject(ResearchPaperService);
 
-    roleFilter: 'ALL' | 'LECTURER' | 'STUDENT' = 'ALL';
-    selectedSpecialization = 'ALL';
-    searchKeyword = '';
-    categoryPanelExpanded = true;
-    specializations: ResearchCategory[] = [];
-    allPapers: ResearchPaper[] = [];
+  roleFilter: 'ALL' | 'LECTURER' | 'STUDENT' = 'ALL';
+  selectedSpecializations: string[] = [];
+  searchKeyword = '';
+  isLoadingSpecializations = true;
+  specializations: ResearchCategory[] = [];
+  allPapers: ResearchPaper[] = [];
 
-    ngOnInit(): void {
-        const type = this.route.snapshot.queryParamMap.get('type');
-        const specialization = this.route.snapshot.queryParamMap.get('specialization');
-        const keyword = this.route.snapshot.queryParamMap.get('q');
+  ngOnInit(): void {
+    const type = this.route.snapshot.queryParamMap.get('type');
+    const keyword = this.route.snapshot.queryParamMap.get('q');
 
-        this.roleFilter = type === 'LECTURER' || type === 'STUDENT' ? type : 'ALL';
-        this.selectedSpecialization = specialization?.trim() ? specialization : 'ALL';
-        this.searchKeyword = keyword?.trim() ?? '';
+    this.roleFilter = type === 'LECTURER' || type === 'STUDENT' ? type : 'ALL';
+    this.selectedSpecializations = this.parseSpecializationsFromQuery();
+    this.searchKeyword = keyword?.trim() ?? '';
 
-        this.researchCategoryService.getActiveCategories().subscribe((items) => {
-            this.specializations = items;
-        });
+    this.researchCategoryService.getActiveCategories().subscribe((items) => {
+      this.specializations = items;
+      this.isLoadingSpecializations = false;
+      this.cdr.detectChanges();
+    });
 
-        this.researchPaperService.getPapers().subscribe((papers) => {
-            this.allPapers = papers;
-        });
+    this.researchPaperService.getPapers().subscribe((papers) => {
+      this.allPapers = papers;
+      this.cdr.detectChanges();
+    });
+  }
+
+  get filteredPapers(): ResearchPaper[] {
+    const keyword = this.normalize(this.searchKeyword);
+    return this.allPapers.filter((paper) => {
+      if (this.roleFilter !== 'ALL' && paper.category !== this.roleFilter) {
+        return false;
+      }
+      if (this.selectedSpecializations.length > 0 && !this.selectedSpecializations.includes(paper.researchArea)) {
+        return false;
+      }
+      if (!keyword) {
+        return true;
+      }
+
+      const haystack = this.normalize([
+        paper.title,
+        paper.abstract,
+        paper.researchArea,
+        paper.journalConference ?? '',
+        this.getMainAuthorName(paper)
+      ].join(' '));
+      return haystack.includes(keyword);
+    });
+  }
+
+  get shouldShowFilterActions(): boolean {
+    return this.roleFilter !== 'ALL'
+      || this.selectedSpecializations.length > 0
+      || !!this.searchKeyword.trim();
+  }
+
+  onSearchKeywordChange(value: string): void {
+    this.searchKeyword = value;
+  }
+
+  setRoleFilter(value: 'ALL' | 'LECTURER' | 'STUDENT'): void {
+    this.roleFilter = value;
+  }
+
+  toggleSpecializationFilter(value: string): void {
+    const normalizedValue = (value ?? '').trim();
+    if (!normalizedValue) {
+      return;
     }
 
-    get filteredPapers(): ResearchPaper[] {
-        const keyword = this.normalize(this.searchKeyword);
-        return this.allPapers.filter((paper) => {
-            if (this.roleFilter !== 'ALL' && paper.category !== this.roleFilter) {
-                return false;
-            }
-            if (this.selectedSpecialization !== 'ALL' && paper.researchArea !== this.selectedSpecialization) {
-                return false;
-            }
-            if (!keyword) {
-                return true;
-            }
-
-            const haystack = this.normalize([
-                paper.title,
-                paper.researchArea,
-                this.getMainAuthorName(paper)
-            ].join(' '));
-            return haystack.includes(keyword);
-        });
+    if (this.selectedSpecializations.includes(normalizedValue)) {
+      this.selectedSpecializations = this.selectedSpecializations.filter((item) => item !== normalizedValue);
+      return;
     }
 
-    setRoleFilter(value: 'ALL' | 'LECTURER' | 'STUDENT'): void {
-        this.roleFilter = value;
+    this.selectedSpecializations = [...this.selectedSpecializations, normalizedValue];
+  }
+
+  isSpecializationSelected(value: string): boolean {
+    return this.selectedSpecializations.includes((value ?? '').trim());
+  }
+
+  clearFilters(): void {
+    this.roleFilter = 'ALL';
+    this.selectedSpecializations = [];
+    this.searchKeyword = '';
+  }
+
+  backToResearch(): void {
+    this.router.navigate(['/research'], {
+      queryParams: this.buildResearchQueryParams()
+    });
+  }
+
+  openPaperDetail(paperId: string): void {
+    this.router.navigate(['/paper', paperId]);
+  }
+
+  getMainAuthorName(paper: ResearchPaper): string {
+    const mainAuthor = paper.authors.find((author) => author.isMainAuthor) ?? paper.authors[0];
+    return mainAuthor?.name ?? 'Unknown';
+  }
+
+  getAuthorInitials(name: string): string {
+    const source = (name ?? '').trim();
+    if (!source) {
+      return 'U';
     }
 
-    setSpecializationFilter(value: string): void {
-        this.selectedSpecialization = value || 'ALL';
+    const parts = source.split(/\s+/).filter((item) => !!item);
+    return parts.slice(0, 2).map((item) => item.charAt(0)).join('').toUpperCase();
+  }
+
+  getSecondaryAuthorSummary(paper: ResearchPaper): string {
+    const authors = paper.authors
+      .map((author) => author.name?.trim())
+      .filter((name): name is string => !!name);
+
+    if (authors.length === 0) {
+      return 'Chưa có thông tin tác giả';
     }
 
-    toggleCategoryPanel(): void {
-        this.categoryPanelExpanded = !this.categoryPanelExpanded;
+    if (authors.length === 1) {
+      return authors[0];
     }
 
-    clearFilters(): void {
-        this.roleFilter = 'ALL';
-        this.selectedSpecialization = 'ALL';
-        this.searchKeyword = '';
+    return authors.slice(0, 2).join(', ');
+  }
+
+  private parseSpecializationsFromQuery(): string[] {
+    const specializations = this.route.snapshot.queryParamMap.getAll('specialization');
+    if (specializations.length > 0) {
+      return specializations
+        .flatMap((item) => item.split(','))
+        .map((item) => item.trim())
+        .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
     }
 
-    applyFilters(): void {
-        this.router.navigate(['/research'], {
-            queryParams: {
-                type: this.roleFilter !== 'ALL' ? this.roleFilter : null,
-                specialization: this.selectedSpecialization !== 'ALL' ? this.selectedSpecialization : null,
-                q: this.searchKeyword.trim() || null
-            }
-        });
+    const fallback = this.route.snapshot.queryParamMap.get('specialization');
+    if (!fallback?.trim()) {
+      return [];
     }
 
-    backToResearch(): void {
-        this.router.navigate(['/research']);
-    }
+    return fallback
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
+  }
 
-    openPaperDetail(paperId: string): void {
-        this.router.navigate(['/paper', paperId]);
-    }
+  private buildResearchQueryParams(): { type: 'LECTURER' | 'STUDENT' | null; specialization: string[] | null; q: string | null } {
+    return {
+      type: this.roleFilter !== 'ALL' ? this.roleFilter : null,
+      specialization: this.selectedSpecializations.length > 0 ? this.selectedSpecializations : null,
+      q: this.searchKeyword.trim() || null
+    };
+  }
 
-    getMainAuthorName(paper: ResearchPaper): string {
-        const mainAuthor = paper.authors.find((author) => author.isMainAuthor) ?? paper.authors[0];
-        return mainAuthor?.name ?? 'Unknown';
-    }
-
-    private normalize(value: string): string {
-        return value
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase();
-    }
+  private normalize(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
 }

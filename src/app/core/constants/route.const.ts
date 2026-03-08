@@ -8,6 +8,9 @@ export const ROUTES = {
     RESEARCH_EDITOR_EDIT: (id: string) => `/paper/editor/${id}`,
     RECRUITMENT: '/recruitment',
     RECRUITMENT_DETAIL: (id: string) => `/recruitment/${id}`,
+    RECRUITMENT_MY_POSTS: '/recruitment/my-posts',
+    RECRUITMENT_EDITOR: '/recruitment/editor',
+    RECRUITMENT_EDITOR_EDIT: (id: string) => `/recruitment/editor/${id}`,
     AUTH: {
         LOGIN: '/auth/login',
         REGISTER: '/auth/register',

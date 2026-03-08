@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -37,6 +37,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
             Điền thông tin cơ bản cho bài viết: tên đề tài, lĩnh vực nghiên cứu và phần tóm tắt.
           </p>
 
+          <ng-container *ngIf="!isLoadingPaper; else loadingPaperTpl">
           <form class="mt-8 space-y-6" (ngSubmit)="save()">
             <div>
               <label for="title" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
@@ -83,6 +84,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
                 Tóm tắt
               </label>
               <div class="border border-gray-200 bg-white overflow-hidden">
+                <ng-container *ngIf="isEditorReady; else editorLoadingTpl">
                 <quill-editor
                   class="research-quill"
                   name="abstract"
@@ -94,6 +96,12 @@ import { ResearchCategory } from '../../core/models/research-category.model';
                   (ngModelChange)="onAbstractChange()"
                   placeholder="Nhập nội dung tóm tắt công trình nghiên cứu...">
                 </quill-editor>
+                </ng-container>
+                <ng-template #editorLoadingTpl>
+                  <div class="h-[300px] px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-gray-300">
+                    Đang tải nội dung tóm tắt...
+                  </div>
+                </ng-template>
               </div>
               <p *ngIf="isAbstractBlank()" class="mt-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
                 Dùng toolbar để định dạng nội dung dài: tiêu đề, căn lề, danh sách, trích dẫn, liên kết...
@@ -104,30 +112,60 @@ import { ResearchCategory } from '../../core/models/research-category.model';
               <label for="pdfFile" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
                 Tệp PDF hiển thị
               </label>
-              <input id="pdfFile"
-                     type="file"
-                     accept="application/pdf,.pdf"
-                     (change)="onPdfSelected($event)"
-                     class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue transition-colors file:mr-3 file:border-0 file:bg-hus-blue file:px-3 file:py-2 file:text-[10px] file:font-black file:text-white file:uppercase file:tracking-widest hover:file:bg-hus-dark">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
+                Mỗi bài viết chỉ được gắn <span class="text-hus-blue">1 tệp PDF</span>.
+                Muốn thay tệp, hãy gỡ tệp hiện tại trước.
+              </p>
 
-              <div class="mt-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 space-y-2">
-                <p *ngIf="selectedPdfName; else currentPdfInfo">
-                  Tệp đã chọn: <span class="text-hus-blue">{{ selectedPdfName }}</span>
-                </p>
-                <ng-template #currentPdfInfo>
-                  <p>
-                    {{ existingPdfUrl ? 'Đang dùng PDF hiện tại' : 'Chưa có PDF, sẽ dùng mẫu mặc định' }}
+              <div class="border border-gray-200 bg-gray-50/40 p-3 space-y-3">
+                <div *ngIf="existingPdfUrl && !selectedPdfName" class="space-y-2">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Tệp hiện tại: <span class="text-hus-blue">{{ existingPdfFileName }}</span>
                   </p>
-                </ng-template>
-                <p *ngIf="selectedPdfName" class="text-hus-blue">
-                  Tệp sẽ được tải lên MinIO khi bạn bấm lưu.
-                </p>
-                <a *ngIf="effectivePdfUrl"
-                   [href]="effectivePdfUrl"
-                   target="_blank"
-                   class="inline-block text-hus-blue hover:text-hus-dark transition underline underline-offset-2">
-                  Xem PDF đang dùng
-                </a>
+                  <div class="flex flex-wrap items-center gap-3">
+                    <a [href]="existingPdfUrl"
+                       target="_blank"
+                       class="text-[10px] font-black uppercase tracking-widest text-hus-blue hover:text-hus-dark transition underline underline-offset-2">
+                      Xem tệp hiện tại
+                    </a>
+                    <button type="button"
+                            (click)="removeExistingPdf()"
+                            class="px-3 py-1.5 border border-red-200 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 transition-colors">
+                      Gỡ tệp hiện tại
+                    </button>
+                  </div>
+                </div>
+
+                <div *ngIf="selectedPdfName" class="space-y-2">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Tệp đã chọn: <span class="text-hus-blue">{{ selectedPdfName }}</span>
+                  </p>
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-hus-blue">
+                    Tệp mới sẽ thay thế tệp hiện tại khi bấm lưu.
+                  </p>
+                  <div class="flex flex-wrap items-center gap-3">
+                    <a *ngIf="selectedPdfPreviewUrl"
+                       [href]="selectedPdfPreviewUrl"
+                       target="_blank"
+                       class="text-[10px] font-black uppercase tracking-widest text-hus-blue hover:text-hus-dark transition underline underline-offset-2">
+                      Xem tệp đã chọn
+                    </a>
+                    <button type="button"
+                            (click)="removeSelectedPdf()"
+                            class="px-3 py-1.5 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-colors">
+                      Bỏ tệp đã chọn
+                    </button>
+                  </div>
+                </div>
+
+                <div *ngIf="!existingPdfUrl && !selectedPdfName">
+                  <input #pdfFileInput
+                         id="pdfFile"
+                         type="file"
+                         accept="application/pdf,.pdf"
+                         (change)="onPdfSelected($event)"
+                         class="w-full border border-gray-200 bg-white px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue transition-colors file:mr-3 file:border-0 file:bg-hus-blue file:px-3 file:py-2 file:text-[10px] file:font-black file:text-white file:uppercase file:tracking-widest hover:file:bg-hus-dark">
+                </div>
               </div>
             </div>
 
@@ -148,6 +186,13 @@ import { ResearchCategory } from '../../core/models/research-category.model';
               </button>
             </div>
           </form>
+          </ng-container>
+
+          <ng-template #loadingPaperTpl>
+            <div class="mt-8 border border-dashed border-gray-200 px-4 py-8 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Đang tải dữ liệu bài viết...
+            </div>
+          </ng-template>
         </div>
       </div>
     </div>
@@ -158,6 +203,8 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     private readonly router = inject(Router);
     private readonly paperService = inject(ResearchPaperService);
     private readonly researchCategoryService = inject(ResearchCategoryService);
+    private readonly cdr = inject(ChangeDetectorRef);
+    @ViewChild('pdfFileInput') private pdfFileInput?: ElementRef<HTMLInputElement>;
 
     protected readonly ROUTES = ROUTES;
     protected readonly quillModules: QuillModules = {
@@ -187,9 +234,24 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     existingPdfUrl: string | null = null;
     errorMessage = '';
     isSaving = false;
+    isLoadingPaper = false;
+    isEditorReady = false;
 
-    get effectivePdfUrl(): string | null {
-        return this.selectedPdfPreviewUrl ?? this.existingPdfUrl;
+    get existingPdfFileName(): string {
+        if (!this.existingPdfUrl) {
+            return '';
+        }
+
+        try {
+            const withoutHash = this.existingPdfUrl.split('#')[0];
+            const withoutQuery = withoutHash.split('?')[0];
+            const segments = withoutQuery.split('/');
+            const rawName = segments[segments.length - 1] || '';
+            const decoded = decodeURIComponent(rawName);
+            return decoded || 'Tệp PDF';
+        } catch {
+            return 'Tệp PDF';
+        }
     }
 
     ngOnInit(): void {
@@ -203,13 +265,23 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
 
         const paperId = this.route.snapshot.paramMap.get('id');
         if (!paperId) {
+            this.isEditorReady = true;
             return;
         }
 
         this.isEditMode = true;
         this.editingPaperId = paperId;
+        this.isLoadingPaper = true;
+        this.isEditorReady = false;
 
-        this.paperService.getMyPaperById(paperId, currentUser).pipe(take(1)).subscribe((paper) => {
+        this.paperService.getMyPaperById(paperId, currentUser).pipe(
+            take(1),
+            finalize(() => {
+                this.isLoadingPaper = false;
+                this.isEditorReady = true;
+                this.cdr.detectChanges();
+            })
+        ).subscribe((paper) => {
             if (!paper) {
                 this.redirectToMyPapers('Bài viết không tồn tại hoặc bạn không có quyền chỉnh sửa.');
                 return;
@@ -217,8 +289,9 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
 
             this.title = paper.title;
             this.abstract = this.normalizeToEditorHtml(paper.abstract);
-            this.existingPdfUrl = paper.pdfUrl;
+            this.existingPdfUrl = paper.pdfUrl?.trim() ? paper.pdfUrl.trim() : null;
             this.selectedResearchArea = paper.researchArea ?? '';
+            this.cdr.detectChanges();
         });
     }
 
@@ -239,6 +312,11 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             return;
         }
 
+        if (!this.selectedPdfFile && !this.existingPdfUrl) {
+            this.errorMessage = 'Mỗi bài viết cần đúng một tệp PDF. Vui lòng chọn tệp trước khi lưu.';
+            return;
+        }
+
         this.errorMessage = '';
         this.isSaving = true;
 
@@ -254,7 +332,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
                         title: trimmedTitle,
                         abstract: abstractHtml,
                         researchArea: trimmedResearchArea,
-                        pdfUrl: uploadedPdfUrl ?? undefined
+                        pdfUrl: uploadedPdfUrl ?? this.existingPdfUrl ?? undefined
                     };
                     return this.paperService.saveFromEditor(payload, currentUser);
                 }),
@@ -291,6 +369,12 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             return;
         }
 
+        if (this.existingPdfUrl) {
+            this.errorMessage = 'Hãy gỡ tệp hiện tại trước khi chọn tệp PDF mới.';
+            input.value = '';
+            return;
+        }
+
         const isPdfMime = file.type === 'application/pdf';
         const hasPdfExtension = file.name.toLowerCase().endsWith('.pdf');
         if (!isPdfMime && !hasPdfExtension) {
@@ -307,6 +391,20 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
         this.selectedPdfFile = file;
         this.selectedPdfName = file.name;
         this.selectedPdfPreviewUrl = URL.createObjectURL(file);
+    }
+
+    removeExistingPdf(): void {
+        this.existingPdfUrl = null;
+        this.errorMessage = '';
+        this.resetPdfInputElement();
+    }
+
+    removeSelectedPdf(): void {
+        this.selectedPdfFile = null;
+        this.selectedPdfName = '';
+        this.revokeSelectedPreviewUrl();
+        this.errorMessage = '';
+        this.resetPdfInputElement();
     }
 
     cancel(): void {
@@ -364,6 +462,12 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             URL.revokeObjectURL(this.selectedPdfPreviewUrl);
         }
         this.selectedPdfPreviewUrl = null;
+    }
+
+    private resetPdfInputElement(): void {
+        if (this.pdfFileInput?.nativeElement) {
+            this.pdfFileInput.nativeElement.value = '';
+        }
     }
 
     private loadResearchCategories(): void {

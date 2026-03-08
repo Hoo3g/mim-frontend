@@ -1,30 +1,43 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { PostService } from '../../core/services/post.service';
 import { Post } from '../../core/models/post.model';
-import { Observable, BehaviorSubject, combineLatest, map, startWith } from 'rxjs';
+import { Observable, BehaviorSubject, combineLatest, map } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { PostDetailComponent } from './post-detail.component';
 import { SpecializationService } from '../../core/services/specialization.service';
 import { ResearchCategory } from '../../core/models/research-category.model';
+import { authSignal } from '../../core/signals/auth.signal';
+import { ROUTES } from '../../core/constants/route.const';
 
 @Component({
   selector: 'app-posts',
   standalone: true,
-  imports: [CommonModule, FormsModule, PostDetailComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PostDetailComponent],
   template: `
     <div class="bg-white min-h-screen">
       
       <!-- Minimal Header - Brand Accented -->
       <div class="border-b border-gray-100 bg-blue-50/10 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 class="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-1 flex items-center gap-2">
-             <span class="w-1 h-6 bg-hus-blue"></span>
-             Tuyển dụng & Sự nghiệp
-          </h1>
-          <p class="text-[10px] font-bold text-hus-blue uppercase tracking-widest pl-3">
-            Kết nối sinh viên MIM với cơ hội nghề nghiệp
-          </p>
+          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-1 flex items-center gap-2">
+                <span class="w-1 h-6 bg-hus-blue"></span>
+                Tuyển dụng & Sự nghiệp
+              </h1>
+              <p class="text-[10px] font-bold text-hus-blue uppercase tracking-widest pl-3">
+                Kết nối sinh viên MIM với cơ hội nghề nghiệp
+              </p>
+            </div>
+
+            <a *ngIf="canManageRecruitmentPosts()"
+               [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
+               class="inline-flex items-center justify-center px-5 py-2.5 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
+              Quản lý bài đăng
+            </a>
+          </div>
         </div>
       </div>
 
@@ -33,7 +46,8 @@ import { ResearchCategory } from '../../core/models/research-category.model';
           
           <!-- LEFT: Sidebar (Filters & Search) -->
           <div class="lg:w-64 flex-shrink-0">
-            <div class="sticky top-24 space-y-8">
+            <div class="sticky space-y-8"
+                 [style.top]="'var(--app-nav-sidebar-offset, 124px)'">
               
               <!-- Search -->
               <section>
@@ -170,18 +184,63 @@ import { ResearchCategory } from '../../core/models/research-category.model';
                   <p class="text-[11px] text-gray-500 font-light leading-relaxed mb-4 line-clamp-2">{{ post.description }}</p>
 
                   <div class="space-y-4 mb-2 flex-grow">
-                    <!-- Achievements (for Students) -->
-                    <div *ngIf="post.achievements" class="pt-3 border-t border-gray-50">
+                    <div *ngIf="!post.postType.includes('COMPANY')" class="border border-gray-100 bg-gray-50/60 p-3">
+                      <div class="grid grid-cols-2 gap-3 text-left">
+                        <div>
+                          <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Trường</p>
+                          <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">
+                            {{ studentDisplayValue(post, 'studentUniversity') }}
+                          </p>
+                        </div>
+                        <div>
+                          <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Chuyên ngành</p>
+                          <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">
+                            {{ studentDisplayValue(post, 'studentMajor') }}
+                          </p>
+                        </div>
+                        <div>
+                          <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Loại sinh viên</p>
+                          <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">
+                            {{ studentDisplayValue(post, 'studentType') }}
+                          </p>
+                        </div>
+                        <div>
+                          <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Vị trí mong muốn</p>
+                          <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">
+                            {{ studentDisplayValue(post, 'studentDesiredPosition') }}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div *ngIf="!post.postType.includes('COMPANY')" class="pt-3 border-t border-gray-50">
+                      <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <span class="w-1 h-1 bg-gray-900"></span>
+                        Giới thiệu
+                      </h4>
+                      <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">
+                        {{ studentDisplayValue(post, 'studentBio') }}
+                      </p>
+                    </div>
+
+                    <div *ngIf="!post.postType.includes('COMPANY')" class="pt-3 border-t border-gray-50">
                       <h4 class="text-[8px] font-bold text-hus-blue uppercase tracking-widest mb-2 flex items-center gap-1.5">
                         <span class="w-1 h-1 bg-hus-blue"></span>
                         Thành tích nổi bật
                       </h4>
-                      <ul class="text-[10px] text-gray-600 space-y-1">
-                        <li *ngFor="let item of post.achievements.split(';')" class="flex items-start gap-2">
-                          <span class="text-hus-blue mt-0.5 text-[8px]">•</span>
-                          <span class="font-medium leading-tight line-clamp-2">{{ item.trim() }}</span>
-                        </li>
-                      </ul>
+                      <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">
+                        {{ studentDisplayValue(post, 'studentAchievements') }}
+                      </p>
+                    </div>
+
+                    <div *ngIf="!post.postType.includes('COMPANY')" class="pt-3 border-t border-gray-50">
+                      <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <span class="w-1 h-1 bg-gray-900"></span>
+                        Mong muốn nghề nghiệp
+                      </h4>
+                      <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">
+                        {{ studentDisplayValue(post, 'studentCareerGoal') }}
+                      </p>
                     </div>
 
                     <!-- Requirements (for Companies) -->
@@ -239,6 +298,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
 export class PostsComponent implements OnInit {
   private postService = inject(PostService);
   private specializationService = inject(SpecializationService);
+  protected readonly ROUTES = ROUTES;
 
   private readonly specializationAliasMap: Record<string, string[]> = {
     'tri tue nhan tao': ['ai', 'artificial intelligence'],
@@ -346,5 +406,38 @@ export class PostsComponent implements OnInit {
       .toLowerCase()
       .trim()
       .replace(/\s+/g, ' ');
+  }
+
+  studentDisplayValue(post: Post, key: string): string {
+    const fromDisplayInfo = this.readDisplayInfo(post, key);
+    if (fromDisplayInfo) {
+      return fromDisplayInfo;
+    }
+
+    if (key === 'studentBio') {
+      const fallbackBio = (post.description ?? '').trim();
+      if (fallbackBio) {
+        return fallbackBio;
+      }
+    }
+
+    if (key === 'studentAchievements') {
+      const fallback = (post.achievements ?? '').trim();
+      if (fallback) {
+        return fallback;
+      }
+    }
+
+    return 'Chưa cập nhật';
+  }
+
+  private readDisplayInfo(post: Post, key: string): string {
+    const value = post.displayInfo?.[key];
+    return typeof value === 'string' ? value.trim() : '';
+  }
+
+  canManageRecruitmentPosts(): boolean {
+    const role = authSignal.user()?.role;
+    return role === 'STUDENT' || role === 'COMPANY';
   }
 }

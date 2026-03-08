@@ -53,7 +53,9 @@ interface AdminTabConfig {
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-6 items-start">
-          <aside class="bg-white border border-gray-100 p-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+          <aside class="bg-white border border-gray-100 p-4 lg:sticky lg:overflow-y-auto"
+                 [style.top]="'var(--app-nav-sidebar-offset, 124px)'"
+                 [style.maxHeight]="'calc(100vh - var(--app-nav-sidebar-offset, 124px) - 1rem)'">
             <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Danh mục quản trị</p>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">

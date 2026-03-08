@@ -226,6 +226,19 @@ import { ResearchCategory } from '../../core/models/research-category.model';
                 </p>
               </div>
             </article>
+
+            <article class="xl:col-span-2 bg-white border border-gray-100 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-1">Đăng bài tuyển dụng của bạn</h3>
+                <p class="text-xs text-gray-500 font-semibold">
+                  Viết và chỉnh sửa nội dung bài đăng tuyển dụng dành cho sinh viên ngay tại khu vực quản lý bài đăng.
+                </p>
+              </div>
+              <a [routerLink]="['/recruitment/my-posts']"
+                 class="inline-flex items-center justify-center px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
+                Mở quản lý bài đăng
+              </a>
+            </article>
           </div>
 
           <div *ngIf="isCompany()" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -309,12 +322,18 @@ import { ResearchCategory } from '../../core/models/research-category.model';
             </article>
 
             <article class="bg-white border border-gray-100 p-6">
-              <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-4">Tin tuyển dụng đã đăng</h3>
+              <div class="flex items-center justify-between gap-2 mb-4">
+                <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Tin tuyển dụng đã đăng</h3>
+                <a [routerLink]="['/recruitment/my-posts']"
+                   class="text-[10px] font-black uppercase tracking-widest text-hus-blue hover:underline">
+                  Quản lý
+                </a>
+              </div>
               <div *ngIf="companyPosts().length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
                 Chưa có bài đăng.
               </div>
               <div *ngFor="let post of companyPosts()" class="border border-gray-100 bg-gray-50 px-4 py-3 mb-3">
-                <a [routerLink]="['/recruitment']" class="text-sm font-bold text-gray-900 hover:text-hus-blue">{{ post.title }}</a>
+                <a [routerLink]="['/recruitment/my-posts']" class="text-sm font-bold text-gray-900 hover:text-hus-blue">{{ post.title }}</a>
                 <p class="mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
                   {{ post.status || 'N/A' }}
                   <span *ngIf="post.approvalStatus"> | {{ post.approvalStatus }}</span>

@@ -1,17 +1,19 @@
 import { Component, inject } from '@angular/core';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
-import { Observable, switchMap } from 'rxjs';
+import { Observable, finalize, switchMap } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ResearchPaper } from '../../core/models/research-paper.model';
 import { authSignal } from '../../core/signals/auth.signal';
+import { API_CONFIG } from '../../core/config/api.config';
 
 @Component({
-    selector: 'app-research-detail',
-    standalone: true,
-    imports: [CommonModule, RouterModule],
-    template: `
+  selector: 'app-research-detail',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
+  template: `
     <div *ngIf="paper$ | async as paper" class="min-h-screen bg-white pb-20">
       
       <!-- Minimal Navigation Bar - Blue Tint -->
@@ -34,9 +36,19 @@ import { authSignal } from '../../core/signals/auth.signal';
               <span class="text-hus-blue">{{ paper.publicationYear }}</span>
               <button *ngIf="isAuth()"
                       (click)="toggleBookmark(paper)"
-                      class="ml-auto px-3 py-1 border text-[10px] font-black uppercase tracking-widest transition-colors"
-                      [ngClass]="paper.isBookmarked ? 'border-hus-blue bg-hus-blue text-white' : 'border-gray-200 text-gray-400 hover:border-hus-blue hover:text-hus-blue'">
-                {{ paper.isBookmarked ? 'Đã lưu' : 'Lưu bài' }}
+                      class="ml-auto w-9 h-9 inline-flex items-center justify-center border transition-colors"
+                      [attr.aria-label]="paper.isBookmarked ? 'Bỏ lưu bài viết' : 'Lưu bài viết'"
+                      [attr.title]="paper.isBookmarked ? 'Đã lưu' : 'Lưu bài'"
+                      [ngClass]="paper.isBookmarked ? 'border-hus-blue bg-blue-50 text-hus-blue' : 'border-gray-200 text-gray-400 hover:border-hus-blue hover:text-hus-blue'">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-4 w-4"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                     stroke-width="1.5"
+                     aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
               </button>
             </div>
             
@@ -80,34 +92,55 @@ import { authSignal } from '../../core/signals/auth.signal';
                 <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] inline-block border-b-4 border-hus-blue pb-1">
                   Văn bản chi tiết (PDF)
                 </h2>
-                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  Xem trực tiếp trên trang
-                </span>
+                
               </div>
-              <div class="aspect-[1.414/1] w-full bg-gray-50 border-2 border-hus-blue/10">
-                <iframe
-                  [src]="getSafePdfViewerUrl(paper.pdfUrl)"
-                  class="w-full h-full"
-                  frameborder="0"
-                  referrerpolicy="no-referrer"
-                  loading="lazy">
+              <div class="w-full h-[68vh] md:h-[82vh] lg:h-[90vh] min-h-[560px] bg-gray-50 border-2 border-hus-blue/10">
+                <iframe *ngIf="canInlinePreview(paper.pdfUrl); else cannotPreviewPdf"
+                        [src]="getSafePdfViewerUrl(paper.pdfUrl)"
+                        class="w-full h-full"
+                        frameborder="0"
+                        referrerpolicy="no-referrer"
+                        loading="lazy">
                 </iframe>
+                <ng-template #cannotPreviewPdf>
+                  <div class="w-full h-full flex flex-col items-center justify-center text-center px-6">
+                    <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
+                      Không thể nhúng PDF trực tiếp.
+                    </p>
+                    <p class="mt-2 text-xs text-gray-500 max-w-md">
+                      Nguồn tệp hiện tại chặn hiển thị trong iframe. Vui lòng mở tệp ở tab mới để xem đầy đủ nội dung.
+                    </p>
+                    <a *ngIf="hasPdfUrl(paper.pdfUrl)"
+                       [href]="getDownloadUrl(paper.pdfUrl)"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="mt-4 inline-flex items-center justify-center border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest px-4 py-2 hover:bg-hus-blue hover:text-white transition-colors">
+                      Mở PDF ở tab mới
+                    </a>
+                  </div>
+                </ng-template>
               </div>
             </section>
 
           </div>
 
           <!-- Footer Actions -->
-          <footer class="mt-20 pt-12 border-t border-gray-100 flex flex-col sm:flex-row justify-center gap-8">
-            <a
-              [href]="paper.pdfUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              download
-              class="inline-flex items-center justify-center bg-hus-blue text-white text-[11px] font-bold uppercase tracking-[0.2em] px-10 py-4 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20">
-              Tải xuống tài liệu (.PDF)
-            </a>
-            <button class="border-2 border-hus-blue text-hus-blue text-[11px] font-bold uppercase tracking-[0.2em] px-10 py-4 hover:bg-hus-blue hover:text-white transition">
+          <footer class="mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-center gap-4">
+            <button *ngIf="hasPdfUrl(paper.pdfUrl); else missingPdf"
+               type="button"
+               (click)="downloadPdf(paper.pdfUrl, paper.title)"
+               [disabled]="isDownloadingPdf"
+               class="inline-flex items-center justify-center bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20">
+              {{ isDownloadingPdf ? 'Đang tải xuống...' : 'Tải xuống tài liệu (.PDF)' }}
+            </button>
+            <ng-template #missingPdf>
+              <button type="button"
+                      disabled
+                      class="inline-flex items-center justify-center bg-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 cursor-not-allowed">
+                Chưa có tệp PDF
+              </button>
+            </ng-template>
+            <button class="border-2 border-hus-blue text-hus-blue text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-blue hover:text-white transition">
               Liên hệ tác giả
             </button>
           </footer>
@@ -118,38 +151,155 @@ import { authSignal } from '../../core/signals/auth.signal';
   `
 })
 export class ResearchDetailComponent {
-    private route = inject(ActivatedRoute);
-    private paperService = inject(ResearchPaperService);
-    private sanitizer = inject(DomSanitizer);
-    isAuth = authSignal.isAuth;
+  private route = inject(ActivatedRoute);
+  private readonly http = inject(HttpClient);
+  private paperService = inject(ResearchPaperService);
+  private sanitizer = inject(DomSanitizer);
+  private readonly frontendOrigin = this.resolveOrigin(typeof window !== 'undefined' ? window.location.origin : '');
+  private readonly backendOrigin = this.resolveOrigin(API_CONFIG.BASE_URL);
+  isAuth = authSignal.isAuth;
+  isDownloadingPdf = false;
 
-    paper$: Observable<ResearchPaper | undefined> = this.route.paramMap.pipe(
-        switchMap(params => this.paperService.getPaperById(params.get('id')!))
-    );
+  paper$: Observable<ResearchPaper | undefined> = this.route.paramMap.pipe(
+    switchMap(params => this.paperService.getPaperById(params.get('id')!))
+  );
 
-    toggleBookmark(paper: ResearchPaper): void {
-        const request$ = paper.isBookmarked
-            ? this.paperService.unbookmarkPaper(paper.id)
-            : this.paperService.bookmarkPaper(paper.id);
+  toggleBookmark(paper: ResearchPaper): void {
+    const request$ = paper.isBookmarked
+      ? this.paperService.unbookmarkPaper(paper.id)
+      : this.paperService.bookmarkPaper(paper.id);
 
-        request$.subscribe({
-            next: () => {
-                this.paper$ = this.route.paramMap.pipe(
-                    switchMap(params => this.paperService.getPaperById(params.get('id')!))
-                );
-            }
-        });
+    request$.subscribe({
+      next: () => {
+        this.paper$ = this.route.paramMap.pipe(
+          switchMap(params => this.paperService.getPaperById(params.get('id')!))
+        );
+      }
+    });
+  }
+
+  getSafePdfViewerUrl(url: string): SafeResourceUrl {
+    return this.sanitizer.bypassSecurityTrustResourceUrl(this.buildPdfViewerUrl(this.resolvePdfUrl(url)));
+  }
+
+  getDownloadUrl(url: string): string {
+    return this.resolvePdfUrl(url);
+  }
+
+  hasPdfUrl(url: string): boolean {
+    return !!this.getDownloadUrl(url);
+  }
+
+  downloadPdf(url: string, title: string): void {
+    const resolved = this.getDownloadUrl(url);
+    if (!resolved || this.isDownloadingPdf) {
+      return;
     }
 
-    getSafePdfViewerUrl(url: string): SafeResourceUrl {
-        return this.sanitizer.bypassSecurityTrustResourceUrl(this.buildPdfViewerUrl(url));
+    this.isDownloadingPdf = true;
+    this.http.get(resolved, { observe: 'response', responseType: 'blob' })
+      .pipe(finalize(() => {
+        this.isDownloadingPdf = false;
+      }))
+      .subscribe({
+        next: (response) => this.saveBlob(response, resolved, title),
+        error: () => window.open(resolved, '_blank', 'noopener')
+      });
+  }
+
+  canInlinePreview(url: string): boolean {
+    const resolved = this.getDownloadUrl(url);
+    if (!resolved) {
+      return false;
     }
 
-    private buildPdfViewerUrl(url: string): string {
-        if (!url) {
-            return '';
-        }
-        const delimiter = url.includes('#') ? '&' : '#';
-        return `${url}${delimiter}toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH`;
+    const resolvedOrigin = this.resolveOrigin(resolved);
+    return !!resolvedOrigin
+      && (resolvedOrigin === this.frontendOrigin || resolvedOrigin === this.backendOrigin);
+  }
+
+  private buildPdfViewerUrl(url: string): string {
+    if (!url) {
+      return '';
     }
+    const delimiter = url.includes('#') ? '&' : '#';
+    return `${url}${delimiter}toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH`;
+  }
+
+  private resolvePdfUrl(rawUrl: string): string {
+    const value = (rawUrl ?? '').trim();
+    if (!value) {
+      return '';
+    }
+
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value.replace('/api/v1/storage/research-pdfs/', '/api/public/storage/research-pdfs/');
+    }
+
+    if (value.startsWith('/api/public/storage/research-pdfs/')) {
+      return `${API_CONFIG.BASE_URL}${value}`;
+    }
+
+    if (value.startsWith('/api/v1/storage/research-pdfs/')) {
+      return `${API_CONFIG.BASE_URL}${value.replace('/api/v1/storage/research-pdfs/', '/api/public/storage/research-pdfs/')}`;
+    }
+
+    if (value.startsWith('/')) {
+      return `${API_CONFIG.BASE_URL}${value}`;
+    }
+
+    // Backward compatibility: old records may store only MinIO object key.
+    return `${API_CONFIG.BASE_URL}/api/public/storage/research-pdfs/${encodeURIComponent(value)}`;
+  }
+
+  private resolveOrigin(url: string): string {
+    try {
+      return new URL(url).origin;
+    } catch {
+      return '';
+    }
+  }
+
+  private saveBlob(response: HttpResponse<Blob>, resolvedUrl: string, title: string): void {
+    const blob = response.body;
+    if (!blob || blob.size === 0) {
+      return;
+    }
+
+    const filename = this.resolveDownloadFilename(response, resolvedUrl, title);
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  }
+
+  private resolveDownloadFilename(response: HttpResponse<Blob>, resolvedUrl: string, title: string): string {
+    const disposition = response.headers.get('content-disposition') ?? '';
+    const utf8FilenameMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8FilenameMatch?.[1]) {
+      return decodeURIComponent(utf8FilenameMatch[1]);
+    }
+
+    const filenameMatch = disposition.match(/filename=\"?([^\";]+)\"?/i);
+    if (filenameMatch?.[1]) {
+      return filenameMatch[1];
+    }
+
+    const pathname = resolvedUrl.split('#')[0].split('?')[0];
+    const urlName = pathname.split('/').pop() ?? '';
+    if (urlName.toLowerCase().endsWith('.pdf')) {
+      return urlName;
+    }
+
+    const safeTitle = (title ?? '')
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, ' ')
+      .replace(/\s+/g, ' ');
+    return `${safeTitle || 'tai-lieu'}.pdf`;
+  }
 }

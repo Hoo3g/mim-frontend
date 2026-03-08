@@ -9,10 +9,10 @@ import { ROUTES } from '../../core/constants/route.const';
 import { authSignal } from '../../core/signals/auth.signal';
 
 @Component({
-    selector: 'app-my-research-papers',
-    standalone: true,
-    imports: [CommonModule, RouterModule],
-    template: `
+  selector: 'app-my-research-papers',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
+  template: `
     <div class="bg-white min-h-screen">
       <div class="bg-gray-50 border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -86,8 +86,8 @@ import { authSignal } from '../../core/signals/auth.signal';
 
               <div class="mt-4 flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
                 <span class="text-gray-400">Tác giả chính: {{ paper.authors[0]?.name || 'N/A' }}</span>
-                <span class="text-gray-300">•</span>
-                <span class="text-hus-blue">Nhấn để chỉnh sửa</span>
+                
+                
               </div>
             </article>
           </div>
@@ -97,58 +97,58 @@ import { authSignal } from '../../core/signals/auth.signal';
   `
 })
 export class MyResearchPapersComponent implements OnInit {
-    private readonly paperService = inject(ResearchPaperService);
-    private readonly router = inject(Router);
+  private readonly paperService = inject(ResearchPaperService);
+  private readonly router = inject(Router);
 
-    protected readonly ROUTES = ROUTES;
+  protected readonly ROUTES = ROUTES;
 
-    displayedPapers$!: Observable<ResearchPaper[]>;
-    isFallbackMode$!: Observable<boolean>;
-    noticeMessage = '';
+  displayedPapers$!: Observable<ResearchPaper[]>;
+  isFallbackMode$!: Observable<boolean>;
+  noticeMessage = '';
 
-    ngOnInit(): void {
-        const currentUser = authSignal.user();
-        const myPapers$ = currentUser ? this.paperService.getMyPapers(currentUser) : of([]);
-        const allPapers$ = this.paperService.getPapers();
+  ngOnInit(): void {
+    const currentUser = authSignal.user();
+    const myPapers$ = currentUser ? this.paperService.getMyPapers(currentUser) : of([]);
+    const allPapers$ = this.paperService.getPapers();
 
-        this.displayedPapers$ = combineLatest([myPapers$, allPapers$]).pipe(
-            map(([myPapers, allPapers]) => (myPapers.length > 0 ? myPapers : allPapers))
-        );
+    this.displayedPapers$ = combineLatest([myPapers$, allPapers$]).pipe(
+      map(([myPapers, allPapers]) => (myPapers.length > 0 ? myPapers : allPapers))
+    );
 
-        this.isFallbackMode$ = myPapers$.pipe(
-            map((myPapers) => myPapers.length === 0)
-        );
+    this.isFallbackMode$ = myPapers$.pipe(
+      map((myPapers) => myPapers.length === 0)
+    );
 
-        const navigationNotice = this.router.getCurrentNavigation()?.extras.state?.['notice'];
-        const historyNotice = history.state?.['notice'];
-        this.noticeMessage = (navigationNotice ?? historyNotice ?? '') as string;
+    const navigationNotice = this.router.getCurrentNavigation()?.extras.state?.['notice'];
+    const historyNotice = history.state?.['notice'];
+    this.noticeMessage = (navigationNotice ?? historyNotice ?? '') as string;
 
-        if (this.noticeMessage) {
-            const currentState = { ...(history.state as Record<string, unknown>) };
-            delete currentState['notice'];
-            history.replaceState(currentState, document.title);
-        }
+    if (this.noticeMessage) {
+      const currentState = { ...(history.state as Record<string, unknown>) };
+      delete currentState['notice'];
+      history.replaceState(currentState, document.title);
     }
+  }
 
-    openEditor(id: string): void {
-        this.router.navigateByUrl(ROUTES.RESEARCH_EDITOR_EDIT(id));
-    }
+  openEditor(id: string): void {
+    this.router.navigateByUrl(ROUTES.RESEARCH_EDITOR_EDIT(id));
+  }
 
-    toPlainText(html: string): string {
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = html ?? '';
-        return (wrapper.textContent ?? '').replace(/\u00A0/g, ' ').trim();
-    }
+  toPlainText(html: string): string {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html ?? '';
+    return (wrapper.textContent ?? '').replace(/\u00A0/g, ' ').trim();
+  }
 
-    statusLabel(status?: string): string {
-        if (status === 'PENDING') return 'Chờ duyệt';
-        if (status === 'REJECTED') return 'Bị từ chối';
-        return 'Đã duyệt';
-    }
+  statusLabel(status?: string): string {
+    if (status === 'PENDING') return 'Chờ duyệt';
+    if (status === 'REJECTED') return 'Bị từ chối';
+    return 'Đã duyệt';
+  }
 
-    statusClass(status?: string): string {
-        if (status === 'PENDING') return 'text-amber-600';
-        if (status === 'REJECTED') return 'text-red-500';
-        return 'text-emerald-600';
-    }
+  statusClass(status?: string): string {
+    if (status === 'PENDING') return 'text-amber-600';
+    if (status === 'REJECTED') return 'text-red-500';
+    return 'text-emerald-600';
+  }
 }

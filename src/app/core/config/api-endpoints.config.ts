@@ -20,6 +20,9 @@ export const API_ENDPOINTS = {
     RECRUITMENT: {
         LIST: `${API_CONFIG.PREFIX}/posts`,
         DETAIL: (id: string) => `${API_CONFIG.PREFIX}/posts/${id}`,
+        CREATE: `${API_CONFIG.PREFIX}/posts`,
+        UPDATE: (id: string) => `${API_CONFIG.PREFIX}/posts/${id}`,
+        MY_POSTS: `${API_CONFIG.PREFIX}/posts/me`,
         APPLY: (id: string) => `${API_CONFIG.PREFIX}/posts/${id}/apply`,
         APPLICATIONS_MY: `${API_CONFIG.PREFIX}/posts/applications/me`,
         APPLICATIONS_RECEIVED: `${API_CONFIG.PREFIX}/posts/applications/received`,

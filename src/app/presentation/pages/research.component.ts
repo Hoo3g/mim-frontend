@@ -16,26 +16,26 @@ import { ResearchHeroContent } from '../../core/models/content.model';
       
       <!-- Hero Banner Section -->
       <div class="bg-gray-50 border-b border-gray-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-4">
           <div *ngIf="hero$ | async as hero" class="relative overflow-hidden border-2 border-hus-blue/10 bg-white">
             <div class="grid grid-cols-1 md:grid-cols-2 items-center">
-              <div class="p-8 md:p-12">
-                <h1 class="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4 uppercase tracking-tighter">
+              <div class="p-4 md:p-6">
+                <h1 class="text-2xl md:text-3xl font-black text-gray-900 leading-tight mb-2 uppercase tracking-tighter">
                   {{ hero.titlePrefix }} <br/>
                   <span class="text-hus-blue">{{ hero.titleHighlight }}</span>
                 </h1>
-                <p class="text-sm text-gray-400 font-bold uppercase tracking-widest max-w-sm mb-8">
+                <p class="text-[11px] text-gray-400 font-bold uppercase tracking-widest max-w-sm mb-4">
                   {{ hero.subtitle }}
                 </p>
                 <div class="flex gap-4">
-                  <div class="h-10 w-1 bg-hus-blue"></div>
+                  <div class="h-7 w-1 bg-hus-blue"></div>
                   <div class="flex flex-col justify-center">
                     <span class="text-[10px] font-bold text-gray-900 uppercase tracking-widest leading-none">HUS - VNU</span>
                     <span class="text-[9px] font-medium text-gray-400 uppercase tracking-tight mt-1">ESTABLISHED 1956</span>
                   </div>
                 </div>
               </div>
-              <div class="h-64 md:h-full relative overflow-hidden bg-gray-100">
+              <div class="h-40 md:h-full relative overflow-hidden bg-gray-100">
                 <img [src]="hero.imageUrl" alt="MIM Faculty Building" class="w-full h-full object-cover grayscale-0 hover:scale-105 transition-transform duration-700">
               </div>
             </div>
@@ -44,7 +44,7 @@ import { ResearchHeroContent } from '../../core/models/content.model';
       </div>
       
       <!-- List Filter & Header -->
-      <div class="border-b border-gray-100 sticky top-16 bg-white z-10">
+      <div class="border-b border-gray-100 bg-white">
          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
              <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
@@ -116,7 +116,7 @@ import { ResearchHeroContent } from '../../core/models/content.model';
                      <div class="flex-grow">
                         <div class="flex items-center justify-between gap-3 mb-2">
                           <div class="flex items-center gap-3">
-                            <span class="text-[10px] font-bold text-gray-900 uppercase tracking-tighter hover:text-hus-blue transition-colors">{{ getMainAuthor(paper) }}</span>
+                            <span class="text-[10px] font-bold text-gray-900 uppercase tracking-tighter">{{ getMainAuthor(paper) }}</span>
                             <span class="h-1 w-1 bg-gray-200 rounded-full"></span>
                             <span class="text-[10px] font-medium text-hus-blue uppercase tracking-tighter">{{ paper.researchArea }}</span>
                             <span class="h-1 w-1 bg-gray-200 rounded-full"></span>
@@ -128,10 +128,26 @@ import { ResearchHeroContent } from '../../core/models/content.model';
                           {{ paper.title }}
                         </h3>
 
-                        <div class="mt-4 flex gap-6 text-[10px] font-bold text-gray-300 uppercase tracking-widest">
-                          <span class="group-hover:text-gray-500 transition-colors">View: 1245</span>
-                          <span class="group-hover:text-gray-500 transition-colors">Download: 32</span>
-                          <span class="group-hover:text-gray-500 transition-colors">Cited: 5</span>
+                        <div class="mt-4 flex flex-wrap gap-5 text-[10px] font-bold text-gray-400 tracking-widest">
+                          <span class="inline-flex items-center gap-1.5" title="Lượt xem">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span class="tabular-nums">1245</span>
+                          </span>
+                          <span class="inline-flex items-center gap-1.5" title="Lượt tải xuống">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M7 10l5 5m0 0 5-5m-5 5V3" />
+                            </svg>
+                            <span class="tabular-nums">32</span>
+                          </span>
+                          <span class="inline-flex items-center gap-1.5" title="Đã lưu">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                            </svg>
+                            <span class="tabular-nums">5</span>
+                          </span>
                         </div>
                      </div>
                    </div>
@@ -156,7 +172,8 @@ import { ResearchHeroContent } from '../../core/models/content.model';
           </section>
 
           <!-- RIGHT: Sidebar - Bulletins -->
-           <aside class="bg-white border border-gray-100 p-6 space-y-12 lg:sticky lg:top-24 self-start">
+           <aside class="bg-white border border-gray-100 p-6 space-y-12 lg:sticky self-start"
+                  [style.top]="'var(--app-nav-sidebar-offset, 124px)'">
              <section>
                <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest mb-6 pb-2 border-b-2 border-hus-blue inline-block">
                  Bảng tin Khoa
@@ -200,7 +217,7 @@ export class ResearchComponent implements OnInit {
   news$!: Observable<any[]>;
   hero$!: Observable<ResearchHeroContent>;
   currentFilter: 'ALL' | 'LECTURER' | 'STUDENT' = 'ALL';
-  selectedSpecialization = 'ALL';
+  selectedSpecializations: string[] = [];
   searchKeyword = '';
   visiblePaperCount = 6;
   private readonly pageSize = 6;
@@ -211,10 +228,9 @@ export class ResearchComponent implements OnInit {
     this.news$ = this.paperService.getNews();
     this.route.queryParamMap.subscribe((params) => {
       const type = params.get('type');
-      const specialization = params.get('specialization');
       const keyword = params.get('q');
       this.currentFilter = type === 'LECTURER' || type === 'STUDENT' ? type : 'ALL';
-      this.selectedSpecialization = specialization?.trim() ? specialization : 'ALL';
+      this.selectedSpecializations = this.parseSpecializationsFromParams(params.getAll('specialization'), params.get('specialization'));
       this.searchKeyword = keyword?.trim() ?? '';
       this.resetVisiblePapers();
       this.updateFilter();
@@ -234,8 +250,8 @@ export class ResearchComponent implements OnInit {
         if (this.currentFilter !== 'ALL') {
           filtered = filtered.filter(p => p.category === this.currentFilter);
         }
-        if (this.selectedSpecialization !== 'ALL') {
-          filtered = filtered.filter(p => p.researchArea === this.selectedSpecialization);
+        if (this.selectedSpecializations.length > 0) {
+          filtered = filtered.filter((p) => this.selectedSpecializations.includes(p.researchArea));
         }
         if (this.searchKeyword) {
           const normalizedKeyword = this.normalize(this.searchKeyword);
@@ -261,7 +277,7 @@ export class ResearchComponent implements OnInit {
     this.router.navigate(['/research/filter'], {
       queryParams: {
         type: this.currentFilter !== 'ALL' ? this.currentFilter : null,
-        specialization: this.selectedSpecialization !== 'ALL' ? this.selectedSpecialization : null,
+        specialization: this.selectedSpecializations.length > 0 ? this.selectedSpecializations : null,
         q: this.searchKeyword || null
       },
       queryParamsHandling: ''
@@ -285,6 +301,24 @@ export class ResearchComponent implements OnInit {
 
   private resetVisiblePapers(): void {
     this.visiblePaperCount = this.pageSize;
+  }
+
+  private parseSpecializationsFromParams(values: string[], fallback: string | null): string[] {
+    if (values.length > 0) {
+      return values
+        .flatMap((item) => item.split(','))
+        .map((item) => item.trim())
+        .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
+    }
+
+    if (!fallback?.trim()) {
+      return [];
+    }
+
+    return fallback
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
   }
 
   private normalize(value: string): string {
