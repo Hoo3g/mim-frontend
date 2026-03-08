@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 
@@ -62,8 +62,7 @@ import { PostDetailComponent } from './post-detail.component';
 
         <div *ngIf="!loading && posts.length > 0" class="divide-y divide-gray-100 border border-gray-100">
           <article *ngFor="let post of posts"
-                   (click)="openPreview(post)"
-                   class="p-6 md:p-8 cursor-pointer group hover:bg-gray-50 transition-colors">
+                   class="p-6 md:p-8 group hover:bg-gray-50 transition-colors">
             <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-3 mb-3 text-[10px] font-bold uppercase tracking-widest">
@@ -78,7 +77,7 @@ import { PostDetailComponent } from './post-detail.component';
                   </span>
                 </div>
 
-                <h3 class="text-xl font-bold text-gray-900 leading-tight group-hover:text-hus-blue transition-colors">
+                <h3 class="text-xl font-bold text-gray-900 leading-tight">
                   {{ post.title }}
                 </h3>
 
@@ -93,6 +92,11 @@ import { PostDetailComponent } from './post-detail.component';
               </div>
 
               <div class="flex items-center gap-2 md:pl-4">
+                <button type="button"
+                        (click)="openPreview(post)"
+                        class="px-4 py-2 border border-gray-200 text-gray-600 text-[10px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-colors">
+                  Xem preview
+                </button>
                 <button type="button"
                         (click)="editPost(post, $event)"
                         class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
@@ -111,7 +115,7 @@ import { PostDetailComponent } from './post-detail.component';
     </div>
   `
 })
-export class MyRecruitmentPostsComponent implements OnInit {
+export class MyRecruitmentPostsComponent implements OnInit, OnDestroy {
   private readonly postService = inject(PostService);
   private readonly router = inject(Router);
 
@@ -158,14 +162,18 @@ export class MyRecruitmentPostsComponent implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    this.unlockBodyScroll();
+  }
+
   openPreview(post: Post): void {
     this.selectedPost = post;
-    document.body.style.overflow = 'hidden';
+    this.lockBodyScroll();
   }
 
   closePreview(): void {
     this.selectedPost = null;
-    document.body.style.overflow = 'auto';
+    this.unlockBodyScroll();
   }
 
   editPost(post: Post, event: Event): void {
@@ -209,5 +217,13 @@ export class MyRecruitmentPostsComponent implements OnInit {
     if (jobType === 'CONTRACT') return 'Hợp đồng';
     if (jobType === 'INTERNSHIP') return 'Thực tập';
     return 'Full-time';
+  }
+
+  private lockBodyScroll(): void {
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockBodyScroll(): void {
+    document.body.style.overflow = 'auto';
   }
 }

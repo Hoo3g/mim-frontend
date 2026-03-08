@@ -34,15 +34,15 @@ interface AdminTabConfig {
     imports: [CommonModule, FormsModule, RouterModule],
     template: `
     <div class="min-h-screen bg-gray-50/50">
-      <div class="bg-gray-900 text-white py-10">
+      <div class="bg-gray-900 text-white py-7 md:py-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between items-end">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-5">
             <div>
-              <h1 class="text-3xl font-black uppercase tracking-tighter mb-2">QUẢN TRỊ VIÊN</h1>
+              <h1 class="text-2xl sm:text-3xl font-black uppercase tracking-tighter mb-2">QUẢN TRỊ VIÊN</h1>
               <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Hệ thống quản trị RBAC & nội dung MIM</p>
             </div>
             <div class="flex gap-4 mb-1">
-              <div class="text-right">
+              <div class="sm:text-right">
                 <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Đang chờ duyệt</p>
                 <p class="text-2xl font-black text-hus-blue">{{ pendingPosts.length + pendingPapers.length }} Item</p>
               </div>

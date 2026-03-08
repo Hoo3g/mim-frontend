@@ -45,10 +45,10 @@ import { ResearchCategory } from '../../core/models/research-category.model';
           </div>
 
           <div *ngIf="isStudent()" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <article class="xl:col-span-2 bg-white border border-gray-100 p-6 space-y-5">
-              <div class="flex items-center justify-between gap-3">
+            <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 space-y-5">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 class="text-lg font-black uppercase tracking-tight text-gray-900">Hồ sơ sinh viên</h3>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                   <button *ngIf="!editingStudent"
                           (click)="beginEditStudent()"
                           class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
@@ -173,7 +173,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
               </div>
             </article>
 
-            <article class="bg-white border border-gray-100 p-6 space-y-4">
+            <article class="bg-white border border-gray-100 p-4 sm:p-6 space-y-4">
               <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">CV mặc định</h3>
 
               <div *ngIf="!editingStudent" class="text-xs text-gray-400 font-semibold">
@@ -198,7 +198,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
           </div>
 
           <div *ngIf="isStudent()" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <article class="bg-white border border-gray-100 p-6">
+            <article class="bg-white border border-gray-100 p-4 sm:p-6">
               <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-4">Bài nghiên cứu đã đánh dấu</h3>
               <div *ngIf="savedPapers().length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
                 Chưa có bài nghiên cứu đã lưu.
@@ -212,7 +212,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
               </div>
             </article>
 
-            <article class="bg-white border border-gray-100 p-6">
+            <article class="bg-white border border-gray-100 p-4 sm:p-6">
               <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-4">Đơn ứng tuyển đang chờ phản hồi</h3>
               <div *ngIf="pendingApplications().length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
                 Không có đơn pending.
@@ -227,7 +227,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
               </div>
             </article>
 
-            <article class="xl:col-span-2 bg-white border border-gray-100 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-1">Đăng bài tuyển dụng của bạn</h3>
                 <p class="text-xs text-gray-500 font-semibold">
@@ -242,10 +242,10 @@ import { ResearchCategory } from '../../core/models/research-category.model';
           </div>
 
           <div *ngIf="isCompany()" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <article class="xl:col-span-2 bg-white border border-gray-100 p-6 space-y-4">
-              <div class="flex items-center justify-between gap-3">
+            <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 class="text-lg font-black uppercase tracking-tight text-gray-900">Hồ sơ doanh nghiệp</h3>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                   <button *ngIf="!editingCompany"
                           (click)="beginEditCompany()"
                           class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
@@ -321,7 +321,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
               </div>
             </article>
 
-            <article class="bg-white border border-gray-100 p-6">
+            <article class="bg-white border border-gray-100 p-4 sm:p-6">
               <div class="flex items-center justify-between gap-2 mb-4">
                 <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Tin tuyển dụng đã đăng</h3>
                 <a [routerLink]="['/recruitment/my-posts']"
@@ -343,7 +343,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
             </article>
           </div>
 
-          <article *ngIf="isCompany()" class="bg-white border border-gray-100 p-6">
+          <article *ngIf="isCompany()" class="bg-white border border-gray-100 p-4 sm:p-6">
             <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-4">Ứng viên đang chờ xử lý</h3>
             <div *ngIf="pendingApplicants().length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
               Không có ứng viên pending.
@@ -359,10 +359,10 @@ import { ResearchCategory } from '../../core/models/research-category.model';
           </article>
 
           <div *ngIf="isLecturer()" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <article class="xl:col-span-2 bg-white border border-gray-100 p-6 space-y-4">
-              <div class="flex items-center justify-between gap-3">
+            <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 class="text-lg font-black uppercase tracking-tight text-gray-900">Hồ sơ giảng viên</h3>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                   <button *ngIf="!editingLecturer"
                           (click)="beginEditLecturer()"
                           class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
@@ -447,7 +447,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
               </div>
             </article>
 
-            <article class="bg-white border border-gray-100 p-6">
+            <article class="bg-white border border-gray-100 p-4 sm:p-6">
               <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-4">Bài nghiên cứu của tôi</h3>
               <div *ngIf="lecturerPapers().length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
                 Chưa có bài nghiên cứu.
@@ -463,7 +463,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
             </article>
           </div>
 
-          <article *ngIf="isLecturer()" class="bg-white border border-gray-100 p-6">
+          <article *ngIf="isLecturer()" class="bg-white border border-gray-100 p-4 sm:p-6">
             <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-4">Cộng tác giả / sinh viên liên quan</h3>
             <div *ngIf="collaborators().length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
               Chưa có dữ liệu cộng tác.
@@ -478,8 +478,8 @@ import { ResearchCategory } from '../../core/models/research-category.model';
           </article>
 
           <div *ngIf="isAdmin()" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <article class="xl:col-span-2 bg-white border border-gray-100 p-6 space-y-5">
-              <div class="flex items-center justify-between gap-4">
+            <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 space-y-5">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <p class="text-[10px] font-black uppercase tracking-widest text-hus-blue mb-1">Quản trị viên</p>
                   <h3 class="text-lg font-black uppercase tracking-tight text-gray-900">{{ displayName() }}</h3>
@@ -516,7 +516,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
               </div>
             </article>
 
-            <article class="bg-white border border-gray-100 p-6 space-y-4">
+            <article class="bg-white border border-gray-100 p-4 sm:p-6 space-y-4">
               <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Lối tắt quản trị</h3>
               <a routerLink="/admin"
                  class="block border border-gray-200 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:border-hus-blue hover:text-hus-blue transition-colors">
@@ -533,7 +533,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
             </article>
           </div>
 
-          <article *ngIf="isUnknownRole()" class="bg-white border border-gray-100 p-6 text-sm text-gray-500 font-semibold">
+          <article *ngIf="isUnknownRole()" class="bg-white border border-gray-100 p-4 sm:p-6 text-sm text-gray-500 font-semibold">
             Hồ sơ tài khoản đang dùng role chưa chuẩn hóa. Vui lòng liên hệ quản trị hệ thống để kiểm tra dữ liệu role.
           </article>
         </div>

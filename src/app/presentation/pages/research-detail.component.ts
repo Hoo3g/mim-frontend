@@ -25,11 +25,11 @@ import { API_CONFIG } from '../../core/config/api.config';
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:mt-12">
         <div class="max-w-4xl mx-auto">
           
           <!-- Header -->
-          <header class="mb-12 border-b-2 border-hus-blue pb-12">
+          <header class="mb-8 sm:mb-12 border-b-2 border-hus-blue pb-8 sm:pb-12">
             <div class="flex items-center gap-3 mb-6 text-[11px] font-bold uppercase tracking-tighter">
               <span class="bg-hus-blue text-white px-3 py-1">{{ paper.category === 'LECTURER' ? 'GIẢNG VIÊN' : 'SINH VIÊN' }}</span>
               <span class="text-gray-300">|</span>
@@ -52,7 +52,7 @@ import { API_CONFIG } from '../../core/config/api.config';
               </button>
             </div>
             
-            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-8">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-6 sm:mb-8">
               {{ paper.title }}
             </h1>
             
@@ -67,7 +67,7 @@ import { API_CONFIG } from '../../core/config/api.config';
                  </div>
                </div>
                
-               <div class="flex items-center gap-6 pt-4 border-t border-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+               <div class="flex flex-wrap items-center gap-4 sm:gap-6 pt-4 border-t border-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                  <span>Tạp chí: <span class="text-hus-blue">{{ paper.journalConference || 'MIM - VNU HUS' }}</span></span>
                  <span>ID: #{{ paper.id.slice(0,8).toUpperCase() }}</span>
                </div>
@@ -75,7 +75,7 @@ import { API_CONFIG } from '../../core/config/api.config';
           </header>
 
           <!-- Main Content Section -->
-          <div class="space-y-16">
+          <div class="space-y-10 sm:space-y-16">
             
             <!-- Abstract Block -->
             <section>
@@ -94,7 +94,7 @@ import { API_CONFIG } from '../../core/config/api.config';
                 </h2>
                 
               </div>
-              <div class="w-full h-[68vh] md:h-[82vh] lg:h-[90vh] min-h-[560px] bg-gray-50 border-2 border-hus-blue/10">
+              <div class="w-full h-[72vh] md:h-[82vh] lg:h-[90vh] min-h-[420px] sm:min-h-[560px] bg-gray-50 border-2 border-hus-blue/10">
                 <iframe *ngIf="canInlinePreview(paper.pdfUrl); else cannotPreviewPdf"
                         [src]="getSafePdfViewerUrl(paper.pdfUrl)"
                         class="w-full h-full"
@@ -125,12 +125,12 @@ import { API_CONFIG } from '../../core/config/api.config';
           </div>
 
           <!-- Footer Actions -->
-          <footer class="mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-center gap-4">
+          <footer class="mt-8 sm:mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             <button *ngIf="hasPdfUrl(paper.pdfUrl); else missingPdf"
                type="button"
                (click)="downloadPdf(paper.pdfUrl, paper.title)"
                [disabled]="isDownloadingPdf"
-               class="inline-flex items-center justify-center bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20">
+               class="inline-flex items-center justify-center bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20 w-full sm:w-auto">
               {{ isDownloadingPdf ? 'Đang tải xuống...' : 'Tải xuống tài liệu (.PDF)' }}
             </button>
             <ng-template #missingPdf>
@@ -140,7 +140,7 @@ import { API_CONFIG } from '../../core/config/api.config';
                 Chưa có tệp PDF
               </button>
             </ng-template>
-            <button class="border-2 border-hus-blue text-hus-blue text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-blue hover:text-white transition">
+            <button class="border-2 border-hus-blue text-hus-blue text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-blue hover:text-white transition w-full sm:w-auto">
               Liên hệ tác giả
             </button>
           </footer>

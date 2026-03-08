@@ -72,7 +72,7 @@ import { AuthService } from './core/services/auth.service';
             <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
               © {{ currentYear }} Cổng MIM - HUS VNU
             </p>
-            <div class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            <div class="flex flex-wrap items-center gap-3 sm:gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
               <a href="#" class="hover:text-hus-blue transition-colors">Chính sách bảo mật</a>
               <a href="#" class="hover:text-hus-blue transition-colors">Điều khoản sử dụng</a>
               <a href="#" class="hover:text-hus-blue transition-colors">An toàn hệ thống</a>

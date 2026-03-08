@@ -13,17 +13,17 @@ import { HttpErrorResponse } from '@angular/common/http';
     standalone: true,
     imports: [CommonModule, FormsModule, RouterModule],
     template: `
-    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-10">
+    <div class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-3 sm:p-6 md:p-10">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" (click)="handleClose()"></div>
 
       <!-- Modal Content -->
-      <div class="relative w-full max-w-4xl bg-white shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] animate-in fade-in zoom-in duration-300">
+      <div class="relative w-full max-w-4xl bg-white shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] sm:max-h-[90vh] animate-in fade-in zoom-in duration-300">
         
         <!-- Left: Visual/Identity (Mobile: Top) -->
-        <div class="w-full md:w-80 bg-gray-50 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-100 p-8 flex flex-col items-center text-center">
+        <div class="w-full md:w-80 bg-gray-50 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-100 p-5 sm:p-8 flex flex-col items-center text-center">
           <div class="relative mb-6">
-            <div class="w-32 h-32 bg-white border-4 border-white shadow-xl overflow-hidden">
+            <div class="w-24 h-24 sm:w-32 sm:h-32 bg-white border-4 border-white shadow-xl overflow-hidden">
               <img *ngIf="post.authorAvatarUrl" [src]="post.authorAvatarUrl" [alt]="post.authorName" class="w-full h-full object-cover">
               <div *ngIf="!post.authorAvatarUrl" class="w-full h-full flex items-center justify-center bg-gray-100 text-3xl font-black text-hus-blue/30 uppercase">
                 {{ post.authorName.charAt(0) }}
@@ -34,7 +34,7 @@ import { HttpErrorResponse } from '@angular/common/http';
             </div>
           </div>
 
-          <h2 class="text-xl font-black text-gray-900 leading-tight mb-2">{{ post.authorName }}</h2>
+          <h2 class="text-lg sm:text-xl font-black text-gray-900 leading-tight mb-2">{{ post.authorName }}</h2>
           <span class="text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 mb-6"
                 [ngClass]="post.postType.includes('COMPANY') ? 'bg-blue-50 text-hus-blue' : 'bg-green-50 text-green-600'">
             {{ post.postType.includes('COMPANY') ? 'Đối tác doanh nghiệp' : 'Ứng viên tiềm năng' }}
@@ -83,8 +83,8 @@ import { HttpErrorResponse } from '@angular/common/http';
         <!-- Right: Details (Scrollable) -->
         <div class="flex-grow flex flex-col min-w-0">
           <!-- Header -->
-          <div class="p-8 border-b border-gray-100 flex justify-between items-start">
-            <div class="pr-8">
+          <div class="p-5 sm:p-8 border-b border-gray-100 flex justify-between items-start gap-3">
+            <div class="pr-0 sm:pr-8 min-w-0">
               <div class="flex items-center gap-2 mb-2">
                 <span class="px-2 py-0.5 bg-gray-900 text-white text-[9px] font-black uppercase tracking-widest">
                   {{ post.jobType }}
@@ -93,9 +93,9 @@ import { HttpErrorResponse } from '@angular/common/http';
                   Đăng ngày {{ post.createdAt | date:'dd.MM.yyyy' }}
                 </span>
               </div>
-              <h1 class="text-2xl font-black text-gray-900 leading-tight uppercase tracking-tighter">{{ post.title }}</h1>
+              <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight uppercase tracking-tighter">{{ post.title }}</h1>
             </div>
-            <button (click)="handleClose()" class="p-2 hover:bg-gray-100 transition-colors">
+            <button (click)="handleClose()" class="p-2 hover:bg-gray-100 transition-colors flex-shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l18 18" />
               </svg>
@@ -103,7 +103,7 @@ import { HttpErrorResponse } from '@angular/common/http';
           </div>
 
           <!-- Body -->
-          <div class="flex-grow overflow-y-auto p-8 space-y-10 custom-scrollbar">
+          <div class="flex-grow overflow-y-auto p-5 sm:p-8 space-y-8 sm:space-y-10 custom-scrollbar">
             <!-- Description -->
             <section>
               <h3 class="text-[10px] font-black text-hus-blue uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
@@ -243,7 +243,7 @@ import { HttpErrorResponse } from '@angular/common/http';
             </section>
           </div>
 
-          <div *ngIf="post.postType.includes('COMPANY') && isAuth()" class="px-8 pt-6 bg-gray-50/50 border-t border-gray-100">
+          <div *ngIf="post.postType.includes('COMPANY') && isAuth()" class="px-5 sm:px-8 pt-5 sm:pt-6 bg-gray-50/50 border-t border-gray-100">
             <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
               Lời nhắn ứng tuyển (tuỳ chọn)
             </label>
@@ -265,12 +265,12 @@ import { HttpErrorResponse } from '@angular/common/http';
           </div>
 
           <!-- Footer Actions -->
-          <div class="p-8 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row gap-4">
+          <div class="p-5 sm:p-8 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row gap-3 sm:gap-4">
             <button (click)="handlePrimaryAction()"
                     class="flex-grow py-4 bg-gray-900 text-white text-[11px] font-black uppercase tracking-widest hover:bg-hus-blue transition-all duration-300 transform active:scale-95 shadow-lg shadow-gray-900/10">
               {{ post.postType.includes('COMPANY') ? (isAuth() ? 'Ứng tuyển ngay' : 'Đăng nhập để ứng tuyển') : 'Liên hệ hợp tác' }}
             </button>
-            <button class="px-8 py-4 bg-white border border-gray-200 text-gray-500 text-[11px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-all duration-300">
+            <button class="px-6 py-4 bg-white border border-gray-200 text-gray-500 text-[11px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-all duration-300">
               Lưu tin
             </button>
           </div>

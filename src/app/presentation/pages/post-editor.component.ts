@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -31,161 +31,7 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12">
-        <div class="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] gap-8">
-          <aside class="lg:sticky self-start space-y-5"
-                 [style.top]="'var(--app-nav-sidebar-offset, 124px)'">
-            <div class="bg-white border border-gray-100 p-6">
-              <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">Bản xem trước</p>
-
-              <div class="bg-white border border-gray-100 p-5 transition-all duration-300 flex flex-col h-full relative">
-                <div class="flex items-start justify-between mb-5">
-                  <div class="flex items-center gap-3 min-w-0">
-                    <div class="relative">
-                      <div class="w-11 h-11 bg-white border-2 border-gray-50 shadow-sm overflow-hidden">
-                        <img *ngIf="currentUserAvatar()"
-                             [src]="currentUserAvatar()!"
-                             [alt]="currentUserName()"
-                             class="w-full h-full object-cover">
-                        <div *ngIf="!currentUserAvatar()"
-                             class="w-full h-full flex items-center justify-center bg-gray-50 text-[12px] font-black text-hus-blue/60 uppercase">
-                          {{ avatarInitial() }}
-                        </div>
-                      </div>
-                      <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-white flex items-center justify-center border border-gray-50 shadow-sm">
-                        <div class="w-1.5 h-1.5" [ngClass]="isCompanyRole ? 'bg-hus-blue animate-pulse' : 'bg-green-500'"></div>
-                      </div>
-                    </div>
-
-                    <div class="min-w-0">
-                      <div class="text-[13px] font-black text-gray-900 leading-tight truncate">{{ currentUserName() }}</div>
-                      <div class="flex items-center gap-2 mt-1">
-                        <span [ngClass]="isCompanyRole ? 'text-hus-blue bg-blue-50/50' : 'text-gray-500 bg-gray-50'"
-                              class="text-[7.5px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5">
-                          {{ isCompanyRole ? 'Đối tác doanh nghiệp' : 'Ứng viên tiềm năng' }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="flex flex-col items-end gap-1">
-                    <span class="text-[9px] font-bold text-gray-300 uppercase tabular-nums">{{ today | date:'dd.MM.yyyy' }}</span>
-                    <div class="w-4 h-0.5 bg-gray-100"></div>
-                  </div>
-                </div>
-
-                <h3 class="text-base font-bold text-gray-900 mb-2 leading-tight line-clamp-2 min-h-[2.5rem]">
-                  {{ form.title.trim() || 'Tiêu đề bài đăng sẽ hiển thị ở đây' }}
-                </h3>
-
-                <p class="text-[11px] text-gray-500 font-light leading-relaxed mb-4 line-clamp-3 min-h-[3rem]">
-                  {{ form.description.trim() || 'Mô tả ngắn sẽ xuất hiện trong danh sách tuyển dụng.' }}
-                </p>
-
-                <div class="space-y-3 mb-2 flex-grow">
-                  <div *ngIf="!isCompanyRole" class="border border-gray-100 bg-gray-50/60 p-3">
-                    <div class="grid grid-cols-2 gap-3 text-left">
-                      <div>
-                        <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Trường</p>
-                        <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">{{ displayValue(studentCardForm.university) }}</p>
-                      </div>
-                      <div>
-                        <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Chuyên ngành</p>
-                        <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">{{ displayValue(studentCardForm.major) }}</p>
-                      </div>
-                      <div>
-                        <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Loại sinh viên</p>
-                        <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">{{ displayValue(studentCardForm.studentType) }}</p>
-                      </div>
-                      <div>
-                        <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Vị trí mong muốn</p>
-                        <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">{{ displayValue(studentCardForm.desiredPosition) }}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div *ngIf="!isCompanyRole" class="pt-3 border-t border-gray-50">
-                    <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                      <span class="w-1 h-1 bg-gray-900"></span>
-                      Giới thiệu
-                    </h4>
-                    <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">{{ displayValue(form.description) }}</p>
-                  </div>
-
-                  <div *ngIf="!isCompanyRole" class="pt-3 border-t border-gray-50">
-                    <h4 class="text-[8px] font-bold text-hus-blue uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                      <span class="w-1 h-1 bg-hus-blue"></span>
-                      Thành tích nổi bật
-                    </h4>
-                    <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">{{ displayValue(form.achievements) }}</p>
-                  </div>
-
-                  <div *ngIf="!isCompanyRole" class="pt-3 border-t border-gray-50">
-                    <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                      <span class="w-1 h-1 bg-gray-900"></span>
-                      Mong muốn nghề nghiệp
-                    </h4>
-                    <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">{{ displayValue(studentCardForm.careerGoal) }}</p>
-                  </div>
-
-                  <div *ngIf="isCompanyRole && form.requirements.trim()" class="pt-3 border-t border-gray-50">
-                    <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                      <span class="w-1 h-1 bg-gray-900"></span>
-                      Yêu cầu công việc
-                    </h4>
-                    <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">{{ form.requirements }}</p>
-                  </div>
-
-                  <div *ngIf="!isCompanyRole && resolvedStudentCvUrl()" class="pt-3 border-t border-gray-50">
-                    <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                      <span class="w-1 h-1 bg-gray-900"></span>
-                      CV đính kèm
-                    </h4>
-                    <p class="text-[10px] text-gray-600 font-medium truncate">{{ cvFileName(resolvedStudentCvUrl()!) }}</p>
-                  </div>
-
-                  <div *ngIf="!isCompanyRole && selectedResearchPaperItems().length > 0" class="pt-3 border-t border-gray-50">
-                    <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                      <span class="w-1 h-1 bg-gray-900"></span>
-                      Bài nghiên cứu đính kèm
-                    </h4>
-                    <p class="text-[10px] text-gray-600 font-medium">
-                      {{ selectedResearchPaperItems().length }} bài nghiên cứu
-                    </p>
-                  </div>
-                </div>
-
-                <div class="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
-                  <div class="flex items-center gap-3 min-w-0">
-                    <div class="flex items-center gap-1 text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <span class="truncate">{{ form.location.trim() || 'Chưa cập nhật địa điểm' }}</span>
-                    </div>
-                    <div *ngIf="isCompanyRole && form.salaryRange.trim()"
-                         class="flex items-center gap-1 text-[9px] font-bold text-hus-blue uppercase tracking-widest">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{{ form.salaryRange }}</span>
-                    </div>
-                  </div>
-                  <span class="text-[8px] font-black text-gray-200 uppercase tracking-widest">Xem trước</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-gray-50 border border-gray-100 p-4">
-              <p class="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Lưu ý khi chỉnh sửa</p>
-              <p class="text-xs text-gray-500 leading-relaxed">
-                Mỗi thay đổi sẽ cập nhật cách bài đăng hiển thị trên cổng tuyển dụng.
-                Hoàn thiện nội dung đầy đủ trước khi bấm lưu.
-              </p>
-            </div>
-          </aside>
-
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12">
           <section class="min-w-0">
             <div class="bg-white border border-gray-100 p-6 md:p-8">
               <h1 class="text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
@@ -203,6 +49,9 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
                       [ngClass]="isCompanyRole ? 'text-hus-blue' : 'text-emerald-600'">
                   {{ isCompanyRole ? 'Doanh nghiệp' : 'Sinh viên' }}
                 </span>
+              </div>
+              <div class="mt-4 border border-gray-100 bg-gray-50 px-4 py-3 text-xs text-gray-500 leading-relaxed">
+                Bản xem trước sẽ mở khi bấm nút <span class="font-bold text-hus-blue">Xem preview</span> ở cuối biểu mẫu.
               </div>
 
               <div *ngIf="profilePrefilledNotice"
@@ -535,27 +384,202 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
                   {{ errorMessage }}
                 </p>
 
-                <div class="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button type="button"
-                          (click)="cancel()"
-                          class="sm:min-w-36 px-5 py-3 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors">
-                    Hủy
-                  </button>
-                  <button type="submit"
-                          [disabled]="saving || cvUploading"
-                          class="sm:min-w-44 px-5 py-3 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                    {{ saving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật bài đăng' : 'Đăng bài tuyển dụng') }}
-                  </button>
+                <div class="pt-4 border-t border-gray-100">
+                  <div class="grid grid-cols-2 gap-3 lg:flex lg:items-center lg:justify-end">
+                    <button type="button"
+                            (click)="cancel()"
+                            class="inline-flex items-center justify-center gap-2 h-11 px-4 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Hủy
+                    </button>
+
+                    <button type="button"
+                            (click)="openPreviewModal()"
+                            class="inline-flex items-center justify-center gap-2 h-11 px-4 border border-hus-blue/30 bg-blue-50/40 text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white hover:border-hus-blue transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      Xem preview
+                    </button>
+
+                    <button type="submit"
+                            [disabled]="saving || cvUploading"
+                            class="col-span-2 lg:col-span-1 inline-flex items-center justify-center gap-2 h-11 px-6 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors shadow-[0_10px_24px_-16px_rgba(30,102,170,0.9)] disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      {{ saving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật bài đăng' : 'Đăng bài tuyển dụng') }}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
           </section>
+      </div>
+
+      <div *ngIf="showPreviewModal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6">
+        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" (click)="closePreviewModal()"></div>
+        <div class="relative w-full max-w-2xl max-h-[90vh] bg-white border border-gray-100 shadow-2xl flex flex-col">
+          <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-3">
+            <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Bản xem trước bài đăng</p>
+            <button type="button"
+                    (click)="closePreviewModal()"
+                    class="w-8 h-8 inline-flex items-center justify-center text-gray-400 hover:text-hus-blue hover:bg-blue-50 transition-colors"
+                    aria-label="Đóng xem trước">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="p-4 sm:p-6 overflow-y-auto">
+            <div class="bg-white border border-gray-100 p-5 transition-all duration-300 flex flex-col h-full relative">
+              <div class="flex items-start justify-between mb-5">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="relative">
+                    <div class="w-11 h-11 bg-white border-2 border-gray-50 shadow-sm overflow-hidden">
+                      <img *ngIf="currentUserAvatar()"
+                           [src]="currentUserAvatar()!"
+                           [alt]="currentUserName()"
+                           class="w-full h-full object-cover">
+                      <div *ngIf="!currentUserAvatar()"
+                           class="w-full h-full flex items-center justify-center bg-gray-50 text-[12px] font-black text-hus-blue/60 uppercase">
+                        {{ avatarInitial() }}
+                      </div>
+                    </div>
+                    <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-white flex items-center justify-center border border-gray-50 shadow-sm">
+                      <div class="w-1.5 h-1.5" [ngClass]="isCompanyRole ? 'bg-hus-blue animate-pulse' : 'bg-green-500'"></div>
+                    </div>
+                  </div>
+
+                  <div class="min-w-0">
+                    <div class="text-[13px] font-black text-gray-900 leading-tight truncate">{{ currentUserName() }}</div>
+                    <div class="flex items-center gap-2 mt-1">
+                      <span [ngClass]="isCompanyRole ? 'text-hus-blue bg-blue-50/50' : 'text-gray-500 bg-gray-50'"
+                            class="text-[7.5px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5">
+                        {{ isCompanyRole ? 'Đối tác doanh nghiệp' : 'Ứng viên tiềm năng' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[9px] font-bold text-gray-300 uppercase tabular-nums">{{ today | date:'dd.MM.yyyy' }}</span>
+                  <div class="w-4 h-0.5 bg-gray-100"></div>
+                </div>
+              </div>
+
+              <h3 class="text-base font-bold text-gray-900 mb-2 leading-tight line-clamp-2 min-h-[2.5rem]">
+                {{ form.title.trim() || 'Tiêu đề bài đăng sẽ hiển thị ở đây' }}
+              </h3>
+
+              <p class="text-[11px] text-gray-500 font-light leading-relaxed mb-4 line-clamp-3 min-h-[3rem]">
+                {{ form.description.trim() || 'Mô tả ngắn sẽ xuất hiện trong danh sách tuyển dụng.' }}
+              </p>
+
+              <div class="space-y-3 mb-2 flex-grow">
+                <div *ngIf="!isCompanyRole" class="border border-gray-100 bg-gray-50/60 p-3">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                    <div>
+                      <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Trường</p>
+                      <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">{{ displayValue(studentCardForm.university) }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Chuyên ngành</p>
+                      <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">{{ displayValue(studentCardForm.major) }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Loại sinh viên</p>
+                      <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">{{ displayValue(studentCardForm.studentType) }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Vị trí mong muốn</p>
+                      <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">{{ displayValue(studentCardForm.desiredPosition) }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div *ngIf="!isCompanyRole" class="pt-3 border-t border-gray-50">
+                  <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <span class="w-1 h-1 bg-gray-900"></span>
+                    Giới thiệu
+                  </h4>
+                  <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">{{ displayValue(form.description) }}</p>
+                </div>
+
+                <div *ngIf="!isCompanyRole" class="pt-3 border-t border-gray-50">
+                  <h4 class="text-[8px] font-bold text-hus-blue uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <span class="w-1 h-1 bg-hus-blue"></span>
+                    Thành tích nổi bật
+                  </h4>
+                  <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">{{ displayValue(form.achievements) }}</p>
+                </div>
+
+                <div *ngIf="!isCompanyRole" class="pt-3 border-t border-gray-50">
+                  <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <span class="w-1 h-1 bg-gray-900"></span>
+                    Mong muốn nghề nghiệp
+                  </h4>
+                  <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">{{ displayValue(studentCardForm.careerGoal) }}</p>
+                </div>
+
+                <div *ngIf="isCompanyRole && form.requirements.trim()" class="pt-3 border-t border-gray-50">
+                  <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <span class="w-1 h-1 bg-gray-900"></span>
+                    Yêu cầu công việc
+                  </h4>
+                  <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">{{ form.requirements }}</p>
+                </div>
+
+                <div *ngIf="!isCompanyRole && resolvedStudentCvUrl()" class="pt-3 border-t border-gray-50">
+                  <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <span class="w-1 h-1 bg-gray-900"></span>
+                    CV đính kèm
+                  </h4>
+                  <p class="text-[10px] text-gray-600 font-medium truncate">{{ cvFileName(resolvedStudentCvUrl()!) }}</p>
+                </div>
+
+                <div *ngIf="!isCompanyRole && selectedResearchPaperItems().length > 0" class="pt-3 border-t border-gray-50">
+                  <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <span class="w-1 h-1 bg-gray-900"></span>
+                    Bài nghiên cứu đính kèm
+                  </h4>
+                  <p class="text-[10px] text-gray-600 font-medium">
+                    {{ selectedResearchPaperItems().length }} bài nghiên cứu
+                  </p>
+                </div>
+              </div>
+
+              <div class="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="flex items-center gap-1 text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span class="truncate">{{ form.location.trim() || 'Chưa cập nhật địa điểm' }}</span>
+                  </div>
+                  <div *ngIf="isCompanyRole && form.salaryRange.trim()"
+                       class="flex items-center gap-1 text-[9px] font-bold text-hus-blue uppercase tracking-widest">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{{ form.salaryRange }}</span>
+                  </div>
+                </div>
+                <span class="text-[8px] font-black text-gray-200 uppercase tracking-widest">Xem trước</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   `
 })
-export class PostEditorComponent implements OnInit {
+export class PostEditorComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly postService = inject(PostService);
@@ -574,6 +598,7 @@ export class PostEditorComponent implements OnInit {
   errorMessage = '';
   postingMode: PostingMode = 'JOB';
   today = new Date();
+  showPreviewModal = false;
 
   profilePrefilledNotice = false;
   studentProfile: ProfileMeResponse['student'] | null = null;
@@ -660,6 +685,10 @@ export class PostEditorComponent implements OnInit {
     }
   }
 
+  ngOnDestroy(): void {
+    document.body.style.overflow = 'auto';
+  }
+
   currentUserName(): string {
     return authSignal.user()?.fullName || 'Người dùng MIM';
   }
@@ -688,6 +717,16 @@ export class PostEditorComponent implements OnInit {
     } else if (this.form.jobType === JobType.INTERNSHIP) {
       this.form.jobType = JobType.FULL_TIME;
     }
+  }
+
+  openPreviewModal(): void {
+    this.showPreviewModal = true;
+    document.body.style.overflow = 'hidden';
+  }
+
+  closePreviewModal(): void {
+    this.showPreviewModal = false;
+    document.body.style.overflow = 'auto';
   }
 
   applyStudentProfilePrefill(force = false): void {
@@ -920,6 +959,7 @@ export class PostEditorComponent implements OnInit {
   }
 
   cancel(): void {
+    this.closePreviewModal();
     this.router.navigateByUrl(ROUTES.RECRUITMENT_MY_POSTS);
   }
 

@@ -14,11 +14,11 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="bg-white min-h-screen">
-      <div class="border-b border-gray-100 bg-blue-50/10 py-8">
+      <div class="border-b border-gray-100 bg-blue-50/10 py-5 md:py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 class="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-1 flex items-center gap-2">
+              <h1 class="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tighter mb-1 flex items-center gap-2">
                 <span class="w-1 h-6 bg-hus-blue"></span>
                 Tìm kiếm nghiên cứu nâng cao
               </h1>
@@ -30,11 +30,11 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="flex flex-col lg:flex-row gap-10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+        <div class="flex flex-col lg:flex-row gap-6 lg:gap-10">
 
           <aside class="lg:w-64 flex-shrink-0">
-            <div class="sticky space-y-8"
+            <div class="space-y-6 md:space-y-8 lg:sticky"
                  [style.top]="'var(--app-nav-sidebar-offset, 124px)'">
 
               <section>
@@ -77,7 +77,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                         <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
                       </svg>
                     </span>
-                    <span>{{ category.name }}</span>
+                    <span class="break-words">{{ category.name }}</span>
                   </button>
                   <div *ngIf="specializations.length === 0"
                        class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-300 border border-dashed border-gray-100">
@@ -166,7 +166,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
           </aside>
 
           <div class="flex-grow">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 md:mb-6">
               <div>
                 <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Kết quả lọc</p>
                 <h2 class="text font-black text-gray-900 uppercase tracking-tight">
@@ -176,7 +176,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
             </div>
 
             <div *ngIf="filteredPapers.length === 0"
-                 class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
+                 class="py-14 md:py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
               Không tìm thấy thông tin phù hợp.
             </div>
 

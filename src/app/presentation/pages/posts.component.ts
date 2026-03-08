@@ -19,11 +19,11 @@ import { ROUTES } from '../../core/constants/route.const';
     <div class="bg-white min-h-screen">
       
       <!-- Minimal Header - Brand Accented -->
-      <div class="border-b border-gray-100 bg-blue-50/10 py-8">
+      <div class="border-b border-gray-100 bg-blue-50/10 py-5 md:py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
-              <h1 class="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-1 flex items-center gap-2">
+              <h1 class="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tighter mb-1 flex items-center gap-2">
                 <span class="w-1 h-6 bg-hus-blue"></span>
                 Tuyển dụng & Sự nghiệp
               </h1>
@@ -34,19 +34,27 @@ import { ROUTES } from '../../core/constants/route.const';
 
             <a *ngIf="canManageRecruitmentPosts()"
                [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
-               class="inline-flex items-center justify-center px-5 py-2.5 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
+               class="inline-flex items-center justify-center px-5 py-2.5 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors w-full sm:w-auto">
               Quản lý bài đăng
             </a>
           </div>
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="flex flex-col lg:flex-row gap-10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+        <div class="flex flex-col lg:flex-row gap-6 lg:gap-10">
           
           <!-- LEFT: Sidebar (Filters & Search) -->
           <div class="lg:w-64 flex-shrink-0">
-            <div class="sticky space-y-8"
+            <button type="button"
+                    (click)="showMobileFilters = !showMobileFilters"
+                    class="lg:hidden w-full inline-flex items-center justify-between border border-gray-200 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 mb-4">
+              Bộ lọc tuyển dụng
+              <span [class.rotate-180]="showMobileFilters" class="transition-transform">⌄</span>
+            </button>
+
+            <div class="space-y-6 md:space-y-8 lg:sticky lg:block"
+                 [ngClass]="showMobileFilters ? 'block' : 'hidden'"
                  [style.top]="'var(--app-nav-sidebar-offset, 124px)'">
               
               <!-- Search -->
@@ -142,7 +150,7 @@ import { ROUTES } from '../../core/constants/route.const';
                   
                   <!-- Author Identity Section - Refined -->
                   <div class="flex items-start justify-between mb-6">
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-4 min-w-0">
                       <!-- Avatar with subtle status ring -->
                       <div class="relative">
                         <div class="w-11 h-11 flex-shrink-0 bg-white border-2 border-gray-50 shadow-sm overflow-hidden group-hover:border-hus-blue/20 transition-all duration-500 transform group-hover:scale-105">
@@ -157,8 +165,8 @@ import { ROUTES } from '../../core/constants/route.const';
                         </div>
                       </div>
                       
-                      <div class="flex flex-col">
-                        <div class="text-[13px] font-black text-gray-900 leading-tight mb-0.5 group-hover:text-hus-blue transition-colors">
+                      <div class="flex flex-col min-w-0">
+                        <div class="text-[13px] font-black text-gray-900 leading-tight mb-0.5 group-hover:text-hus-blue transition-colors truncate">
                           {{ post.authorName }}
                         </div>
                         <div class="flex items-center gap-2">
@@ -177,7 +185,7 @@ import { ROUTES } from '../../core/constants/route.const';
                     </div>
                   </div>
 
-                  <h3 class="text-base font-bold text-gray-900 mb-2 leading-tight group-hover:translate-x-1 transition-all duration-300 line-clamp-2 min-h-[2.5rem]">
+                  <h3 class="text-[15px] sm:text-base font-bold text-gray-900 mb-2 leading-tight group-hover:translate-x-1 transition-all duration-300 line-clamp-2 min-h-[2.5rem]">
                     {{ post.title }}
                   </h3>
                   
@@ -185,7 +193,7 @@ import { ROUTES } from '../../core/constants/route.const';
 
                   <div class="space-y-4 mb-2 flex-grow">
                     <div *ngIf="!post.postType.includes('COMPANY')" class="border border-gray-100 bg-gray-50/60 p-3">
-                      <div class="grid grid-cols-2 gap-3 text-left">
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
                         <div>
                           <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Trường</p>
                           <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">
@@ -317,6 +325,7 @@ export class PostsComponent implements OnInit {
   filterType: 'COMPANY' | 'STUDENT' = 'COMPANY';
   subFilter: string = 'ALL';
   selectedPost: Post | null = null;
+  showMobileFilters = false;
 
   ngOnInit(): void {
     this.loadSpecializations();
@@ -358,11 +367,13 @@ export class PostsComponent implements OnInit {
     this.subFilter = 'ALL';
     this.filterTypeSelected$.next(type);
     this.subFilterSelected$.next('ALL');
+    this.collapseMobileFiltersIfNeeded();
   }
 
   setSubFilter(sub: string): void {
     this.subFilter = sub;
     this.subFilterSelected$.next(sub);
+    this.collapseMobileFiltersIfNeeded();
   }
 
   openDetail(post: Post): void {
@@ -434,6 +445,15 @@ export class PostsComponent implements OnInit {
   private readDisplayInfo(post: Post, key: string): string {
     const value = post.displayInfo?.[key];
     return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private collapseMobileFiltersIfNeeded(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (window.innerWidth < 1024) {
+      this.showMobileFilters = false;
+    }
   }
 
   canManageRecruitmentPosts(): boolean {

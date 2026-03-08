@@ -18,9 +18,32 @@ import { ResearchHeroContent } from '../../core/models/content.model';
       <div class="bg-gray-50 border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-4">
           <div *ngIf="hero$ | async as hero" class="relative overflow-hidden border-2 border-hus-blue/10 bg-white">
-            <div class="grid grid-cols-1 md:grid-cols-2 items-center">
+            <div class="md:hidden relative h-[280px] sm:h-[320px] overflow-hidden">
+              <img [src]="hero.imageUrl"
+                   alt="MIM Faculty Building"
+                   class="absolute inset-0 w-full h-full object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/20"></div>
+              <div class="absolute inset-x-0 bottom-0 p-4">
+                <h1 class="text-[32px] leading-[0.95] font-black text-gray-900 uppercase tracking-tighter">
+                  {{ hero.titlePrefix }}<br/>
+                  <span class="text-hus-blue">{{ hero.titleHighlight }}</span>
+                </h1>
+                <p class="mt-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest max-w-[22rem]">
+                  {{ hero.subtitle }}
+                </p>
+                <div class="mt-3 flex gap-3 items-center">
+                  <div class="h-7 w-1 bg-hus-blue"></div>
+                  <div class="flex flex-col justify-center">
+                    <span class="text-[10px] font-bold text-gray-900 uppercase tracking-widest leading-none">HUS - VNU</span>
+                    <span class="text-[9px] font-medium text-gray-400 uppercase tracking-tight mt-1">ESTABLISHED 1956</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="hidden md:grid grid-cols-2 items-center">
               <div class="p-4 md:p-6">
-                <h1 class="text-2xl md:text-3xl font-black text-gray-900 leading-tight mb-2 uppercase tracking-tighter">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 leading-tight mb-2 uppercase tracking-tighter">
                   {{ hero.titlePrefix }} <br/>
                   <span class="text-hus-blue">{{ hero.titleHighlight }}</span>
                 </h1>
@@ -52,8 +75,8 @@ import { ResearchHeroContent } from '../../core/models/content.model';
                Cổng nghiên cứu khoa học
              </h2>
 
-             <div class="flex justify-end">
-               <div class="flex border border-gray-200 w-fit">
+             <div class="overflow-x-auto pb-1 -mx-1 px-1">
+               <div class="inline-flex border border-gray-200 min-w-max">
                  <button (click)="setFilter('ALL')"
                          [class.bg-hus-blue.text-white]="currentFilter === 'ALL'"
                          [class.text-gray-400]="currentFilter !== 'ALL'"
@@ -78,8 +101,8 @@ import { ResearchHeroContent } from '../../core/models/content.model';
          </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 lg:gap-10">
 
           <!-- LEFT: Research Index -->
           <section class="min-w-0">
@@ -102,33 +125,33 @@ import { ResearchHeroContent } from '../../core/models/content.model';
               </div>
               
               <div class="divide-y divide-gray-100">
-                <div *ngFor="let paper of papers | slice:0:visiblePaperCount" 
-                     class="py-8 first:pt-4 group cursor-pointer" 
+                <div *ngFor="let paper of papers | slice:0:visiblePaperCount"
+                     class="py-6 md:py-8 first:pt-4 group cursor-pointer"
                      (click)="navigateToDetail(paper.id)">
                    
-                   <div class="flex items-start gap-6">
+                   <div class="flex items-start gap-4 md:gap-6">
                      <!-- Minimal Category Indicator - Using HUS Blue for prominence -->
                      <div class="flex-shrink-0 w-8 h-8 border border-gray-100 flex items-center justify-center text-[10px] font-bold transition-all"
                           [ngClass]="paper.category === 'LECTURER' ? 'bg-hus-blue text-white' : 'bg-hus-gold text-white'">
                        {{ paper.category === 'LECTURER' ? 'GV' : 'SV' }}
                      </div>
 
-                     <div class="flex-grow">
+                     <div class="flex-grow min-w-0">
                         <div class="flex items-center justify-between gap-3 mb-2">
-                          <div class="flex items-center gap-3">
-                            <span class="text-[10px] font-bold text-gray-900 uppercase tracking-tighter">{{ getMainAuthor(paper) }}</span>
+                          <div class="flex items-center gap-2 md:gap-3 flex-wrap min-w-0">
+                            <span class="text-[10px] font-bold text-gray-900 uppercase tracking-tighter truncate max-w-[9rem] sm:max-w-none">{{ getMainAuthor(paper) }}</span>
                             <span class="h-1 w-1 bg-gray-200 rounded-full"></span>
-                            <span class="text-[10px] font-medium text-hus-blue uppercase tracking-tighter">{{ paper.researchArea }}</span>
+                            <span class="text-[10px] font-medium text-hus-blue uppercase tracking-tighter truncate max-w-[8rem] sm:max-w-none">{{ paper.researchArea }}</span>
                             <span class="h-1 w-1 bg-gray-200 rounded-full"></span>
                             <span class="text-[10px] font-medium text-gray-400 uppercase tabular-nums">{{ paper.publicationYear }}</span>
                           </div>
                         </div>
 
-                        <h3 class="text-xl font-bold text-gray-900 leading-tight group-hover:text-hus-blue transition-all">
+                        <h3 class="text-lg sm:text-xl font-bold text-gray-900 leading-tight group-hover:text-hus-blue transition-all">
                           {{ paper.title }}
                         </h3>
 
-                        <div class="mt-4 flex flex-wrap gap-5 text-[10px] font-bold text-gray-400 tracking-widest">
+                        <div class="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[10px] font-bold text-gray-400 tracking-widest">
                           <span class="inline-flex items-center gap-1.5" title="Lượt xem">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -172,7 +195,7 @@ import { ResearchHeroContent } from '../../core/models/content.model';
           </section>
 
           <!-- RIGHT: Sidebar - Bulletins -->
-           <aside class="bg-white border border-gray-100 p-6 space-y-12 lg:sticky self-start"
+           <aside class="bg-white border border-gray-100 p-5 md:p-6 space-y-8 md:space-y-12 lg:sticky self-start"
                   [style.top]="'var(--app-nav-sidebar-offset, 124px)'">
              <section>
                <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest mb-6 pb-2 border-b-2 border-hus-blue inline-block">
