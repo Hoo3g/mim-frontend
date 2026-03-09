@@ -38,8 +38,17 @@ jobs:
             ${{ env.IMAGE_NAME }}:staging-${{ github.sha }}
             ${{ env.IMAGE_NAME }}:staging-latest
 
+      - name: Check infra dispatch secrets
+        id: check-secrets
+        run: |
+          if [ -n "${{ secrets.INFRA_REPO }}" ] && [ -n "${{ secrets.INFRA_REPO_TOKEN }}" ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Notify infra repo for staging deploy
-        if: ${{ secrets.INFRA_REPO != '' && secrets.INFRA_REPO_TOKEN != '' }}
+        if: steps.check-secrets.outputs.available == 'true'
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.INFRA_REPO_TOKEN }}
