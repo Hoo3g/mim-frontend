@@ -11,6 +11,7 @@ import { ContentService } from '../../../core/services/content.service';
 import { AdminRbacService } from '../../../core/services/admin-rbac.service';
 import { AdminResearchCategoryService } from '../../../core/services/admin-research-category.service';
 import { AdminSpecializationService } from '../../../core/services/admin-specialization.service';
+import { AdminNewsService } from '../../../core/services/admin-news.service';
 import { ModerationPaperItem, ModerationPostItem } from '../../../core/models/admin-moderation.model';
 import {
     PermissionOverrideDraftEffect,
@@ -18,8 +19,9 @@ import {
     RbacUserAssignment
 } from '../../../core/models/rbac.model';
 import { ResearchCategory } from '../../../core/models/research-category.model';
+import { NewsItem, NewsStatus } from '../../../core/models/news.model';
 
-type AdminTabKey = 'POSTS' | 'PAPERS' | 'HERO' | 'RBAC' | 'SPECIALIZATIONS' | 'PAPER_CATEGORIES';
+type AdminTabKey = 'POSTS' | 'PAPERS' | 'HERO' | 'NEWS' | 'RBAC' | 'SPECIALIZATIONS' | 'PAPER_CATEGORIES';
 
 interface AdminTabConfig {
     key: AdminTabKey;
@@ -223,6 +225,161 @@ interface AdminTabConfig {
               class="px-6 py-3 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors disabled:opacity-60">
               {{ isSavingHero ? 'Đang lưu...' : 'Lưu cấu hình trang nghiên cứu' }}
             </button>
+          </div>
+        </div>
+
+        <div *ngIf="currentTab === 'NEWS' && can('RESEARCH_HERO_EDIT')" class="bg-white border border-gray-100 p-6 md:p-8 space-y-6">
+          <div>
+            <h2 class="text-lg font-black text-gray-900 uppercase tracking-widest">Quản lý Bảng tin khoa</h2>
+            <p class="mt-2 text-[11px] text-gray-500 font-medium">Đăng, cập nhật và hiển thị thông báo ở khối "Bảng tin khoa" trang nghiên cứu.</p>
+          </div>
+
+          <div *ngIf="newsNotice" class="border border-hus-blue/20 bg-blue-50 text-hus-blue text-[10px] font-bold uppercase tracking-widest px-4 py-3">
+            {{ newsNotice }}
+          </div>
+
+          <div class="grid xl:grid-cols-[380px_1fr] gap-6">
+            <div class="border border-gray-100 p-4 space-y-4">
+              <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                {{ editingNewsId ? 'Cập nhật bản tin' : 'Đăng bản tin mới' }}
+              </p>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tiêu đề</label>
+                <input
+                  [(ngModel)]="newsForm.title"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="text"
+                  maxlength="300"
+                  placeholder="Ví dụ: Thông báo lịch seminar..."
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tóm tắt (tùy chọn)</label>
+                <textarea
+                  [(ngModel)]="newsForm.summary"
+                  [ngModelOptions]="{ standalone: true }"
+                  rows="3"
+                  placeholder="Dòng mô tả ngắn hiển thị ở trang chi tiết"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+                </textarea>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Nội dung chi tiết</label>
+                <textarea
+                  [(ngModel)]="newsForm.content"
+                  [ngModelOptions]="{ standalone: true }"
+                  rows="8"
+                  placeholder="Nội dung thông báo đầy đủ"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+                </textarea>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">URL ảnh (tùy chọn)</label>
+                <input
+                  [(ngModel)]="newsForm.imageUrl"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="text"
+                  placeholder="https://..."
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Trạng thái</label>
+                  <select
+                    [(ngModel)]="newsForm.status"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-700 focus:outline-none focus:border-hus-blue">
+                    <option [ngValue]="'PUBLISHED'">Hiển thị công khai</option>
+                    <option [ngValue]="'DRAFT'">Nháp</option>
+                  </select>
+                </div>
+
+                <div class="flex items-end">
+                  <label class="inline-flex items-center gap-2 text-[10px] font-bold text-gray-600 uppercase tracking-widest cursor-pointer">
+                    <input
+                      [(ngModel)]="newsForm.pinned"
+                      [ngModelOptions]="{ standalone: true }"
+                      type="checkbox"
+                      class="h-4 w-4 border-gray-300 text-hus-blue focus:ring-hus-blue">
+                    Ghim lên đầu
+                  </label>
+                </div>
+              </div>
+
+              <div class="flex gap-3 pt-2">
+                <button
+                  (click)="saveNews()"
+                  [disabled]="isSavingNews"
+                  class="px-5 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors disabled:opacity-50">
+                  {{ isSavingNews ? 'Đang lưu...' : (editingNewsId ? 'Cập nhật bản tin' : 'Đăng bản tin') }}
+                </button>
+                <button
+                  (click)="startCreateNews()"
+                  type="button"
+                  class="px-5 py-2 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-colors">
+                  Làm mới
+                </button>
+              </div>
+            </div>
+
+            <div class="border border-gray-100">
+              <div *ngIf="newsItems.length === 0"
+                   class="py-12 text-center text-[11px] text-gray-400 uppercase tracking-widest">
+                Chưa có bản tin khoa nào.
+              </div>
+
+              <article *ngFor="let news of newsItems"
+                       class="p-4 border-b border-gray-100 space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5"
+                          [class.bg-blue-50]="news.status === 'PUBLISHED'"
+                          [class.text-hus-blue]="news.status === 'PUBLISHED'"
+                          [class.bg-gray-100]="news.status === 'DRAFT'"
+                          [class.text-gray-500]="news.status === 'DRAFT'">
+                      {{ news.status === 'PUBLISHED' ? 'Công khai' : 'Nháp' }}
+                    </span>
+                    <span *ngIf="news.pinned"
+                          class="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 bg-amber-50 text-amber-700">
+                      Ghim
+                    </span>
+                  </div>
+                  <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest tabular-nums">
+                    {{ news.createdAt | date:'dd.MM.yyyy HH:mm' }}
+                  </p>
+                </div>
+
+                <h3 class="text-[14px] font-black text-gray-900 leading-snug">
+                  {{ news.title }}
+                </h3>
+
+                <p class="text-[11px] text-gray-500 line-clamp-2">
+                  {{ news.summary || news.content }}
+                </p>
+
+                <div class="flex flex-wrap items-center gap-2 pt-1">
+                  <a [routerLink]="['/news', news.id]"
+                     class="px-3 py-1.5 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:border-hus-blue hover:text-hus-blue transition-colors">
+                    Xem
+                  </a>
+                  <button
+                    (click)="editNews(news)"
+                    class="px-3 py-1.5 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:border-hus-blue hover:text-hus-blue transition-colors">
+                    Sửa
+                  </button>
+                  <button
+                    (click)="deleteNews(news.id)"
+                    class="px-3 py-1.5 border border-red-200 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors">
+                    Xóa
+                  </button>
+                </div>
+              </article>
+            </div>
           </div>
         </div>
 
@@ -554,6 +711,7 @@ export class AdminDashboardComponent implements OnInit {
     private readonly moderationService = inject(AdminModerationService);
     private readonly contentService = inject(ContentService);
     private readonly adminContentService = inject(AdminContentService);
+    private readonly adminNewsService = inject(AdminNewsService);
     private readonly adminRbacService = inject(AdminRbacService);
     private readonly adminResearchCategoryService = inject(AdminResearchCategoryService);
     private readonly adminSpecializationService = inject(AdminSpecializationService);
@@ -576,6 +734,12 @@ export class AdminDashboardComponent implements OnInit {
             key: 'HERO',
             label: 'Trang nghiên cứu',
             helper: 'Chỉnh hero trang research',
+            permission: 'RESEARCH_HERO_EDIT'
+        },
+        {
+            key: 'NEWS',
+            label: 'Bảng tin khoa',
+            helper: 'Đăng thông báo cho trang research',
             permission: 'RESEARCH_HERO_EDIT'
         },
         {
@@ -611,6 +775,25 @@ export class AdminDashboardComponent implements OnInit {
         imageUrl: ''
     };
     isSavingHero = false;
+    newsItems: NewsItem[] = [];
+    newsForm: {
+        title: string;
+        summary: string;
+        content: string;
+        imageUrl: string;
+        status: NewsStatus;
+        pinned: boolean;
+    } = {
+            title: '',
+            summary: '',
+            content: '',
+            imageUrl: '',
+            status: 'PUBLISHED',
+            pinned: false
+        };
+    editingNewsId: string | null = null;
+    isSavingNews = false;
+    newsNotice = '';
 
     rbacPermissions: RbacPermissionDefinition[] = [];
     rbacUsers: RbacUserAssignment[] = [];
@@ -648,6 +831,7 @@ export class AdminDashboardComponent implements OnInit {
         this.currentTab = this.resolveInitialTab();
         this.loadPendingModeration();
         this.loadHeroContent();
+        this.loadNews();
         this.loadSpecializations();
         this.loadResearchCategories();
         this.loadRbacData();
@@ -782,6 +966,102 @@ export class AdminDashboardComponent implements OnInit {
                 imageUrl: saved.imageUrl
             };
             this.heroNotice = 'Đã cập nhật hero trang nghiên cứu.';
+        });
+    }
+
+    startCreateNews(): void {
+        this.editingNewsId = null;
+        this.newsForm = {
+            title: '',
+            summary: '',
+            content: '',
+            imageUrl: '',
+            status: 'PUBLISHED',
+            pinned: false
+        };
+        this.errorMessage = '';
+        this.newsNotice = '';
+    }
+
+    editNews(news: NewsItem): void {
+        this.editingNewsId = news.id;
+        this.newsForm = {
+            title: news.title,
+            summary: news.summary ?? '',
+            content: news.content,
+            imageUrl: news.imageUrl ?? '',
+            status: news.status,
+            pinned: news.pinned
+        };
+        this.errorMessage = '';
+        this.newsNotice = '';
+    }
+
+    saveNews(): void {
+        const payload = {
+            title: this.newsForm.title.trim(),
+            summary: this.newsForm.summary.trim(),
+            content: this.newsForm.content.trim(),
+            imageUrl: this.newsForm.imageUrl.trim(),
+            status: this.newsForm.status,
+            pinned: this.newsForm.pinned
+        };
+
+        if (!payload.title) {
+            this.errorMessage = 'Vui lòng nhập tiêu đề bản tin.';
+            return;
+        }
+        if (!payload.content) {
+            this.errorMessage = 'Vui lòng nhập nội dung bản tin.';
+            return;
+        }
+
+        this.errorMessage = '';
+        this.newsNotice = '';
+        this.isSavingNews = true;
+
+        const request$ = this.editingNewsId
+            ? this.adminNewsService.update(this.editingNewsId, payload)
+            : this.adminNewsService.create(payload);
+
+        request$.pipe(
+            finalize(() => {
+                this.isSavingNews = false;
+            })
+        ).subscribe((saved) => {
+            if (!saved) {
+                this.errorMessage = this.editingNewsId
+                    ? 'Không thể cập nhật bản tin.'
+                    : 'Không thể tạo bản tin.';
+                return;
+            }
+
+            const notice = this.editingNewsId
+                ? 'Đã cập nhật bản tin.'
+                : 'Đã đăng bản tin mới.';
+            this.startCreateNews();
+            this.newsNotice = notice;
+            this.loadNews();
+        });
+    }
+
+    deleteNews(newsId: string): void {
+        if (!confirm('Bạn có chắc muốn xóa bản tin này?')) {
+            return;
+        }
+
+        this.errorMessage = '';
+        this.newsNotice = '';
+        this.adminNewsService.delete(newsId).subscribe((ok) => {
+            if (!ok) {
+                this.errorMessage = 'Không thể xóa bản tin đã chọn.';
+                return;
+            }
+            if (this.editingNewsId === newsId) {
+                this.startCreateNews();
+            }
+            this.newsNotice = 'Đã xóa bản tin.';
+            this.loadNews();
         });
     }
 
@@ -1111,6 +1391,17 @@ export class AdminDashboardComponent implements OnInit {
                 subtitle: hero.subtitle,
                 imageUrl: hero.imageUrl
             };
+        });
+    }
+
+    private loadNews(): void {
+        if (!this.can('RESEARCH_HERO_EDIT')) {
+            this.newsItems = [];
+            return;
+        }
+
+        this.adminNewsService.getAll().subscribe((items) => {
+            this.newsItems = items;
         });
     }
 

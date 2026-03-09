@@ -6,6 +6,8 @@ import { ResearchPaper } from '../../core/models/research-paper.model';
 import { Observable, map } from 'rxjs';
 import { ContentService } from '../../core/services/content.service';
 import { ResearchHeroContent } from '../../core/models/content.model';
+import { NewsService } from '../../core/services/news.service';
+import { NewsItem } from '../../core/models/news.model';
 
 @Component({
   selector: 'app-research',
@@ -198,18 +200,37 @@ import { ResearchHeroContent } from '../../core/models/content.model';
            <aside class="bg-white border border-gray-100 p-5 md:p-6 space-y-8 md:space-y-12 lg:sticky self-start"
                   [style.top]="'var(--app-nav-sidebar-offset, 124px)'">
              <section>
-               <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest mb-6 pb-2 border-b-2 border-hus-blue inline-block">
-                 Bảng tin Khoa
-               </h3>
-               <div class="space-y-8">
-                 <div *ngFor="let item of news$ | async" class="group cursor-pointer">
-                   <p class="text-[9px] font-bold text-hus-blue opacity-50 mb-2 font-mono tabular-nums">{{ item.date | date:'dd.MM.yyyy' }}</p>
-                   <h4 class="text-xs font-bold text-gray-700 leading-normal group-hover:text-hus-blue transition-colors">
-                     {{ item.title }}
-                   </h4>
-                   <div class="mt-2 text-[10px] text-hus-blue opacity-0 group-hover:opacity-100 transition-opacity font-bold">Xem chi tiết &rarr;</div>
+               <div class="flex items-center justify-between gap-3 mb-6 pb-2 border-b-2 border-hus-blue">
+                 <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">
+                   Bảng tin Khoa
+                 </h3>
+                 <a routerLink="/news"
+                    class="text-[10px] font-bold uppercase tracking-widest text-hus-blue hover:text-hus-dark transition-colors">
+                   Xem tất cả
+                 </a>
+               </div>
+               <div *ngIf="(news$ | async) as newsItems; else newsLoading">
+                 <div *ngIf="newsItems.length === 0"
+                      class="text-[10px] text-gray-400 uppercase tracking-widest border border-dashed border-gray-100 px-3 py-4">
+                   Chưa có bản tin.
+                 </div>
+                 <div *ngIf="newsItems.length > 0" class="space-y-8">
+                   <a *ngFor="let item of newsItems | slice:0:6"
+                      [routerLink]="['/news', item.id]"
+                      class="block group cursor-pointer">
+                     <p class="text-[9px] font-bold text-hus-blue opacity-50 mb-2 font-mono tabular-nums">{{ item.createdAt | date:'dd.MM.yyyy' }}</p>
+                     <h4 class="text-xs font-bold text-gray-700 leading-normal group-hover:text-hus-blue transition-colors">
+                       {{ item.title }}
+                     </h4>
+                     <div class="mt-2 text-[10px] text-hus-blue opacity-0 group-hover:opacity-100 transition-opacity font-bold">Xem chi tiết &rarr;</div>
+                   </a>
                  </div>
                </div>
+               <ng-template #newsLoading>
+                 <div class="text-[10px] text-gray-400 uppercase tracking-widest">
+                   Đang tải bảng tin...
+                 </div>
+               </ng-template>
              </section>
 
              <section>
@@ -232,12 +253,13 @@ import { ResearchHeroContent } from '../../core/models/content.model';
 export class ResearchComponent implements OnInit {
   private paperService = inject(ResearchPaperService);
   private contentService = inject(ContentService);
+  private newsService = inject(NewsService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
   allPapers$!: Observable<ResearchPaper[]>;
   filteredPapers$!: Observable<ResearchPaper[]>;
-  news$!: Observable<any[]>;
+  news$!: Observable<NewsItem[]>;
   hero$!: Observable<ResearchHeroContent>;
   currentFilter: 'ALL' | 'LECTURER' | 'STUDENT' = 'ALL';
   selectedSpecializations: string[] = [];
@@ -248,7 +270,7 @@ export class ResearchComponent implements OnInit {
   ngOnInit(): void {
     this.hero$ = this.contentService.getResearchHeroContent();
     this.reloadPapers();
-    this.news$ = this.paperService.getNews();
+    this.news$ = this.newsService.getPublicNews();
     this.route.queryParamMap.subscribe((params) => {
       const type = params.get('type');
       const keyword = params.get('q');

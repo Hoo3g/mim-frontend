@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -13,10 +13,10 @@ import { ResearchCategoryService } from '../../core/services/research-category.s
 import { ResearchCategory } from '../../core/models/research-category.model';
 
 @Component({
-    selector: 'app-research-editor',
-    standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, QuillEditorComponent],
-    template: `
+  selector: 'app-research-editor',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule, QuillEditorComponent],
+  template: `
     <div class="bg-white min-h-screen">
       <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
@@ -29,7 +29,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
       </div>
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="max-w-3xl mx-auto border-2 border-hus-blue/10 bg-white p-8 md:p-10">
+        <div class="w-full border-2 border-hus-blue/10 bg-white p-6 md:p-8 lg:p-10">
           <h1 class="text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
             {{ isEditMode ? 'Chỉnh sửa bài viết nghiên cứu' : 'Soạn thảo bài viết nghiên cứu' }}
           </h1>
@@ -91,14 +91,14 @@ import { ResearchCategory } from '../../core/models/research-category.model';
                   format="html"
                   theme="snow"
                   [modules]="quillModules"
-                  [styles]="{ height: '300px' }"
+                  [styles]="{ height: '460px' }"
                   [(ngModel)]="abstract"
                   (ngModelChange)="onAbstractChange()"
                   placeholder="Nhập nội dung tóm tắt công trình nghiên cứu...">
                 </quill-editor>
                 </ng-container>
                 <ng-template #editorLoadingTpl>
-                  <div class="h-[300px] px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-gray-300">
+                  <div class="h-[460px] px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-gray-300">
                     Đang tải nội dung tóm tắt...
                   </div>
                 </ng-template>
@@ -112,60 +112,26 @@ import { ResearchCategory } from '../../core/models/research-category.model';
               <label for="pdfFile" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
                 Tệp PDF hiển thị
               </label>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
-                Mỗi bài viết chỉ được gắn <span class="text-hus-blue">1 tệp PDF</span>.
-                Muốn thay tệp, hãy gỡ tệp hiện tại trước.
-              </p>
+              <input id="pdfFile"
+                     type="file"
+                     accept="application/pdf,.pdf"
+                     (change)="onPdfSelected($event)"
+                     class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue transition-colors file:mr-3 file:border-0 file:bg-hus-blue file:px-3 file:py-2 file:text-[10px] file:font-black file:text-white file:uppercase file:tracking-widest hover:file:bg-hus-dark">
 
-              <div class="border border-gray-200 bg-gray-50/40 p-3 space-y-3">
-                <div *ngIf="existingPdfUrl && !selectedPdfName" class="space-y-2">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    Tệp hiện tại: <span class="text-hus-blue">{{ existingPdfFileName }}</span>
+              <div class="mt-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 space-y-2">
+                
+                <ng-template #currentPdfInfo>
+                  <p>
+                    {{ existingPdfUrl ? 'Tệp hiện tại: ' + existingPdfFileName : 'Chưa có PDF hiện tại' }}
                   </p>
-                  <div class="flex flex-wrap items-center gap-3">
-                    <a [href]="existingPdfUrl"
-                       target="_blank"
-                       class="text-[10px] font-black uppercase tracking-widest text-hus-blue hover:text-hus-dark transition underline underline-offset-2">
-                      Xem tệp hiện tại
-                    </a>
-                    <button type="button"
-                            (click)="removeExistingPdf()"
-                            class="px-3 py-1.5 border border-red-200 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 transition-colors">
-                      Gỡ tệp hiện tại
-                    </button>
-                  </div>
-                </div>
-
-                <div *ngIf="selectedPdfName" class="space-y-2">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    Tệp đã chọn: <span class="text-hus-blue">{{ selectedPdfName }}</span>
-                  </p>
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-hus-blue">
-                    Tệp mới sẽ thay thế tệp hiện tại khi bấm lưu.
-                  </p>
-                  <div class="flex flex-wrap items-center gap-3">
-                    <a *ngIf="selectedPdfPreviewUrl"
-                       [href]="selectedPdfPreviewUrl"
-                       target="_blank"
-                       class="text-[10px] font-black uppercase tracking-widest text-hus-blue hover:text-hus-dark transition underline underline-offset-2">
-                      Xem tệp đã chọn
-                    </a>
-                    <button type="button"
-                            (click)="removeSelectedPdf()"
-                            class="px-3 py-1.5 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-colors">
-                      Bỏ tệp đã chọn
-                    </button>
-                  </div>
-                </div>
-
-                <div *ngIf="!existingPdfUrl && !selectedPdfName">
-                  <input #pdfFileInput
-                         id="pdfFile"
-                         type="file"
-                         accept="application/pdf,.pdf"
-                         (change)="onPdfSelected($event)"
-                         class="w-full border border-gray-200 bg-white px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue transition-colors file:mr-3 file:border-0 file:bg-hus-blue file:px-3 file:py-2 file:text-[10px] file:font-black file:text-white file:uppercase file:tracking-widest hover:file:bg-hus-dark">
-                </div>
+                </ng-template>
+      
+                <a *ngIf="effectivePdfUrl"
+                   [href]="effectivePdfUrl"
+                   target="_blank"
+                   class="inline-block text-hus-blue hover:text-hus-dark transition underline underline-offset-2">
+                  Xem PDF đang dùng
+                </a>
               </div>
             </div>
 
@@ -199,293 +165,270 @@ import { ResearchCategory } from '../../core/models/research-category.model';
   `
 })
 export class ResearchEditorComponent implements OnInit, OnDestroy {
-    private readonly route = inject(ActivatedRoute);
-    private readonly router = inject(Router);
-    private readonly paperService = inject(ResearchPaperService);
-    private readonly researchCategoryService = inject(ResearchCategoryService);
-    private readonly cdr = inject(ChangeDetectorRef);
-    @ViewChild('pdfFileInput') private pdfFileInput?: ElementRef<HTMLInputElement>;
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly paperService = inject(ResearchPaperService);
+  private readonly researchCategoryService = inject(ResearchCategoryService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-    protected readonly ROUTES = ROUTES;
-    protected readonly quillModules: QuillModules = {
-        toolbar: [
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ header: [1, 2, 3, false] }],
-            [{ list: 'ordered' }, { list: 'bullet' }],
-            [{ align: [] }],
-            ['blockquote', 'code-block'],
-            ['link', 'image'],
-            ['clean']
-        ]
-    };
+  protected readonly ROUTES = ROUTES;
+  protected readonly quillModules: QuillModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ header: [1, 2, 3, false] }],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ align: [] }],
+      ['blockquote', 'code-block'],
+      ['link', 'image'],
+      ['clean']
+    ]
+  };
 
-    isEditMode = false;
-    editingPaperId: string | null = null;
+  isEditMode = false;
+  editingPaperId: string | null = null;
 
-    researchCategories: ResearchCategory[] = [];
-    isLoadingCategories = false;
-    selectedResearchArea = '';
+  researchCategories: ResearchCategory[] = [];
+  isLoadingCategories = false;
+  selectedResearchArea = '';
 
-    title = '';
-    abstract = '';
-    selectedPdfFile: File | null = null;
-    selectedPdfPreviewUrl: string | null = null;
-    selectedPdfName = '';
-    existingPdfUrl: string | null = null;
-    errorMessage = '';
-    isSaving = false;
-    isLoadingPaper = false;
-    isEditorReady = false;
+  title = '';
+  abstract = '';
+  selectedPdfFile: File | null = null;
+  selectedPdfPreviewUrl: string | null = null;
+  selectedPdfName = '';
+  existingPdfUrl: string | null = null;
+  errorMessage = '';
+  isSaving = false;
+  isLoadingPaper = false;
+  isEditorReady = false;
 
-    get existingPdfFileName(): string {
-        if (!this.existingPdfUrl) {
-            return '';
-        }
+  get effectivePdfUrl(): string | null {
+    return this.selectedPdfPreviewUrl ?? this.existingPdfUrl;
+  }
 
-        try {
-            const withoutHash = this.existingPdfUrl.split('#')[0];
-            const withoutQuery = withoutHash.split('?')[0];
-            const segments = withoutQuery.split('/');
-            const rawName = segments[segments.length - 1] || '';
-            const decoded = decodeURIComponent(rawName);
-            return decoded || 'Tệp PDF';
-        } catch {
-            return 'Tệp PDF';
-        }
+  get existingPdfFileName(): string {
+    if (!this.existingPdfUrl) {
+      return '';
     }
 
-    ngOnInit(): void {
-        const currentUser = authSignal.user();
-        if (!currentUser) {
-            this.redirectToMyPapers('Vui lòng đăng nhập để thao tác bài viết.');
-            return;
-        }
+    try {
+      const withoutHash = this.existingPdfUrl.split('#')[0];
+      const withoutQuery = withoutHash.split('?')[0];
+      const segments = withoutQuery.split('/');
+      const rawName = segments[segments.length - 1] || '';
+      const decoded = decodeURIComponent(rawName);
+      return decoded || 'Tệp PDF';
+    } catch {
+      return 'Tệp PDF';
+    }
+  }
 
-        this.loadResearchCategories();
+  ngOnInit(): void {
+    const currentUser = authSignal.user();
+    if (!currentUser) {
+      this.redirectToMyPapers('Vui lòng đăng nhập để thao tác bài viết.');
+      return;
+    }
 
-        const paperId = this.route.snapshot.paramMap.get('id');
-        if (!paperId) {
-            this.isEditorReady = true;
-            return;
-        }
+    this.loadResearchCategories();
 
-        this.isEditMode = true;
-        this.editingPaperId = paperId;
-        this.isLoadingPaper = true;
-        this.isEditorReady = false;
+    const paperId = this.route.snapshot.paramMap.get('id');
+    if (!paperId) {
+      this.isEditorReady = true;
+      return;
+    }
 
-        this.paperService.getMyPaperById(paperId, currentUser).pipe(
-            take(1),
-            finalize(() => {
-                this.isLoadingPaper = false;
-                this.isEditorReady = true;
-                this.cdr.detectChanges();
-            })
-        ).subscribe((paper) => {
-            if (!paper) {
-                this.redirectToMyPapers('Bài viết không tồn tại hoặc bạn không có quyền chỉnh sửa.');
-                return;
+    this.isEditMode = true;
+    this.editingPaperId = paperId;
+    this.isLoadingPaper = true;
+    this.isEditorReady = false;
+
+    this.paperService.getMyPaperById(paperId, currentUser).pipe(
+      take(1),
+      finalize(() => {
+        this.isLoadingPaper = false;
+        this.isEditorReady = true;
+        this.cdr.detectChanges();
+      })
+    ).subscribe((paper) => {
+      if (!paper) {
+        this.redirectToMyPapers('Bài viết không tồn tại hoặc bạn không có quyền chỉnh sửa.');
+        return;
+      }
+
+      this.title = paper.title;
+      this.abstract = this.normalizeToEditorHtml(paper.abstract);
+      this.existingPdfUrl = paper.pdfUrl?.trim() ? paper.pdfUrl.trim() : null;
+      this.selectedResearchArea = paper.researchArea ?? '';
+      this.cdr.detectChanges();
+    });
+  }
+
+  save(): void {
+    const currentUser = authSignal.user();
+    if (!currentUser) {
+      this.redirectToMyPapers('Vui lòng đăng nhập để thao tác bài viết.');
+      return;
+    }
+
+    const trimmedTitle = this.title.trim();
+    const abstractHtml = (this.abstract ?? '').trim();
+    const abstractPlainText = this.toPlainText(abstractHtml);
+    const trimmedResearchArea = this.selectedResearchArea.trim();
+
+    if (!trimmedTitle || !trimmedResearchArea || !abstractPlainText) {
+      this.errorMessage = 'Vui lòng nhập đầy đủ tên đề tài, lĩnh vực và tóm tắt.';
+      return;
+    }
+
+    if (!this.isEditMode && !this.selectedPdfFile && !this.existingPdfUrl) {
+      this.errorMessage = 'Vui lòng tải lên tệp PDF trước khi tạo bài viết.';
+      return;
+    }
+
+    this.errorMessage = '';
+    this.isSaving = true;
+
+    const upload$ = this.selectedPdfFile
+      ? this.paperService.uploadPdfToMinio(this.selectedPdfFile)
+      : of<string | null>(null);
+
+    upload$
+      .pipe(
+        switchMap((uploadedPdfUrl) => {
+          const payload: ResearchEditorPayload = {
+            id: this.editingPaperId ?? undefined,
+            title: trimmedTitle,
+            abstract: abstractHtml,
+            researchArea: trimmedResearchArea,
+            pdfUrl: uploadedPdfUrl ?? this.existingPdfUrl ?? undefined
+          };
+          return this.paperService.saveFromEditor(payload, currentUser);
+        }),
+        finalize(() => (this.isSaving = false))
+      )
+      .subscribe({
+        next: (savedPaper) => {
+          if (!savedPaper) {
+            if (this.isEditMode) {
+              this.redirectToMyPapers('Không thể cập nhật bài viết.');
+              return;
             }
-
-            this.title = paper.title;
-            this.abstract = this.normalizeToEditorHtml(paper.abstract);
-            this.existingPdfUrl = paper.pdfUrl?.trim() ? paper.pdfUrl.trim() : null;
-            this.selectedResearchArea = paper.researchArea ?? '';
-            this.cdr.detectChanges();
-        });
-    }
-
-    save(): void {
-        const currentUser = authSignal.user();
-        if (!currentUser) {
-            this.redirectToMyPapers('Vui lòng đăng nhập để thao tác bài viết.');
+            this.errorMessage = 'Không thể lưu bài viết. Vui lòng thử lại.';
             return;
+          }
+
+          const notice = this.isEditMode
+            ? (savedPaper.approvalStatus === 'PENDING'
+              ? 'Đã cập nhật bài viết nghiên cứu và gửi lại duyệt.'
+              : 'Đã cập nhật bài viết nghiên cứu.')
+            : 'Đã tạo bài viết nghiên cứu mới.';
+          this.router.navigateByUrl(ROUTES.RESEARCH_MY_PAPERS, { state: { notice } });
+        },
+        error: () => {
+          this.errorMessage = 'Lưu bài viết thất bại. Vui lòng thử lại.';
         }
+      });
+  }
 
-        const trimmedTitle = this.title.trim();
-        const abstractHtml = (this.abstract ?? '').trim();
-        const abstractPlainText = this.toPlainText(abstractHtml);
-        const trimmedResearchArea = this.selectedResearchArea.trim();
+  onPdfSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
 
-        if (!trimmedTitle || !trimmedResearchArea || !abstractPlainText) {
-            this.errorMessage = 'Vui lòng nhập đầy đủ tên đề tài, lĩnh vực và tóm tắt.';
-            return;
+    const isPdfMime = file.type === 'application/pdf';
+    const hasPdfExtension = file.name.toLowerCase().endsWith('.pdf');
+    if (!isPdfMime && !hasPdfExtension) {
+      this.errorMessage = 'Chỉ chấp nhận tệp PDF.';
+      this.selectedPdfFile = null;
+      this.selectedPdfName = '';
+      this.revokeSelectedPreviewUrl();
+      input.value = '';
+      return;
+    }
+
+    this.errorMessage = '';
+    this.revokeSelectedPreviewUrl();
+    this.selectedPdfFile = file;
+    this.selectedPdfName = file.name;
+    this.selectedPdfPreviewUrl = URL.createObjectURL(file);
+  }
+
+  cancel(): void {
+    this.router.navigateByUrl(ROUTES.RESEARCH_MY_PAPERS);
+  }
+
+  onAbstractChange(): void {
+    this.errorMessage = '';
+  }
+
+  isAbstractBlank(): boolean {
+    return !this.toPlainText(this.abstract);
+  }
+
+  private redirectToMyPapers(notice: string): void {
+    this.router.navigateByUrl(ROUTES.RESEARCH_MY_PAPERS, { state: { notice } });
+  }
+
+  ngOnDestroy(): void {
+    this.revokeSelectedPreviewUrl();
+  }
+
+  private normalizeToEditorHtml(value: string): string {
+    const raw = value?.trim() ?? '';
+    if (!raw) {
+      return '';
+    }
+
+    if (/<[a-z][\s\S]*>/i.test(raw)) {
+      return raw;
+    }
+
+    return this.escapeHtml(raw).replace(/\n/g, '<br>');
+  }
+
+  private toPlainText(html: string): string {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html ?? '';
+    return (wrapper.textContent ?? '')
+      .replace(/\u00A0/g, ' ')
+      .trim();
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private revokeSelectedPreviewUrl(): void {
+    if (this.selectedPdfPreviewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.selectedPdfPreviewUrl);
+    }
+    this.selectedPdfPreviewUrl = null;
+  }
+
+  private loadResearchCategories(): void {
+    this.isLoadingCategories = true;
+    this.researchCategoryService.getActiveCategories()
+      .pipe(
+        take(1),
+        finalize(() => (this.isLoadingCategories = false))
+      )
+      .subscribe((categories) => {
+        this.researchCategories = categories;
+        if (!this.selectedResearchArea && categories.length > 0) {
+          this.selectedResearchArea = categories[0].name;
         }
+      });
+  }
 
-        if (!this.selectedPdfFile && !this.existingPdfUrl) {
-            this.errorMessage = 'Mỗi bài viết cần đúng một tệp PDF. Vui lòng chọn tệp trước khi lưu.';
-            return;
-        }
-
-        this.errorMessage = '';
-        this.isSaving = true;
-
-        const upload$ = this.selectedPdfFile
-            ? this.paperService.uploadPdfToMinio(this.selectedPdfFile)
-            : of<string | null>(null);
-
-        upload$
-            .pipe(
-                switchMap((uploadedPdfUrl) => {
-                    const payload: ResearchEditorPayload = {
-                        id: this.editingPaperId ?? undefined,
-                        title: trimmedTitle,
-                        abstract: abstractHtml,
-                        researchArea: trimmedResearchArea,
-                        pdfUrl: uploadedPdfUrl ?? this.existingPdfUrl ?? undefined
-                    };
-                    return this.paperService.saveFromEditor(payload, currentUser);
-                }),
-                finalize(() => (this.isSaving = false))
-            )
-            .subscribe({
-                next: (savedPaper) => {
-                    if (!savedPaper) {
-                        if (this.isEditMode) {
-                            this.redirectToMyPapers('Không thể cập nhật bài viết.');
-                            return;
-                        }
-                        this.errorMessage = 'Không thể lưu bài viết. Vui lòng thử lại.';
-                        return;
-                    }
-
-                    const notice = this.isEditMode
-                        ? (savedPaper.approvalStatus === 'PENDING'
-                            ? 'Đã cập nhật bài viết nghiên cứu và gửi lại duyệt.'
-                            : 'Đã cập nhật bài viết nghiên cứu.')
-                        : 'Đã tạo bài viết nghiên cứu mới.';
-                    this.router.navigateByUrl(ROUTES.RESEARCH_MY_PAPERS, { state: { notice } });
-                },
-                error: () => {
-                    this.errorMessage = 'Lưu bài viết thất bại. Vui lòng thử lại.';
-                }
-            });
-    }
-
-    onPdfSelected(event: Event): void {
-        const input = event.target as HTMLInputElement;
-        const file = input.files?.[0];
-        if (!file) {
-            return;
-        }
-
-        if (this.existingPdfUrl) {
-            this.errorMessage = 'Hãy gỡ tệp hiện tại trước khi chọn tệp PDF mới.';
-            input.value = '';
-            return;
-        }
-
-        const isPdfMime = file.type === 'application/pdf';
-        const hasPdfExtension = file.name.toLowerCase().endsWith('.pdf');
-        if (!isPdfMime && !hasPdfExtension) {
-            this.errorMessage = 'Chỉ chấp nhận tệp PDF.';
-            this.selectedPdfFile = null;
-            this.selectedPdfName = '';
-            this.revokeSelectedPreviewUrl();
-            input.value = '';
-            return;
-        }
-
-        this.errorMessage = '';
-        this.revokeSelectedPreviewUrl();
-        this.selectedPdfFile = file;
-        this.selectedPdfName = file.name;
-        this.selectedPdfPreviewUrl = URL.createObjectURL(file);
-    }
-
-    removeExistingPdf(): void {
-        this.existingPdfUrl = null;
-        this.errorMessage = '';
-        this.resetPdfInputElement();
-    }
-
-    removeSelectedPdf(): void {
-        this.selectedPdfFile = null;
-        this.selectedPdfName = '';
-        this.revokeSelectedPreviewUrl();
-        this.errorMessage = '';
-        this.resetPdfInputElement();
-    }
-
-    cancel(): void {
-        this.router.navigateByUrl(ROUTES.RESEARCH_MY_PAPERS);
-    }
-
-    onAbstractChange(): void {
-        this.errorMessage = '';
-    }
-
-    isAbstractBlank(): boolean {
-        return !this.toPlainText(this.abstract);
-    }
-
-    private redirectToMyPapers(notice: string): void {
-        this.router.navigateByUrl(ROUTES.RESEARCH_MY_PAPERS, { state: { notice } });
-    }
-
-    ngOnDestroy(): void {
-        this.revokeSelectedPreviewUrl();
-    }
-
-    private normalizeToEditorHtml(value: string): string {
-        const raw = value?.trim() ?? '';
-        if (!raw) {
-            return '';
-        }
-
-        if (/<[a-z][\s\S]*>/i.test(raw)) {
-            return raw;
-        }
-
-        return this.escapeHtml(raw).replace(/\n/g, '<br>');
-    }
-
-    private toPlainText(html: string): string {
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = html ?? '';
-        return (wrapper.textContent ?? '')
-            .replace(/\u00A0/g, ' ')
-            .trim();
-    }
-
-    private escapeHtml(value: string): string {
-        return value
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    }
-
-    private revokeSelectedPreviewUrl(): void {
-        if (this.selectedPdfPreviewUrl?.startsWith('blob:')) {
-            URL.revokeObjectURL(this.selectedPdfPreviewUrl);
-        }
-        this.selectedPdfPreviewUrl = null;
-    }
-
-    private resetPdfInputElement(): void {
-        if (this.pdfFileInput?.nativeElement) {
-            this.pdfFileInput.nativeElement.value = '';
-        }
-    }
-
-    private loadResearchCategories(): void {
-        this.isLoadingCategories = true;
-        this.researchCategoryService.getActiveCategories()
-            .pipe(
-                take(1),
-                finalize(() => (this.isLoadingCategories = false))
-            )
-            .subscribe((categories) => {
-                this.researchCategories = categories;
-                if (!this.selectedResearchArea && categories.length > 0) {
-                    this.selectedResearchArea = categories[0].name;
-                }
-            });
-    }
-
-    isKnownResearchArea(name: string): boolean {
-        return this.researchCategories.some((category) => category.name === name);
-    }
+  isKnownResearchArea(name: string): boolean {
+    return this.researchCategories.some((category) => category.name === name);
+  }
 }

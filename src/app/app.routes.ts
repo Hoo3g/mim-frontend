@@ -15,6 +15,8 @@ export const routes: Routes = [
             { path: '', loadChildren: () => import('./features/research/research.routes').then(m => m.researchRoutes), pathMatch: 'full' },
             { path: 'research', loadChildren: () => import('./features/research/research.routes').then(m => m.researchRoutes) },
             { path: 'paper', loadChildren: () => import('./features/research/research.routes').then(m => m.researchRoutes) },
+            { path: 'news', loadComponent: () => import('./presentation/pages/news-list.component').then(m => m.NewsListComponent) },
+            { path: 'news/:id', loadComponent: () => import('./presentation/pages/news-detail.component').then(m => m.NewsDetailComponent) },
             { path: 'posts', loadChildren: () => import('./features/recruitment/recruitment.routes').then(m => m.recruitmentRoutes) },
             { path: 'recruitment', loadChildren: () => import('./features/recruitment/recruitment.routes').then(m => m.recruitmentRoutes) },
             { path: 'auth', loadChildren: () => import('./features/auth/auth.routes').then(m => m.authRoutes) },

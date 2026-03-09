@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
     },
     NEWS: {
         LIST: `${API_CONFIG.PREFIX}/news`,
+        DETAIL: (id: string) => `${API_CONFIG.PREFIX}/news/${id}`,
     },
     PROFILE: {
         ME: `${API_CONFIG.PREFIX}/profile/me`,
@@ -61,5 +62,6 @@ export const API_ENDPOINTS = {
         SPECIALIZATIONS: `${API_CONFIG.PREFIX}/admin/specializations`,
         SPECIALIZATION_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/specializations/${id}`,
         NEWS: `${API_CONFIG.PREFIX}/admin/news`,
+        NEWS_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/news/${id}`,
     },
 } as const;
