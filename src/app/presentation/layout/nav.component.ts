@@ -296,6 +296,8 @@ export class NavComponent implements OnInit {
   private readonly condensedNavOffset = 28;
   private readonly sidebarGap = 32;
   private readonly desktopBreakpoint = 768;
+  private readonly mobileShowTopThreshold = 16;
+  private readonly mobileHideBelowThreshold = 48;
   private readonly topResetThreshold = 24;
   private readonly hideNavMinScrollY = 96;
   private readonly hideNavTravelThreshold = 56;
@@ -305,6 +307,7 @@ export class NavComponent implements OnInit {
   ngOnInit(): void {
     this.resetScrollTracking(this.document.defaultView?.scrollY ?? 0);
     this.syncViewportMode();
+    this.syncCondensedStateWithScroll();
     this.applyStickyOffsets();
   }
 
@@ -336,6 +339,7 @@ export class NavComponent implements OnInit {
   @HostListener('window:resize')
   onWindowResize(): void {
     this.syncViewportMode();
+    this.syncCondensedStateWithScroll();
   }
 
   @HostListener('window:scroll')
@@ -344,6 +348,12 @@ export class NavComponent implements OnInit {
 
     if (this.showMobileMenu) {
       this.resetScrollTracking(currentScrollY);
+      return;
+    }
+
+    if (!this.isDesktopViewport) {
+      this.updateMobileCondensedState(currentScrollY);
+      this.lastScrollY = currentScrollY;
       return;
     }
 
@@ -416,6 +426,26 @@ export class NavComponent implements OnInit {
     this.lastScrollY = scrollY;
     this.scrollDirection = null;
     this.scrollTravelSinceDirectionChange = 0;
+  }
+
+  private updateMobileCondensedState(currentScrollY: number): void {
+    if (currentScrollY <= this.mobileShowTopThreshold) {
+      this.setCondensed(false);
+      this.resetScrollTracking(currentScrollY);
+      return;
+    }
+
+    if (currentScrollY >= this.mobileHideBelowThreshold) {
+      this.setCondensed(true);
+    }
+  }
+
+  private syncCondensedStateWithScroll(): void {
+    const currentScrollY = this.document.defaultView?.scrollY ?? 0;
+    if (this.isDesktopViewport) {
+      return;
+    }
+    this.updateMobileCondensedState(currentScrollY);
   }
 
   private applyStickyOffsets(): void {
