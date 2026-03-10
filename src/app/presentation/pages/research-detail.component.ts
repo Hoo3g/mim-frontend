@@ -155,6 +155,7 @@ export class ResearchDetailComponent {
   private readonly http = inject(HttpClient);
   private paperService = inject(ResearchPaperService);
   private sanitizer = inject(DomSanitizer);
+  private readonly forceExternalPdfView = this.shouldForceExternalPdfView();
   private readonly frontendOrigin = this.resolveOrigin(typeof window !== 'undefined' ? window.location.origin : '');
   private readonly backendOrigin = this.resolveOrigin(API_CONFIG.BASE_URL);
   private readonly frontendProtocol = this.resolveProtocol(this.frontendOrigin);
@@ -210,6 +211,10 @@ export class ResearchDetailComponent {
   }
 
   canInlinePreview(url: string): boolean {
+    if (this.forceExternalPdfView) {
+      return false;
+    }
+
     const resolved = this.getDownloadUrl(url);
     if (!resolved) {
       return false;
@@ -262,6 +267,17 @@ export class ResearchDetailComponent {
     } catch {
       return '';
     }
+  }
+
+  private shouldForceExternalPdfView(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    const width = window.innerWidth || 0;
+    const userAgent = window.navigator?.userAgent ?? '';
+    const isMobileAgent = /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(userAgent);
+    return isMobileAgent || width < 1024;
   }
 
   private resolveProtocol(origin: string): string {
