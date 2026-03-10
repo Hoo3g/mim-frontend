@@ -290,13 +290,20 @@ export class NavComponent implements OnInit {
   isCondensed = false;
   isDesktopViewport = true;
   private lastScrollY = 0;
+  private scrollDirection: 'up' | 'down' | null = null;
+  private scrollTravelSinceDirectionChange = 0;
   private readonly expandedNavOffset = 92;
   private readonly condensedNavOffset = 28;
   private readonly sidebarGap = 32;
   private readonly desktopBreakpoint = 768;
+  private readonly topResetThreshold = 24;
+  private readonly hideNavMinScrollY = 96;
+  private readonly hideNavTravelThreshold = 56;
+  private readonly showNavTravelThreshold = 36;
+  private readonly minMeaningfulScrollDelta = 2;
 
   ngOnInit(): void {
-    this.lastScrollY = this.document.defaultView?.scrollY ?? 0;
+    this.resetScrollTracking(this.document.defaultView?.scrollY ?? 0);
     this.syncViewportMode();
     this.applyStickyOffsets();
   }
@@ -333,24 +340,43 @@ export class NavComponent implements OnInit {
 
   @HostListener('window:scroll')
   onWindowScroll(): void {
+    const currentScrollY = this.document.defaultView?.scrollY ?? 0;
+
     if (this.showMobileMenu) {
-      this.lastScrollY = this.document.defaultView?.scrollY ?? 0;
+      this.resetScrollTracking(currentScrollY);
       return;
     }
 
-    const currentScrollY = this.document.defaultView?.scrollY ?? 0;
     const delta = currentScrollY - this.lastScrollY;
 
-    if (currentScrollY <= 24) {
-      this.setCondensed(false);
+    if (Math.abs(delta) < this.minMeaningfulScrollDelta) {
       this.lastScrollY = currentScrollY;
       return;
     }
 
-    if (delta > 8 && currentScrollY > 96) {
-      this.setCondensed(true);
-    } else if (delta < -8) {
+    if (currentScrollY <= this.topResetThreshold) {
       this.setCondensed(false);
+      this.resetScrollTracking(currentScrollY);
+      return;
+    }
+
+    const direction: 'up' | 'down' = delta > 0 ? 'down' : 'up';
+    if (direction !== this.scrollDirection) {
+      this.scrollDirection = direction;
+      this.scrollTravelSinceDirectionChange = 0;
+    }
+
+    this.scrollTravelSinceDirectionChange += Math.abs(delta);
+
+    if (direction === 'down' &&
+      currentScrollY > this.hideNavMinScrollY &&
+      this.scrollTravelSinceDirectionChange >= this.hideNavTravelThreshold) {
+      this.setCondensed(true);
+      this.scrollTravelSinceDirectionChange = 0;
+    } else if (direction === 'up' &&
+      this.scrollTravelSinceDirectionChange >= this.showNavTravelThreshold) {
+      this.setCondensed(false);
+      this.scrollTravelSinceDirectionChange = 0;
     }
 
     this.lastScrollY = currentScrollY;
@@ -384,6 +410,12 @@ export class NavComponent implements OnInit {
 
     this.isCondensed = value;
     this.applyStickyOffsets();
+  }
+
+  private resetScrollTracking(scrollY: number): void {
+    this.lastScrollY = scrollY;
+    this.scrollDirection = null;
+    this.scrollTravelSinceDirectionChange = 0;
   }
 
   private applyStickyOffsets(): void {

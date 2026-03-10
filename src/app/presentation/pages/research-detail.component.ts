@@ -157,6 +157,8 @@ export class ResearchDetailComponent {
   private sanitizer = inject(DomSanitizer);
   private readonly frontendOrigin = this.resolveOrigin(typeof window !== 'undefined' ? window.location.origin : '');
   private readonly backendOrigin = this.resolveOrigin(API_CONFIG.BASE_URL);
+  private readonly frontendProtocol = this.resolveProtocol(this.frontendOrigin);
+  private readonly backendHost = this.resolveHost(this.backendOrigin);
   isAuth = authSignal.isAuth;
   isDownloadingPdf = false;
 
@@ -233,7 +235,9 @@ export class ResearchDetailComponent {
     }
 
     if (value.startsWith('http://') || value.startsWith('https://')) {
-      return value.replace('/api/v1/storage/research-pdfs/', '/api/public/storage/research-pdfs/');
+      return this.normalizePdfProtocol(
+        value.replace('/api/v1/storage/research-pdfs/', '/api/public/storage/research-pdfs/')
+      );
     }
 
     if (value.startsWith('/api/public/storage/research-pdfs/')) {
@@ -258,6 +262,42 @@ export class ResearchDetailComponent {
     } catch {
       return '';
     }
+  }
+
+  private resolveProtocol(origin: string): string {
+    try {
+      return new URL(origin).protocol;
+    } catch {
+      return '';
+    }
+  }
+
+  private resolveHost(origin: string): string {
+    try {
+      return new URL(origin).host;
+    } catch {
+      return '';
+    }
+  }
+
+  private normalizePdfProtocol(url: string): string {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'http:') {
+        return url;
+      }
+
+      // Production traffic is HTTPS via Cloudflare/nginx. Convert legacy stored links
+      // that still use http://api... so browser can embed/download without mixed-content issues.
+      if (this.frontendProtocol === 'https:' && !!this.backendHost && parsed.host === this.backendHost) {
+        parsed.protocol = 'https:';
+        return parsed.toString();
+      }
+    } catch {
+      return url;
+    }
+
+    return url;
   }
 
   private saveBlob(response: HttpResponse<Blob>, resolvedUrl: string, title: string): void {
