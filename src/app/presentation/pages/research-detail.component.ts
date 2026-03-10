@@ -4,15 +4,15 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
 import { Observable, finalize, switchMap } from 'rxjs';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ResearchPaper } from '../../core/models/research-paper.model';
 import { authSignal } from '../../core/signals/auth.signal';
 import { API_CONFIG } from '../../core/config/api.config';
+import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-canvas-viewer.component';
 
 @Component({
   selector: 'app-research-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, PdfCanvasViewerComponent],
   template: `
     <div *ngIf="paper$ | async as paper" class="min-h-screen bg-white pb-20">
       
@@ -100,28 +100,19 @@ import { API_CONFIG } from '../../core/config/api.config';
                 
               </div>
               <div class="w-full h-[72vh] md:h-[82vh] lg:h-[90vh] min-h-[420px] sm:min-h-[560px] bg-gray-50 border-2 border-hus-blue/10">
-                <iframe *ngIf="canInlinePreview(paper.pdfUrl); else cannotPreviewPdf"
-                        [src]="getSafePdfViewerUrl(paper.pdfUrl)"
-                        class="w-full h-full"
-                        frameborder="0"
-                        referrerpolicy="no-referrer"
-                        loading="lazy">
-                </iframe>
-                <ng-template #cannotPreviewPdf>
+                <app-pdf-canvas-viewer *ngIf="hasPdfUrl(paper.pdfUrl); else missingInlinePdf"
+                                       [src]="getDownloadUrl(paper.pdfUrl)"
+                                       [title]="paper.title"
+                                       class="block w-full h-full">
+                </app-pdf-canvas-viewer>
+                <ng-template #missingInlinePdf>
                   <div class="w-full h-full flex flex-col items-center justify-center text-center px-6">
                     <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
-                      Không thể nhúng PDF trực tiếp.
+                      Chưa có PDF để hiển thị.
                     </p>
                     <p class="mt-2 text-xs text-gray-500 max-w-md">
-                      Nguồn tệp hiện tại chặn hiển thị trong iframe. Vui lòng mở tệp ở tab mới để xem đầy đủ nội dung.
+                      Bài nghiên cứu hiện chưa có file PDF công khai.
                     </p>
-                    <a *ngIf="hasPdfUrl(paper.pdfUrl)"
-                       [href]="getDownloadUrl(paper.pdfUrl)"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       class="mt-4 inline-flex items-center justify-center border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest px-4 py-2 hover:bg-hus-blue hover:text-white transition-colors">
-                      Mở PDF ở tab mới
-                    </a>
                   </div>
                 </ng-template>
               </div>
@@ -159,8 +150,6 @@ export class ResearchDetailComponent {
   private route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
   private paperService = inject(ResearchPaperService);
-  private sanitizer = inject(DomSanitizer);
-  private readonly forceExternalPdfView = this.shouldForceExternalPdfView();
   private readonly frontendOrigin = this.resolveOrigin(typeof window !== 'undefined' ? window.location.origin : '');
   private readonly backendOrigin = this.resolveOrigin(API_CONFIG.BASE_URL);
   private readonly frontendProtocol = this.resolveProtocol(this.frontendOrigin);
@@ -186,10 +175,6 @@ export class ResearchDetailComponent {
     });
   }
 
-  getSafePdfViewerUrl(url: string): SafeResourceUrl {
-    return this.sanitizer.bypassSecurityTrustResourceUrl(this.buildPdfViewerUrl(this.resolvePdfUrl(url)));
-  }
-
   getDownloadUrl(url: string): string {
     return this.resolvePdfUrl(url);
   }
@@ -213,29 +198,6 @@ export class ResearchDetailComponent {
         next: (response) => this.saveBlob(response, resolved, title),
         error: () => window.open(resolved, '_blank', 'noopener')
       });
-  }
-
-  canInlinePreview(url: string): boolean {
-    if (this.forceExternalPdfView) {
-      return false;
-    }
-
-    const resolved = this.getDownloadUrl(url);
-    if (!resolved) {
-      return false;
-    }
-
-    const resolvedOrigin = this.resolveOrigin(resolved);
-    return !!resolvedOrigin
-      && (resolvedOrigin === this.frontendOrigin || resolvedOrigin === this.backendOrigin);
-  }
-
-  private buildPdfViewerUrl(url: string): string {
-    if (!url) {
-      return '';
-    }
-    const delimiter = url.includes('#') ? '&' : '#';
-    return `${url}${delimiter}toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH`;
   }
 
   private resolvePdfUrl(rawUrl: string): string {
@@ -272,17 +234,6 @@ export class ResearchDetailComponent {
     } catch {
       return '';
     }
-  }
-
-  private shouldForceExternalPdfView(): boolean {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    const width = window.innerWidth || 0;
-    const userAgent = window.navigator?.userAgent ?? '';
-    const isMobileAgent = /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(userAgent);
-    return isMobileAgent || width < 1024;
   }
 
   private resolveProtocol(origin: string): string {
