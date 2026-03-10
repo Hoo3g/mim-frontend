@@ -68,7 +68,7 @@ jobs:
             {"environment":"staging","service":"frontend","image":"${{ env.IMAGE_NAME }}","tag":"staging-${{ github.sha }}","sha":"${{ github.sha }}"}
 
   publish-production:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -94,11 +94,42 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Prepare production tags
+        id: prod-tags
+        run: |
+          set -euo pipefail
+          TAGS="${IMAGE_NAME}:prod-${GITHUB_SHA}"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAGS="${TAGS}"$'\n'"${IMAGE_NAME}:prod-${GITHUB_REF_NAME}"
+          fi
+          {
+            echo "tags<<EOF"
+            echo "${TAGS}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and push production image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: |
-            ${{ env.IMAGE_NAME }}:prod-${{ github.ref_name }}
-            ${{ env.IMAGE_NAME }}:prod-${{ github.sha }}
+          tags: ${{ steps.prod-tags.outputs.tags }}
+
+      - name: Check infra dispatch secrets
+        id: check-secrets-production
+        run: |
+          if [ -n "${{ secrets.INFRA_REPO }}" ] && [ -n "${{ secrets.INFRA_REPO_TOKEN }}" ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notify infra repo for production deploy
+        if: steps.check-secrets-production.outputs.available == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_REPO_TOKEN }}
+          repository: ${{ secrets.INFRA_REPO }}
+          event-type: frontend-production-image-published
+          client-payload: >-
+            {"environment":"production","service":"frontend","image":"${{ env.IMAGE_NAME }}","tag":"prod-${{ github.sha }}","sha":"${{ github.sha }}"}
