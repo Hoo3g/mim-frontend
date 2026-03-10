@@ -61,7 +61,12 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
                  <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tác giả biên soạn:</span>
                  <div class="flex flex-wrap gap-x-6 gap-y-2">
                    <div *ngFor="let author of paper.authors" class="text-sm font-bold text-gray-900">
-                     {{ author.name }}
+                     <a *ngIf="author.isMainAuthor && author.studentId"
+                        [routerLink]="['/profile', author.studentId]"
+                        class="transition-colors hover:text-hus-blue">
+                       {{ author.name }}
+                     </a>
+                     <span *ngIf="!author.isMainAuthor || !author.studentId">{{ author.name }}</span>
                      <span *ngIf="author.isMainAuthor" class="ml-1 text-[9px] text-hus-blue uppercase tracking-tighter font-black">(Chủ biên)</span>
                    </div>
                  </div>

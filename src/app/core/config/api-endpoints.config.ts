@@ -36,6 +36,7 @@ export const API_ENDPOINTS = {
     },
     PROFILE: {
         ME: `${API_CONFIG.PREFIX}/profile/me`,
+        DETAIL: (id: string) => `${API_CONFIG.PREFIX}/profile/${id}`,
         DASHBOARD: `${API_CONFIG.PREFIX}/profile/me/dashboard`,
         STUDENT: `${API_CONFIG.PREFIX}/profile/me/student`,
         COMPANY: `${API_CONFIG.PREFIX}/profile/me/company`,

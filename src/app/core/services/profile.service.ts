@@ -18,6 +18,12 @@ import {
 export class ProfileService {
     private readonly http = inject(HttpClient);
 
+    getById(userId: string): Observable<ProfileMeResponse> {
+        return this.http.get<ApiResponse<ProfileMeResponse>>(API_ENDPOINTS.PROFILE.DETAIL(userId)).pipe(
+            map((response) => this.unwrap(response))
+        );
+    }
+
     getMe(): Observable<ProfileMeResponse> {
         return this.http.get<ApiResponse<ProfileMeResponse>>(API_ENDPOINTS.PROFILE.ME).pipe(
             map((response) => this.unwrap(response))
