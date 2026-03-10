@@ -12,7 +12,7 @@ export type RuntimeConfig = {
 
 const DEFAULT_CONFIG: RuntimeConfig = {
   apiBaseUrl: 'http://localhost:8080',
-  googleClientId: '983439776863-h1dbo93cbt93bpcnq5q15940cpk4a22o.apps.googleusercontent.com',
+  googleClientId: '',
 };
 
 function normalizeUrl(value: string | undefined, fallback: string): string {

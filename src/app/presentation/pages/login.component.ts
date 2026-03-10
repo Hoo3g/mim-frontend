@@ -95,7 +95,7 @@ type GoogleIdentityApi = {
         </div>
 
         <p *ngIf="showGoogleConfigHint" class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2">
-          Cần cập nhật <code>GOOGLE_CLIENT_ID</code> trong <code>api.config.ts</code> để bật nút Google Login.
+          Cần cấu hình <code>APP_GOOGLE_CLIENT_ID</code> (runtime env) để bật Google Login.
         </p>
 
         <div class="text-center mt-4 text-[10px] font-bold uppercase tracking-widest">
@@ -142,7 +142,7 @@ export class LoginComponent implements AfterViewInit {
     }
 
     private renderGoogleButton(): void {
-        if (API_CONFIG.GOOGLE_CLIENT_ID.startsWith('YOUR_GOOGLE_CLIENT_ID')) {
+        if (!API_CONFIG.GOOGLE_CLIENT_ID || API_CONFIG.GOOGLE_CLIENT_ID.startsWith('YOUR_GOOGLE_CLIENT_ID')) {
             this.showGoogleConfigHint = true;
             return;
         }
