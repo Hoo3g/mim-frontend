@@ -47,17 +47,14 @@ jobs:
             ${{ env.IMAGE_NAME }}:staging-${{ github.sha }}
             ${{ env.IMAGE_NAME }}:staging-latest
 
-      - name: Check infra dispatch secrets
-        id: check-secrets
+      - name: Validate infra dispatch configuration
         run: |
-          if [ -n "${{ secrets.INFRA_REPO }}" ] && [ -n "${{ secrets.INFRA_REPO_TOKEN }}" ]; then
-            echo "available=true" >> $GITHUB_OUTPUT
-          else
-            echo "available=false" >> $GITHUB_OUTPUT
+          if [ -z "${{ secrets.INFRA_REPO }}" ] || [ -z "${{ secrets.INFRA_REPO_TOKEN }}" ]; then
+            echo "::error::Missing INFRA_REPO or INFRA_REPO_TOKEN secret. Staging image was built, but auto deploy dispatch cannot run."
+            exit 1
           fi
 
       - name: Notify infra repo for staging deploy
-        if: steps.check-secrets.outputs.available == 'true'
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.INFRA_REPO_TOKEN }}
@@ -112,17 +109,14 @@ jobs:
           push: true
           tags: ${{ steps.prod-tags.outputs.tags }}
 
-      - name: Check infra dispatch secrets
-        id: check-secrets-production
+      - name: Validate infra dispatch configuration
         run: |
-          if [ -n "${{ secrets.INFRA_REPO }}" ] && [ -n "${{ secrets.INFRA_REPO_TOKEN }}" ]; then
-            echo "available=true" >> $GITHUB_OUTPUT
-          else
-            echo "available=false" >> $GITHUB_OUTPUT
+          if [ -z "${{ secrets.INFRA_REPO }}" ] || [ -z "${{ secrets.INFRA_REPO_TOKEN }}" ]; then
+            echo "::error::Missing INFRA_REPO or INFRA_REPO_TOKEN secret. Production image was built, but auto deploy dispatch cannot run."
+            exit 1
           fi
 
       - name: Notify infra repo for production deploy
-        if: steps.check-secrets-production.outputs.available == 'true'
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.INFRA_REPO_TOKEN }}

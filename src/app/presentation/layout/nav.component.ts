@@ -296,8 +296,8 @@ export class NavComponent implements OnInit {
   private readonly condensedNavOffset = 28;
   private readonly sidebarGap = 32;
   private readonly desktopBreakpoint = 768;
-  private readonly mobileShowTopThreshold = 16;
-  private readonly mobileHideBelowThreshold = 48;
+  private readonly topOnlyNavModeBreakpoint = 1024;
+  private readonly mobileShowTopThreshold = 8;
   private readonly topResetThreshold = 24;
   private readonly hideNavMinScrollY = 96;
   private readonly hideNavTravelThreshold = 56;
@@ -351,7 +351,7 @@ export class NavComponent implements OnInit {
       return;
     }
 
-    if (!this.isDesktopViewport) {
+    if (this.shouldUseTopOnlyNavMode()) {
       this.updateMobileCondensedState(currentScrollY);
       this.lastScrollY = currentScrollY;
       return;
@@ -429,23 +429,24 @@ export class NavComponent implements OnInit {
   }
 
   private updateMobileCondensedState(currentScrollY: number): void {
-    if (currentScrollY <= this.mobileShowTopThreshold) {
-      this.setCondensed(false);
+    // Mobile/tablet: header only appears when user is very close to top.
+    this.setCondensed(currentScrollY > this.mobileShowTopThreshold);
+    if (!this.isCondensed) {
       this.resetScrollTracking(currentScrollY);
-      return;
-    }
-
-    if (currentScrollY >= this.mobileHideBelowThreshold) {
-      this.setCondensed(true);
     }
   }
 
   private syncCondensedStateWithScroll(): void {
     const currentScrollY = this.document.defaultView?.scrollY ?? 0;
-    if (this.isDesktopViewport) {
+    if (!this.shouldUseTopOnlyNavMode()) {
       return;
     }
     this.updateMobileCondensedState(currentScrollY);
+  }
+
+  private shouldUseTopOnlyNavMode(): boolean {
+    const width = this.document.defaultView?.innerWidth ?? this.desktopBreakpoint;
+    return width < this.topOnlyNavModeBreakpoint;
   }
 
   private applyStickyOffsets(): void {
