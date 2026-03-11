@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -175,12 +175,14 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
               </div>
             </div>
 
-            <div *ngIf="filteredPapers.length === 0"
-                 class="py-14 md:py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
-              Không tìm thấy thông tin phù hợp.
-            </div>
+            <div #resultsViewport
+                 [style.minHeight.px]="filteredPapers.length === 0 && emptyStateMinHeightPx > 0 ? emptyStateMinHeightPx : null">
+              <div *ngIf="filteredPapers.length === 0"
+                   class="py-14 md:py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
+                Không tìm thấy thông tin phù hợp.
+              </div>
 
-            <div *ngIf="filteredPapers.length > 0" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div *ngIf="filteredPapers.length > 0" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <button
                 type="button"
                 *ngFor="let paper of filteredPapers"
@@ -219,7 +221,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                   </div>
 
                   <div class="flex flex-col items-end gap-1">
-                    <span class="text-[9px] font-bold text-gray-300 uppercase tabular-nums">{{ paper.publicationYear }}</span>
+                    <span class="text-[10px] font-black text-gray-900 uppercase tabular-nums">{{ getCardMonthYear(paper) }}</span>
                     <div class="w-4 h-0.5 bg-gray-100 group-hover:bg-hus-blue/30 transition-colors"></div>
                   </div>
                 </div>
@@ -227,10 +229,6 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                 <h3 class="text-base font-bold text-gray-900 mb-2 leading-tight group-hover:translate-x-1 transition-all duration-300 line-clamp-2 min-h-[2.5rem]">
                   {{ paper.title }}
                 </h3>
-
-                <p class="text-[11px] text-gray-500 font-light leading-relaxed mb-4 line-clamp-3">
-                  {{ paper.abstract || 'Bài nghiên cứu chưa có phần tóm tắt.' }}
-                </p>
 
                 <div class="space-y-4 mb-2 flex-grow">
                   <div class="pt-3 border-t border-gray-50">
@@ -243,13 +241,13 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                     </p>
                   </div>
 
-                  <div *ngIf="paper.journalConference" class="pt-3 border-t border-gray-50">
+                  <div class="pt-3 border-t border-gray-50">
                     <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                       <span class="w-1 h-1 bg-gray-900"></span>
-                      Nơi công bố
+                      Tóm tắt nghiên cứu
                     </h4>
                     <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-2">
-                      {{ paper.journalConference }}
+                      {{ getAbstractPreview(paper) }}
                     </p>
                   </div>
                 </div>
@@ -272,6 +270,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                   <div class="text-[8px] font-black text-gray-200 uppercase tracking-widest group-hover:text-hus-blue transition-colors">Chi tiết</div>
                 </div>
               </button>
+              </div>
             </div>
           </div>
         </div>
@@ -280,6 +279,8 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
   `
 })
 export class ResearchFilterComponent implements OnInit {
+  @ViewChild('resultsViewport') private resultsViewport?: ElementRef<HTMLDivElement>;
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -292,6 +293,7 @@ export class ResearchFilterComponent implements OnInit {
   isLoadingSpecializations = true;
   specializations: ResearchCategory[] = [];
   allPapers: ResearchPaper[] = [];
+  emptyStateMinHeightPx = 0;
 
   ngOnInit(): void {
     const type = this.route.snapshot.queryParamMap.get('type');
@@ -328,7 +330,7 @@ export class ResearchFilterComponent implements OnInit {
 
       const haystack = this.normalize([
         paper.title,
-        paper.abstract,
+        this.extractPlainText(paper.abstract),
         paper.researchArea,
         paper.journalConference ?? '',
         this.getMainAuthorName(paper)
@@ -344,14 +346,17 @@ export class ResearchFilterComponent implements OnInit {
   }
 
   onSearchKeywordChange(value: string): void {
+    this.rememberResultsHeightForEmptyState();
     this.searchKeyword = value;
   }
 
   setRoleFilter(value: 'ALL' | 'LECTURER' | 'STUDENT'): void {
+    this.rememberResultsHeightForEmptyState();
     this.roleFilter = value;
   }
 
   toggleSpecializationFilter(value: string): void {
+    this.rememberResultsHeightForEmptyState();
     const normalizedValue = (value ?? '').trim();
     if (!normalizedValue) {
       return;
@@ -370,6 +375,7 @@ export class ResearchFilterComponent implements OnInit {
   }
 
   clearFilters(): void {
+    this.rememberResultsHeightForEmptyState();
     this.roleFilter = 'ALL';
     this.selectedSpecializations = [];
     this.searchKeyword = '';
@@ -416,6 +422,22 @@ export class ResearchFilterComponent implements OnInit {
     return authors.slice(0, 2).join(', ');
   }
 
+  getCardMonthYear(paper: ResearchPaper): string {
+    const createdAtValue = (paper as ResearchPaper & { createdAt?: Date | string | null }).createdAt;
+    const createdAt = createdAtValue instanceof Date ? createdAtValue : new Date(createdAtValue ?? '');
+    if (!Number.isNaN(createdAt.getTime())) {
+      const month = String(createdAt.getMonth() + 1).padStart(2, '0');
+      const year = String(createdAt.getFullYear());
+      return `${month}/${year}`;
+    }
+    return `01/${paper.publicationYear}`;
+  }
+
+  getAbstractPreview(paper: ResearchPaper): string {
+    const plain = this.extractPlainText(paper.abstract);
+    return plain || 'Bài nghiên cứu chưa có phần tóm tắt.';
+  }
+
   private parseSpecializationsFromQuery(): string[] {
     const specializations = this.route.snapshot.queryParamMap.getAll('specialization');
     if (specializations.length > 0) {
@@ -449,5 +471,35 @@ export class ResearchFilterComponent implements OnInit {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase();
+  }
+
+  private extractPlainText(value: string | null | undefined): string {
+    const source = (value ?? '').trim();
+    if (!source) {
+      return '';
+    }
+
+    return source
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&#39;/gi, "'")
+      .replace(/&quot;/gi, '"')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private rememberResultsHeightForEmptyState(): void {
+    const element = this.resultsViewport?.nativeElement;
+    if (!element) {
+      return;
+    }
+
+    const measured = Math.round(element.getBoundingClientRect().height);
+    if (measured > 0) {
+      this.emptyStateMinHeightPx = measured;
+    }
   }
 }

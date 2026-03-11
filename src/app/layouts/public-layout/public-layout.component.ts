@@ -10,9 +10,9 @@ import { NavComponent } from '../../presentation/layout/nav.component';
     selector: 'app-public-layout',
     standalone: true,
     imports: [NavComponent, RouterOutlet],
-    template: `
+  template: `
     <app-nav />
-    <main>
+    <main [style.paddingTop]="'var(--app-nav-offset, 92px)'">
       <router-outlet />
     </main>
   `

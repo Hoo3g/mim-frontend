@@ -8,11 +8,12 @@ import { ContentService } from '../../core/services/content.service';
 import { ResearchHeroContent } from '../../core/models/content.model';
 import { NewsService } from '../../core/services/news.service';
 import { NewsItem } from '../../core/models/news.model';
+import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading-spinner.component';
 
 @Component({
   selector: 'app-research',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, LoadingSpinnerComponent],
   template: `
     <div class="bg-white min-h-screen">
       
@@ -68,47 +69,16 @@ import { NewsItem } from '../../core/models/news.model';
         </div>
       </div>
       
-      <!-- List Filter & Header -->
-      <div class="border-b border-gray-100 bg-white">
-         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-             <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
-               <span class="w-1 h-4 bg-hus-blue"></span>
-               Cổng nghiên cứu khoa học
-             </h2>
-
-             <div class="overflow-x-auto pb-1 -mx-1 px-1">
-               <div class="inline-flex border border-gray-200 min-w-max">
-                 <button (click)="setFilter('ALL')"
-                         [class.bg-hus-blue.text-white]="currentFilter === 'ALL'"
-                         [class.text-gray-400]="currentFilter !== 'ALL'"
-                         class="px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all">
-                   Tất cả
-                 </button>
-                 <button (click)="setFilter('LECTURER')"
-                         [class.bg-hus-blue.text-white]="currentFilter === 'LECTURER'"
-                         [class.text-gray-400]="currentFilter !== 'LECTURER'"
-                         class="px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest border-l border-gray-200 transition-all">
-                   Giảng viên
-                 </button>
-                 <button (click)="setFilter('STUDENT')"
-                         [class.bg-hus-blue.text-white]="currentFilter === 'STUDENT'"
-                         [class.text-gray-400]="currentFilter !== 'STUDENT'"
-                         class="px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest border-l border-gray-200 transition-all">
-                   Sinh viên
-                 </button>
-               </div>
-             </div>
-           </div>
-         </div>
-      </div>
-
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 lg:gap-10">
 
           <!-- LEFT: Research Index -->
           <section class="min-w-0">
-            <div class="flex justify-end mb-1">
+            <div class="flex items-center justify-between gap-3 mb-6 pb-2 border-b-2 border-hus-blue">
+              <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                <span class="w-1 h-4 bg-hus-blue"></span>
+                Nghiên cứu khoa học
+              </h2>
               <button type="button"
                       (click)="openFilterPage()"
                       class="inline-flex items-center gap-2 px-3 h-10 border border-gray-200 text-gray-500 hover:border-hus-blue hover:text-hus-blue transition-colors"
@@ -117,7 +87,7 @@ import { NewsItem } from '../../core/models/news.model';
                 <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z"></path>
                 </svg>
-                <span class="text-[10px] font-bold uppercase tracking-widest">Tìm kiếm nâng cao</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest">Tìm kiếm</span>
               </button>
             </div>
 
@@ -190,15 +160,12 @@ import { NewsItem } from '../../core/models/news.model';
             </div>
 
             <ng-template #loading>
-               <div class="py-20 flex justify-center">
-                 <div class="h-4 w-4 bg-hus-blue animate-pulse"></div>
-               </div>
+              <app-loading-spinner [size]="52"></app-loading-spinner>
             </ng-template>
           </section>
 
-          <!-- RIGHT: Sidebar - Bulletins -->
-           <aside class="bg-white border border-gray-100 p-5 md:p-6 space-y-8 md:space-y-12 lg:sticky self-start"
-                  [style.top]="'var(--app-nav-sidebar-offset, 124px)'">
+          <!-- RIGHT: Sidebar - Bulletins (hidden on mobile, moved to hamburger menu) -->
+           <aside class="hidden md:block bg-white border border-gray-100 p-5 md:p-6 space-y-8 md:space-y-12 self-start">
              <section>
                <div class="flex items-center justify-between gap-3 mb-6 pb-2 border-b-2 border-hus-blue">
                  <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">
@@ -227,9 +194,10 @@ import { NewsItem } from '../../core/models/news.model';
                  </div>
                </div>
                <ng-template #newsLoading>
-                 <div class="text-[10px] text-gray-400 uppercase tracking-widest">
-                   Đang tải bảng tin...
-                 </div>
+                <app-loading-spinner
+                  [compact]="true"
+                  [size]="40">
+                </app-loading-spinner>
                </ng-template>
              </section>
 
@@ -280,12 +248,6 @@ export class ResearchComponent implements OnInit {
       this.resetVisiblePapers();
       this.updateFilter();
     });
-  }
-
-  setFilter(filter: 'ALL' | 'LECTURER' | 'STUDENT'): void {
-    this.currentFilter = filter;
-    this.resetVisiblePapers();
-    this.updateFilter();
   }
 
   private updateFilter(): void {

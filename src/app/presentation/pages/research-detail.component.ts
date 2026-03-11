@@ -52,7 +52,7 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
               </button>
             </div>
             
-            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-6 sm:mb-8">
+            <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-6 sm:mb-8">
               {{ paper.title }}
             </h1>
             
@@ -71,11 +71,6 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
                    </div>
                  </div>
                </div>
-               
-               <div class="flex flex-wrap items-center gap-4 sm:gap-6 pt-4 border-t border-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                 <span>Tạp chí: <span class="text-hus-blue">{{ paper.journalConference || 'MIM - VNU HUS' }}</span></span>
-                 <span>ID: #{{ paper.id.slice(0,8).toUpperCase() }}</span>
-               </div>
             </div>
           </header>
 
@@ -87,7 +82,7 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
               <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] mb-6 inline-block border-b-4 border-hus-blue pb-1">
                 Tóm tắt Nghiên cứu
               </h2>
-              <div class="text-lg text-gray-700 leading-relaxed text-justify font-light whitespace-pre-line"
+              <div class="research-rich-content text-lg text-gray-700 leading-relaxed text-justify font-light"
                    [innerHTML]="paper.abstract"></div>
             </section>
 
@@ -99,7 +94,7 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
                 </h2>
                 
               </div>
-              <div class="w-full h-[72vh] md:h-[82vh] lg:h-[90vh] min-h-[420px] sm:min-h-[560px] bg-gray-50 border-2 border-hus-blue/10">
+              <div class="w-full aspect-[1/1.55] min-h-[560px] md:min-h-[720px] bg-gray-50 border-2 border-hus-blue/10">
                 <app-pdf-canvas-viewer *ngIf="hasPdfUrl(paper.pdfUrl); else missingInlinePdf"
                                        [src]="getDownloadUrl(paper.pdfUrl)"
                                        [title]="paper.title"

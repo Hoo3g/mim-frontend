@@ -1,5 +1,5 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
@@ -10,7 +10,14 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     // withComponentInputBinding: cho phép route params tự bind vào input() signal
-    provideRouter(routes, withComponentInputBinding()),
+    provideRouter(
+      routes,
+      withComponentInputBinding(),
+      withInMemoryScrolling({
+        // Always move to top on each navigation instead of keeping previous scroll position.
+        scrollPositionRestoration: 'top',
+      }),
+    ),
     // HTTP client với JWT interceptor và error handler
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
   ]

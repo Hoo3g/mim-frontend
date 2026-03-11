@@ -1,14 +1,23 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { RouterModule, RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterModule, RouterOutlet } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { authSignal } from './core/signals/auth.signal';
+import { appSignal } from './core/signals/app.signal';
 import { AuthService } from './core/services/auth.service';
+import { LoadingSpinnerComponent } from './shared/ui/loading-spinner/loading-spinner.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterModule],
+  imports: [CommonModule, RouterOutlet, RouterModule, LoadingSpinnerComponent],
   template: `
     <div class="min-h-screen bg-gray-50 flex flex-col">
+      <app-loading-spinner *ngIf="isRouteLoading()"
+                           [fullscreen]="true"
+                           [size]="58">
+      </app-loading-spinner>
+
       <router-outlet></router-outlet>
 
       <footer class="mt-16 bg-white border-t border-gray-100">
@@ -83,12 +92,70 @@ import { AuthService } from './core/services/auth.service';
     </div>
   `
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
+  private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   readonly currentYear = new Date().getFullYear();
+  readonly isRouteLoading = appSignal.loading;
+
+  private routeLoadingSub?: Subscription;
+  private hideLoadingTimer: ReturnType<typeof setTimeout> | null = null;
+  private routeLoadingStartedAt = 0;
+  private routeLoadingMinDurationMs = 220;
 
   ngOnInit(): void {
     authSignal.restoreFromStorage();
     this.authService.syncProfileFromBackend();
+    this.bindRouteLoadingOverlay();
+  }
+
+  ngOnDestroy(): void {
+    this.routeLoadingSub?.unsubscribe();
+    if (this.hideLoadingTimer) {
+      clearTimeout(this.hideLoadingTimer);
+      this.hideLoadingTimer = null;
+    }
+  }
+
+  private bindRouteLoadingOverlay(): void {
+    this.routeLoadingSub = this.router.events.subscribe((event) => {
+      if (event instanceof NavigationStart) {
+        this.beginRouteLoading(event.url);
+        return;
+      }
+
+      if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
+        this.endRouteLoading();
+      }
+    });
+  }
+
+  private beginRouteLoading(url: string): void {
+    if (this.hideLoadingTimer) {
+      clearTimeout(this.hideLoadingTimer);
+      this.hideLoadingTimer = null;
+    }
+
+    this.routeLoadingStartedAt = Date.now();
+    this.routeLoadingMinDurationMs = this.resolveRouteLoadingMinDuration(url);
+    appSignal.setLoading(true);
+  }
+
+  private endRouteLoading(): void {
+    const elapsed = Date.now() - this.routeLoadingStartedAt;
+    const remaining = Math.max(0, this.routeLoadingMinDurationMs - elapsed);
+    if (remaining === 0) {
+      appSignal.setLoading(false);
+      return;
+    }
+
+    this.hideLoadingTimer = setTimeout(() => {
+      appSignal.setLoading(false);
+      this.hideLoadingTimer = null;
+    }, remaining);
+  }
+
+  private resolveRouteLoadingMinDuration(url: string): number {
+    return url.startsWith('/news') ? 1400 : 220;
   }
 }

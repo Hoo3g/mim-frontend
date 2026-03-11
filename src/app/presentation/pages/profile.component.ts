@@ -21,16 +21,19 @@ import {
   UpdateStudentProfileRequest
 } from '../../core/models/profile.model';
 import { ResearchCategory } from '../../core/models/research-category.model';
+import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading-spinner.component';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, LoadingSpinnerComponent],
   template: `
     <div class="bg-gray-50 min-h-screen">
       <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
         <div *ngIf="loading" class="text-center py-20 text-gray-400 text-xs uppercase tracking-widest">
-          Đang tải thông tin hồ sơ...
+          <app-loading-spinner
+            [size]="52">
+          </app-loading-spinner>
         </div>
 
         <div *ngIf="!loading && errorMessage" class="border border-red-200 bg-red-50 text-red-600 px-4 py-3 text-xs font-bold uppercase tracking-widest">
