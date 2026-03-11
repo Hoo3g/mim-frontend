@@ -235,15 +235,9 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
             <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-1">Bài tuyển dụng của bạn</h3>
-                <p class="text-xs text-gray-500 font-semibold">
-                  Viết và chỉnh sửa nội dung bài đăng tuyển dụng dành cho sinh viên ngay tại hồ sơ cá nhân hoặc trong khu vực quản lý bài đăng.
-                </p>
+                
               </div>
               <div class="flex flex-wrap items-center gap-2">
-                <a [routerLink]="ROUTES.RECRUITMENT_EDITOR"
-                   class="inline-flex items-center justify-center px-4 py-2 border border-gray-200 text-gray-600 text-[10px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-colors">
-                  Tạo mới
-                </a>
                 <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
                    class="inline-flex items-center justify-center px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
                   Mở quản lý bài đăng
