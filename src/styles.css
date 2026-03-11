@@ -43,3 +43,117 @@ body {
     font-style: normal;
     color: rgb(156 163 175);
 }
+
+.research-rich-content {
+    padding: 0;
+    line-height: 1.9;
+    color: rgb(55 65 81);
+}
+
+.research-rich-content p {
+    margin: 0.45rem 0;
+}
+
+.research-rich-content h1 {
+    font-size: 2rem;
+    line-height: 1.2;
+    font-weight: 700;
+    margin: 0.85rem 0 0.45rem;
+}
+
+.research-rich-content h2 {
+    font-size: 1.5rem;
+    line-height: 1.3;
+    font-weight: 700;
+    margin: 0.8rem 0 0.45rem;
+}
+
+.research-rich-content h3 {
+    font-size: 1.2rem;
+    line-height: 1.35;
+    font-weight: 700;
+    margin: 0.75rem 0 0.4rem;
+}
+
+.research-rich-content h4,
+.research-rich-content h5,
+.research-rich-content h6 {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 700;
+    margin: 0.7rem 0 0.35rem;
+}
+
+.research-rich-content ul,
+.research-rich-content ol {
+    margin: 0.55rem 0;
+    padding-left: 1.5rem;
+}
+
+.research-rich-content ul {
+    list-style: disc;
+}
+
+.research-rich-content ol {
+    list-style: decimal;
+}
+
+.research-rich-content li {
+    margin: 0.2rem 0;
+}
+
+.research-rich-content li:not([data-list]) {
+    list-style: inherit;
+    padding-left: 0.15rem;
+}
+
+.research-rich-content li:not([data-list]) > .ql-ui {
+    display: none;
+}
+
+.research-rich-content blockquote {
+    border-left: 4px solid rgb(209 213 219);
+    margin: 0.55rem 0;
+    padding-left: 0.9rem;
+    color: rgb(75 85 99);
+}
+
+.research-rich-content .ql-size-small {
+    font-size: 0.75em;
+}
+
+.research-rich-content .ql-size-large {
+    font-size: 1.5em;
+}
+
+.research-rich-content .ql-size-huge {
+    font-size: 2.5em;
+}
+
+.research-rich-content .ql-align-center {
+    text-align: center;
+}
+
+.research-rich-content .ql-align-right {
+    text-align: right;
+}
+
+.research-rich-content .ql-align-justify {
+    text-align: justify;
+}
+
+.research-rich-content .ql-indent-1 {
+    padding-left: 3rem;
+}
+
+.research-rich-content .ql-indent-2 {
+    padding-left: 6rem;
+}
+
+.research-rich-content > *:first-child {
+    margin-top: 0;
+}
+
+.research-rich-content > *:last-child {
+    margin-bottom: 0;
+}

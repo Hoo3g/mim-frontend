@@ -10,11 +10,12 @@ import { SpecializationService } from '../../core/services/specialization.servic
 import { ResearchCategory } from '../../core/models/research-category.model';
 import { authSignal } from '../../core/signals/auth.signal';
 import { ROUTES } from '../../core/constants/route.const';
+import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading-spinner.component';
 
 @Component({
   selector: 'app-posts',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PostDetailComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PostDetailComponent, LoadingSpinnerComponent],
   template: `
     <div class="bg-white min-h-screen">
       
@@ -146,7 +147,7 @@ import { ROUTES } from '../../core/constants/route.const';
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div *ngFor="let post of posts" 
                      (click)="openDetail(post)"
-                     class="bg-white border border-gray-100 p-6 hover:border-hus-blue hover:shadow-lg transition-all duration-300 group flex flex-col h-full relative cursor-pointer">
+                     class="bg-white border border-gray-100 p-6 hover:border-hus-blue hover:shadow-lg transition-all duration-300 group flex h-[500px] flex-col relative cursor-pointer">
                   
                   <!-- Author Identity Section - Refined -->
                   <div class="flex items-start justify-between mb-6">
@@ -206,30 +207,9 @@ import { ROUTES } from '../../core/constants/route.const';
                             {{ studentDisplayValue(post, 'studentMajor') }}
                           </p>
                         </div>
-                        <div>
-                          <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Loại sinh viên</p>
-                          <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">
-                            {{ studentDisplayValue(post, 'studentType') }}
-                          </p>
-                        </div>
-                        <div>
-                          <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Vị trí mong muốn</p>
-                          <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">
-                            {{ studentDisplayValue(post, 'studentDesiredPosition') }}
-                          </p>
-                        </div>
                       </div>
                     </div>
 
-                    <div *ngIf="!post.postType.includes('COMPANY')" class="pt-3 border-t border-gray-50">
-                      <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                        <span class="w-1 h-1 bg-gray-900"></span>
-                        Giới thiệu
-                      </h4>
-                      <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">
-                        {{ studentDisplayValue(post, 'studentBio') }}
-                      </p>
-                    </div>
 
                     <div *ngIf="!post.postType.includes('COMPANY')" class="pt-3 border-t border-gray-50">
                       <h4 class="text-[8px] font-bold text-hus-blue uppercase tracking-widest mb-2 flex items-center gap-1.5">
@@ -287,9 +267,7 @@ import { ROUTES } from '../../core/constants/route.const';
             </div>
 
             <ng-template #loading>
-               <div class="py-20 flex justify-center">
-                 <div class="h-4 w-4 bg-hus-blue animate-pulse"></div>
-               </div>
+              <app-loading-spinner [size]="52"></app-loading-spinner>
             </ng-template>
           </div>
         </div>

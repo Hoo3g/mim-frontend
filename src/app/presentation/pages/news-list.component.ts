@@ -4,12 +4,13 @@ import { RouterModule } from '@angular/router';
 
 import { NewsItem } from '../../core/models/news.model';
 import { NewsService } from '../../core/services/news.service';
+import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading-spinner.component';
 
 @Component({
-    selector: 'app-news-list',
-    standalone: true,
-    imports: [CommonModule, RouterModule],
-    template: `
+  selector: 'app-news-list',
+  standalone: true,
+  imports: [CommonModule, RouterModule, LoadingSpinnerComponent],
+  template: `
     <div class="bg-white min-h-screen">
       <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
@@ -27,16 +28,15 @@ import { NewsService } from '../../core/services/news.service';
               {{ loading ? 'Đang tải dữ liệu...' : ('Tổng cộng: ' + newsItems.length + ' bản tin') }}
             </p>
           </div>
-          <a routerLink="/"
-             class="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-hus-blue hover:text-hus-dark transition-colors">
-            <span aria-hidden="true">‹</span>
-            Quay lại trang nghiên cứu
-          </a>
+          
         </div>
 
         <div *ngIf="loading"
              class="py-16 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
-          Đang tải bảng tin khoa...
+          <app-loading-spinner
+            [compact]="true"
+            [size]="48">
+          </app-loading-spinner>
         </div>
 
         <div *ngIf="!loading && errorMessage"
@@ -78,22 +78,22 @@ import { NewsService } from '../../core/services/news.service';
   `
 })
 export class NewsListComponent implements OnInit {
-    private readonly newsService = inject(NewsService);
+  private readonly newsService = inject(NewsService);
 
-    loading = true;
-    errorMessage = '';
-    newsItems: NewsItem[] = [];
+  loading = true;
+  errorMessage = '';
+  newsItems: NewsItem[] = [];
 
-    ngOnInit(): void {
-        this.newsService.getPublicNews().subscribe({
-            next: (items) => {
-                this.newsItems = items;
-                this.loading = false;
-            },
-            error: () => {
-                this.errorMessage = 'Không thể tải bảng tin khoa.';
-                this.loading = false;
-            }
-        });
-    }
+  ngOnInit(): void {
+    this.newsService.getPublicNews().subscribe({
+      next: (items) => {
+        this.newsItems = items;
+        this.loading = false;
+      },
+      error: () => {
+        this.errorMessage = 'Không thể tải bảng tin khoa.';
+        this.loading = false;
+      }
+    });
+  }
 }
