@@ -2,7 +2,6 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { catchError, forkJoin, map, Observable, of } from 'rxjs';
 import { PaperAuthor, ResearchPaper } from '../models/research-paper.model';
-import { MOCK_NEWS, MOCK_PAPERS } from '../../infrastructure/mock/data';
 import type { AuthUser } from '../signals/auth.signal';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
@@ -55,12 +54,9 @@ interface ResearchBookmarkApiModel {
 export class ResearchPaperService {
     private readonly http = inject(HttpClient);
 
-    private readonly mockPapers = MOCK_PAPERS.map((paper) => this.clonePaper(paper));
-
     getPapers(): Observable<ResearchPaper[]> {
         const papers$ = this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.LIST).pipe(
-            map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
-            catchError(() => of(this.mockPapers.map((paper) => this.clonePaper(paper))))
+            map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper)))
         );
 
         return forkJoin([papers$, this.getBookmarkedPaperIds()]).pipe(
@@ -73,10 +69,11 @@ export class ResearchPaperService {
 
     getPaperById(id: string): Observable<ResearchPaper | undefined> {
         const paper$ = this.http.get<ApiResponse<ResearchPaperApiModel>>(API_ENDPOINTS.RESEARCH.DETAIL(id)).pipe(
-            map((response) => this.toPaperModel(this.unwrap(response))),
-            catchError(() => {
-                const fallback = this.mockPapers.find((paper) => paper.id === id);
-                return of(fallback ? this.clonePaper(fallback) : undefined);
+            map((response) => {
+                if (!response.success || !response.data) {
+                    return undefined;
+                }
+                return this.toPaperModel(response.data);
             })
         );
 
@@ -99,11 +96,9 @@ export class ResearchPaperService {
         );
     }
 
-    getMyPapers(currentUser: AuthUser): Observable<ResearchPaper[]> {
+    getMyPapers(_currentUser: AuthUser): Observable<ResearchPaper[]> {
         return this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.MY_PAPERS).pipe(
-            map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
-            catchError(() => of(this.mockPapers.filter((paper) => this.isOwnedByUser(paper, currentUser))
-                .map((paper) => this.clonePaper(paper))))
+            map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper)))
         );
     }
 
@@ -146,13 +141,14 @@ export class ResearchPaperService {
             : this.http.post<ApiResponse<ResearchPaperApiModel>>(API_ENDPOINTS.RESEARCH.LIST, requestBody);
 
         return request$.pipe(
-            map((response) => this.toPaperModel(this.unwrap(response))),
-            catchError(() => of(null))
+            map((response) => this.toPaperModel(this.unwrap(response)))
         );
     }
 
     getNews(): Observable<any[]> {
-        return of(MOCK_NEWS);
+        return this.http.get<ApiResponse<any[]>>(API_ENDPOINTS.NEWS.LIST).pipe(
+            map((response) => this.unwrapList(response))
+        );
     }
 
     getBookmarkedPaperIds(): Observable<Set<string>> {
@@ -260,15 +256,6 @@ export class ResearchPaperService {
 
     private getMainAuthor(paper: ResearchPaper): PaperAuthor | undefined {
         return paper.authors.find((author) => author.isMainAuthor) ?? paper.authors[0];
-    }
-
-    private clonePaper(paper: ResearchPaper): ResearchPaper {
-        return {
-            ...paper,
-            authors: paper.authors.map((author) => ({ ...author })),
-            createdAt: new Date(paper.createdAt),
-            updatedAt: new Date(paper.updatedAt)
-        };
     }
 
     private emailPrefix(email: string): string {
