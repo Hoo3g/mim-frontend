@@ -88,16 +88,18 @@ export const authSignal = {
         localStorage.setItem('user', JSON.stringify(updated));
     },
 
-    updateUserInfo(payload: { fullName?: string | null; avatarUrl?: string | null }): void {
+    updateUserInfo(payload: { fullName?: string | null; avatarUrl?: string | null; role?: string | null }): void {
         const current = _user();
         if (!current) {
             return;
         }
 
+        const normalizedRole = normalizeRole(payload.role);
         const updated = {
             ...current,
             fullName: payload.fullName?.trim() ? payload.fullName.trim() : current.fullName,
-            avatarUrl: payload.avatarUrl || undefined
+            avatarUrl: payload.avatarUrl || undefined,
+            role: normalizedRole ?? current.role
         };
         _user.set(updated);
         localStorage.setItem('user', JSON.stringify(updated));
@@ -118,7 +120,7 @@ export const authSignal = {
                 id: parsed.id,
                 email: parsed.email,
                 fullName: parsed.fullName,
-                role: parsed.role,
+                role: normalizeRole(parsed.role) ?? parsed.role,
                 avatarUrl: parsed.avatarUrl,
                 permissions: Array.isArray(parsed.permissions)
                     ? parsed.permissions.map((item) => String(item).toUpperCase())
@@ -127,3 +129,16 @@ export const authSignal = {
         }
     }
 };
+
+function normalizeRole(role?: string | null): Role | null {
+    const value = (role ?? '').toString().trim().toUpperCase();
+    if (!value) {
+        return null;
+    }
+    const normalized = value.startsWith('ROLE_') ? value.substring(5) : value;
+    if (normalized === Role.STUDENT) return Role.STUDENT;
+    if (normalized === Role.COMPANY) return Role.COMPANY;
+    if (normalized === Role.LECTURER) return Role.LECTURER;
+    if (normalized === Role.ADMIN) return Role.ADMIN;
+    return null;
+}

@@ -622,7 +622,7 @@ interface AdminTabConfig {
                   class="w-full text-left border-b border-gray-100 p-3 hover:bg-gray-50 transition-colors">
                   <p class="text-[11px] font-black uppercase tracking-tight text-gray-900">{{ user.displayName }}</p>
                   <p class="text-[10px] text-gray-500">{{ user.email }}</p>
-                  <p class="mt-1 text-[9px] text-gray-400 uppercase tracking-widest">Role: {{ user.roles.join(', ') || 'N/A' }}</p>
+                  <p class="mt-1 text-[9px] text-gray-400 uppercase tracking-widest">Role: {{ primaryRole(user.roles) || 'N/A' }}</p>
                 </button>
 
                 <div *ngIf="filteredRbacUsers.length === 0" class="p-6 text-center text-[10px] text-gray-400 uppercase tracking-widest">
@@ -636,7 +636,7 @@ interface AdminTabConfig {
                 <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Đang chỉnh quyền</p>
                 <p class="mt-1 text-sm font-black text-gray-900 uppercase tracking-tight">{{ selected.displayName }}</p>
                 <p class="text-[11px] text-gray-500">{{ selected.email }}</p>
-                <p class="mt-2 text-[10px] text-gray-500">Vai trò hiện tại: <span class="font-bold uppercase">{{ selected.roles.join(', ') || 'N/A' }}</span></p>
+                <p class="mt-2 text-[10px] text-gray-500">Vai trò hiện tại: <span class="font-bold uppercase">{{ primaryRole(selected.roles) || 'N/A' }}</span></p>
               </div>
 
               <div class="border border-gray-100 p-4 space-y-3">
@@ -1356,6 +1356,21 @@ export class AdminDashboardComponent implements OnInit {
         }
     }
 
+    primaryRole(roles: string[] | null | undefined): string {
+        if (!roles || roles.length === 0) {
+            return '';
+        }
+        const normalized = [...new Set(roles
+            .map((role) => (role ?? '').toString().trim().toUpperCase())
+            .map((role) => role.startsWith('ROLE_') ? role.substring(5) : role)
+            .filter((role) => !!role))];
+        if (normalized.length === 0) {
+            return '';
+        }
+        return normalized
+            .sort((left, right) => this.rolePriority(left) - this.rolePriority(right))[0];
+    }
+
     private resolveInitialTab(): AdminTabKey {
         const firstAccessibleTab = this.adminTabs.find((tab) => this.can(tab.permission));
         return firstAccessibleTab?.key ?? 'POSTS';
@@ -1437,13 +1452,34 @@ export class AdminDashboardComponent implements OnInit {
             users: this.adminRbacService.getUsers()
         }).subscribe(({ permissions, users }) => {
             this.rbacPermissions = permissions;
-            this.rbacUsers = users;
+            this.rbacUsers = users.map((user) => {
+                const primaryRole = this.primaryRole(user.roles);
+                return {
+                    ...user,
+                    roles: primaryRole ? [primaryRole] : []
+                };
+            });
             this.initializeRbacDrafts();
             if (!this.selectedRbacUserId || !this.rbacUsers.some((user) => user.userId === this.selectedRbacUserId)) {
                 this.selectedRbacUserId = this.rbacUsers.length > 0 ? this.rbacUsers[0].userId : null;
             }
             this.permissionToAdd = '';
         });
+    }
+
+    private rolePriority(roleName: string): number {
+        switch (roleName) {
+            case 'ADMIN':
+                return 1;
+            case 'LECTURER':
+                return 2;
+            case 'COMPANY':
+                return 3;
+            case 'STUDENT':
+                return 4;
+            default:
+                return 99;
+        }
     }
 
     private initializeRbacDrafts(): void {
