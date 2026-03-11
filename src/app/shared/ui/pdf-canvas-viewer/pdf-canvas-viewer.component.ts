@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import {
   AfterViewInit,
   Component,
@@ -6,11 +7,13 @@ import {
   HostListener,
   OnDestroy,
   effect,
+  inject,
   input,
   signal,
   viewChild,
   viewChildren
 } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import {
   GlobalWorkerOptions,
   getDocument,
@@ -126,6 +129,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   private readonly scrollContainerRef = viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
   private readonly pagesContainerRef = viewChild<ElementRef<HTMLDivElement>>('pagesContainer');
   private readonly pageCanvasRefs = viewChildren<ElementRef<HTMLCanvasElement>>('pdfPageCanvas');
+  private readonly http = inject(HttpClient);
   private readonly pixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
 
   private pdfDocument: PDFDocumentProxy | null = null;
@@ -273,18 +277,27 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
       }
 
       try {
-        const response = await fetch(source, {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          throw new Error(`Không thể tải PDF (HTTP ${response.status})`);
+        const arrayBuffer = await firstValueFrom<ArrayBuffer>(this.http.get(source, {
+          responseType: 'arraybuffer',
+          withCredentials: true
+        }));
+        const bytes = new Uint8Array(arrayBuffer);
+        if (bytes.byteLength <= 0) {
+          throw new Error('Không thể tải PDF');
         }
-
-        const bytes = new Uint8Array(await response.arrayBuffer());
         this.loadingTask = getDocument({ data: bytes });
         return await this.loadingTask.promise;
       } catch {
-        throw primaryError;
+        try {
+          const fallbackTask = getDocument({
+            url: source,
+            withCredentials: true
+          });
+          this.loadingTask = fallbackTask;
+          return await fallbackTask.promise;
+        } catch {
+          throw primaryError;
+        }
       }
     }
   }

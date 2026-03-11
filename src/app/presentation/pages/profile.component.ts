@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, NgZone, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import { ROUTES } from '../../core/constants/route.const';
 import { Post } from '../../core/models/post.model';
@@ -618,6 +618,8 @@ export class ProfileComponent implements OnInit {
   me: ProfileMeResponse | null = null;
   dashboard: ProfileDashboardResponse | null = null;
   myRecruitmentPosts: Post[] = [];
+  pendingApplicationsFromPostApi: PendingApplicationItem[] = [];
+  pendingApplicantsFromPostApi: PendingApplicantItem[] = [];
   specializations: ResearchCategory[] = [];
 
   studentForm: UpdateStudentProfileRequest = {
@@ -765,10 +767,16 @@ export class ProfileComponent implements OnInit {
   }
 
   pendingApplications(): PendingApplicationItem[] {
+    if (this.isStudent()) {
+      return this.pendingApplicationsFromPostApi;
+    }
     return this.dashboard?.student?.pendingApplications ?? [];
   }
 
   pendingApplicants(): PendingApplicantItem[] {
+    if (this.isCompany()) {
+      return this.pendingApplicantsFromPostApi;
+    }
     return this.dashboard?.company?.pendingApplicants ?? [];
   }
 
@@ -927,6 +935,8 @@ export class ProfileComponent implements OnInit {
   private reload(): void {
     const currentUser = authSignal.user();
     const canLoadRecruitmentPosts = currentUser?.role === 'STUDENT' || currentUser?.role === 'COMPANY';
+    const canLoadStudentPending = currentUser?.role === 'STUDENT';
+    const canLoadCompanyPending = currentUser?.role === 'COMPANY';
 
     this.loading = true;
     this.errorMessage = '';
@@ -936,14 +946,26 @@ export class ProfileComponent implements OnInit {
       dashboard: this.profileService.getDashboard(),
       myRecruitmentPosts: canLoadRecruitmentPosts && currentUser
         ? this.postService.getMyPosts(currentUser.id)
-        : of([])
+        : of([]),
+      pendingApplications: canLoadStudentPending
+        ? this.postService.getMyPendingApplications().pipe(
+          catchError(() => of([] as PendingApplicationItem[]))
+        )
+        : of([] as PendingApplicationItem[]),
+      pendingApplicants: canLoadCompanyPending
+        ? this.postService.getReceivedPendingApplications().pipe(
+          catchError(() => of([] as PendingApplicantItem[]))
+        )
+        : of([] as PendingApplicantItem[])
     }).subscribe({
-      next: ({ me, dashboard, myRecruitmentPosts }) => {
+      next: ({ me, dashboard, myRecruitmentPosts, pendingApplications, pendingApplicants }) => {
         this.ngZone.run(() => {
           this.me = me;
           this.avatarLoadError = false;
           this.dashboard = dashboard;
           this.myRecruitmentPosts = myRecruitmentPosts;
+          this.pendingApplicationsFromPostApi = pendingApplications;
+          this.pendingApplicantsFromPostApi = pendingApplicants;
           this.patchForms(me);
           this.loading = false;
           this.cdr.detectChanges();
@@ -953,6 +975,8 @@ export class ProfileComponent implements OnInit {
         this.ngZone.run(() => {
           this.errorMessage = error?.error?.message || 'Không thể tải dữ liệu profile';
           this.myRecruitmentPosts = [];
+          this.pendingApplicationsFromPostApi = [];
+          this.pendingApplicantsFromPostApi = [];
           this.loading = false;
           this.cdr.detectChanges();
         });

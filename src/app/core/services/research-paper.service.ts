@@ -145,12 +145,6 @@ export class ResearchPaperService {
         );
     }
 
-    getNews(): Observable<any[]> {
-        return this.http.get<ApiResponse<any[]>>(API_ENDPOINTS.NEWS.LIST).pipe(
-            map((response) => this.unwrapList(response))
-        );
-    }
-
     getBookmarkedPaperIds(): Observable<Set<string>> {
         if (!authSignal.isAuth()) {
             return of(new Set<string>());

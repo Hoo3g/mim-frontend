@@ -6,9 +6,11 @@ import { catchError, map, Observable, of } from 'rxjs';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import {
+    AuthApiUser,
     AuthResponse,
     GoogleLoginRequest,
     LoginRequest,
+    RegisterRequest,
     UserType
 } from '../../features/auth/models/auth.model';
 import { authSignal } from '../signals/auth.signal';
@@ -25,6 +27,12 @@ export class AuthService {
         return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.LOGIN, request, { withCredentials: true }).pipe(
             map((response) => this.unwrap(response)),
             map((auth) => this.persistAuth(auth))
+        );
+    }
+
+    register(request: RegisterRequest): Observable<AuthApiUser> {
+        return this.http.post<ApiResponse<AuthApiUser>>(API_ENDPOINTS.AUTH.REGISTER, request, { withCredentials: true }).pipe(
+            map((response) => this.unwrap(response))
         );
     }
 

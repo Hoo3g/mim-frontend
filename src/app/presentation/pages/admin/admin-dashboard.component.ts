@@ -16,6 +16,7 @@ import { ModerationPaperItem, ModerationPostItem } from '../../../core/models/ad
 import {
     PermissionOverrideDraftEffect,
     RbacPermissionDefinition,
+    RbacRolePermission,
     RbacUserAssignment
 } from '../../../core/models/rbac.model';
 import { ResearchCategory } from '../../../core/models/research-category.model';
@@ -796,6 +797,8 @@ export class AdminDashboardComponent implements OnInit {
     newsNotice = '';
 
     rbacPermissions: RbacPermissionDefinition[] = [];
+    rbacRoleMatrix: RbacRolePermission[] = [];
+    rbacRolePriority: Record<string, number> = {};
     rbacUsers: RbacUserAssignment[] = [];
     rbacOverrideDrafts: Record<string, Record<string, PermissionOverrideDraftEffect>> = {};
     savingRbacUser: Record<string, boolean> = {};
@@ -1449,9 +1452,12 @@ export class AdminDashboardComponent implements OnInit {
 
         forkJoin({
             permissions: this.adminRbacService.getDelegablePermissions(),
+            roleMatrix: this.adminRbacService.getRolePermissionMatrix(),
             users: this.adminRbacService.getUsers()
-        }).subscribe(({ permissions, users }) => {
+        }).subscribe(({ permissions, roleMatrix, users }) => {
             this.rbacPermissions = permissions;
+            this.rbacRoleMatrix = roleMatrix;
+            this.rbacRolePriority = this.buildRolePriority(roleMatrix);
             this.rbacUsers = users.map((user) => {
                 const primaryRole = this.primaryRole(user.roles);
                 return {
@@ -1468,7 +1474,13 @@ export class AdminDashboardComponent implements OnInit {
     }
 
     private rolePriority(roleName: string): number {
-        switch (roleName) {
+        const normalized = (roleName ?? '').toString().trim().toUpperCase().replace(/^ROLE_/, '');
+        const matrixPriority = this.rbacRolePriority[normalized];
+        if (Number.isFinite(matrixPriority)) {
+            return matrixPriority;
+        }
+
+        switch (normalized) {
             case 'ADMIN':
                 return 1;
             case 'LECTURER':
@@ -1480,6 +1492,19 @@ export class AdminDashboardComponent implements OnInit {
             default:
                 return 99;
         }
+    }
+
+    private buildRolePriority(roleMatrix: RbacRolePermission[]): Record<string, number> {
+        const priority: Record<string, number> = {};
+
+        roleMatrix
+            .map((entry) => (entry.role ?? '').toString().trim().toUpperCase().replace(/^ROLE_/, ''))
+            .filter((role, index, array) => !!role && array.indexOf(role) === index)
+            .forEach((role, index) => {
+                priority[role] = index + 1;
+            });
+
+        return priority;
     }
 
     private initializeRbacDrafts(): void {
