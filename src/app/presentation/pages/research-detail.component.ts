@@ -1,25 +1,24 @@
-import { Component, OnDestroy, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { ResearchPaperService } from '../../core/services/research-paper.service';
-import { Observable, finalize, switchMap, tap } from 'rxjs';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Observable, finalize, switchMap } from 'rxjs';
+
 import { ResearchPaper } from '../../core/models/research-paper.model';
+import { ResearchPaperService } from '../../core/services/research-paper.service';
 import { authSignal } from '../../core/signals/auth.signal';
 import { API_CONFIG } from '../../core/config/api.config';
+import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-canvas-viewer.component';
 
 @Component({
   selector: 'app-research-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, PdfCanvasViewerComponent],
   template: `
     <div *ngIf="paper$ | async as paper" class="min-h-screen bg-white pb-20">
-      
-      <!-- Minimal Navigation Bar - Blue Tint -->
       <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-          <a routerLink="/" class="text-hus-blue hover:text-hus-dark transition">Cổng nghiên cứu</a>
+          <a routerLink="/" class="text-hus-blue hover:text-hus-dark transition">Cong nghien cuu</a>
           <span class="text-gray-300">/</span>
           <span class="text-hus-blue opacity-70">{{ paper.researchArea }}</span>
         </div>
@@ -27,18 +26,16 @@ import { API_CONFIG } from '../../core/config/api.config';
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:mt-12">
         <div class="max-w-4xl mx-auto">
-          
-          <!-- Header -->
           <header class="mb-8 sm:mb-12 border-b-2 border-hus-blue pb-8 sm:pb-12">
             <div class="flex items-center gap-3 mb-6 text-[11px] font-bold uppercase tracking-tighter">
-              <span class="bg-hus-blue text-white px-3 py-1">{{ paper.category === 'LECTURER' ? 'GIẢNG VIÊN' : 'SINH VIÊN' }}</span>
+              <span class="bg-hus-blue text-white px-3 py-1">{{ paper.category === 'LECTURER' ? 'GIANG VIEN' : 'SINH VIEN' }}</span>
               <span class="text-gray-300">|</span>
               <span class="text-hus-blue">{{ paper.publicationYear }}</span>
               <button *ngIf="isAuth()"
                       (click)="toggleBookmark(paper)"
                       class="ml-auto w-9 h-9 inline-flex items-center justify-center border transition-colors"
-                      [attr.aria-label]="paper.isBookmarked ? 'Bỏ lưu bài viết' : 'Lưu bài viết'"
-                      [attr.title]="paper.isBookmarked ? 'Đã lưu' : 'Lưu bài'"
+                      [attr.aria-label]="paper.isBookmarked ? 'Bo luu bai viet' : 'Luu bai viet'"
+                      [attr.title]="paper.isBookmarked ? 'Da luu' : 'Luu bai'"
                       [ngClass]="paper.isBookmarked ? 'border-hus-blue bg-blue-50 text-hus-blue' : 'border-gray-200 text-gray-400 hover:border-hus-blue hover:text-hus-blue'">
                 <svg xmlns="http://www.w3.org/2000/svg"
                      class="h-4 w-4"
@@ -51,146 +48,108 @@ import { API_CONFIG } from '../../core/config/api.config';
                 </svg>
               </button>
             </div>
-            
+
             <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-6 sm:mb-8">
               {{ paper.title }}
             </h1>
-            
+
             <div class="flex flex-col gap-6">
-               <div class="flex flex-wrap gap-4 items-center">
-                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tác giả biên soạn:</span>
-                 <div class="flex flex-wrap gap-x-6 gap-y-2">
-                   <div *ngFor="let author of paper.authors" class="text-sm font-bold text-gray-900">
-                     <a *ngIf="author.isMainAuthor && author.studentId"
-                        [routerLink]="['/profile', author.studentId]"
-                        class="transition-colors hover:text-hus-blue">
-                       {{ author.name }}
-                     </a>
-                     <span *ngIf="!author.isMainAuthor || !author.studentId">{{ author.name }}</span>
-                     <span *ngIf="author.isMainAuthor" class="ml-1 text-[9px] text-hus-blue uppercase tracking-tighter font-black">(Chủ biên)</span>
-                   </div>
-                 </div>
-               </div>
-               
-               <div class="flex flex-wrap items-center gap-4 sm:gap-6 pt-4 border-t border-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                 <span>Tạp chí: <span class="text-hus-blue">{{ paper.journalConference || 'MIM - VNU HUS' }}</span></span>
-                 <span>ID: #{{ paper.id.slice(0,8).toUpperCase() }}</span>
-               </div>
+              <div class="flex flex-wrap gap-4 items-center">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tac gia bien soan:</span>
+                <div class="flex flex-wrap gap-x-6 gap-y-2">
+                  <div *ngFor="let author of paper.authors" class="text-sm font-bold text-gray-900">
+                    <a *ngIf="author.isMainAuthor && author.studentId"
+                       [routerLink]="['/profile', author.studentId]"
+                       class="transition-colors hover:text-hus-blue">
+                      {{ author.name }}
+                    </a>
+                    <span *ngIf="!author.isMainAuthor || !author.studentId">{{ author.name }}</span>
+                    <span *ngIf="author.isMainAuthor" class="ml-1 text-[9px] text-hus-blue uppercase tracking-tighter font-black">(Chu bien)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-4 sm:gap-6 pt-4 border-t border-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <span>Tap chi: <span class="text-hus-blue">{{ paper.journalConference || 'MIM - VNU HUS' }}</span></span>
+                <span>ID: #{{ paper.id.slice(0, 8).toUpperCase() }}</span>
+              </div>
             </div>
           </header>
 
-          <!-- Main Content Section -->
           <div class="space-y-10 sm:space-y-16">
-            
-            <!-- Abstract Block -->
             <section>
               <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] mb-6 inline-block border-b-4 border-hus-blue pb-1">
-                Tóm tắt Nghiên cứu
+                Tom tat nghien cuu
               </h2>
               <div class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-lg text-gray-700 leading-relaxed text-justify font-light whitespace-pre-wrap [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:ml-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:ml-4 [&_li]:mb-2 [&_p]:mb-4"
                    [innerHTML]="paper.abstract"></div>
             </section>
 
-            <!-- Document View -->
             <section>
               <div class="flex justify-between items-baseline mb-6">
                 <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] inline-block border-b-4 border-hus-blue pb-1">
-                  Văn bản chi tiết (PDF)
+                  Van ban chi tiet (PDF)
                 </h2>
-                
               </div>
-              <div class="w-full h-[72vh] md:h-[82vh] lg:h-[90vh] min-h-[420px] sm:min-h-[560px] bg-gray-50 border-2 border-hus-blue/10">
-                <div *ngIf="isLoadingPreview" class="w-full h-full flex items-center justify-center text-center px-6">
-                  <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
-                    Äang táº£i báº£n xem trÆ°á»›c PDF...
-                  </p>
-                </div>
-                <iframe *ngIf="!isLoadingPreview && previewPdfUrl; else cannotPreviewPdf"
-                        [src]="previewPdfSafeUrl"
-                        class="w-full h-full"
-                        frameborder="0"
-                        loading="lazy">
-                </iframe>
-                  <div *ngIf="false" class="w-full h-full flex flex-col items-center justify-center text-center px-6">
-                    <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
-                      Trình duyệt không hỗ trợ xem PDF trực tiếp.
-                    </p>
-                    <a *ngIf="hasPdfUrl(paper.pdfUrl)"
-                       [href]="getDownloadUrl(paper.pdfUrl)"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       class="mt-4 inline-flex items-center justify-center border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest px-4 py-2 hover:bg-hus-blue hover:text-white transition-colors">
-                      Mở PDF ở tab mới
-                    </a>
-                  </div>
-                <ng-template #cannotPreviewPdf>
+
+              <div class="w-full aspect-[1/1.55] min-h-[560px] md:min-h-[720px] bg-gray-50 border-2 border-hus-blue/10">
+                <app-pdf-canvas-viewer *ngIf="hasPdfUrl(paper.pdfUrl); else missingInlinePdf"
+                                       [src]="getDownloadUrl(paper.pdfUrl)"
+                                       [title]="paper.title"
+                                       class="block w-full h-full">
+                </app-pdf-canvas-viewer>
+                <ng-template #missingInlinePdf>
                   <div class="w-full h-full flex flex-col items-center justify-center text-center px-6">
                     <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
-                      Không thể nhúng PDF trực tiếp.
+                      Chua co PDF de hien thi.
                     </p>
                     <p class="mt-2 text-xs text-gray-500 max-w-md">
-                      Nguồn tệp hiện tại chặn hiển thị trong iframe. Vui lòng mở tệp ở tab mới để xem đầy đủ nội dung.
+                      Bai nghien cuu hien chua co file PDF cong khai.
                     </p>
-                    <a *ngIf="hasPdfUrl(paper.pdfUrl)"
-                       [href]="getDownloadUrl(paper.pdfUrl)"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       class="mt-4 inline-flex items-center justify-center border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest px-4 py-2 hover:bg-hus-blue hover:text-white transition-colors">
-                      Mở PDF ở tab mới
-                    </a>
                   </div>
                 </ng-template>
               </div>
             </section>
-
           </div>
 
-          <!-- Footer Actions -->
           <footer class="mt-8 sm:mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             <button *ngIf="hasPdfUrl(paper.pdfUrl); else missingPdf"
-               type="button"
-               (click)="downloadPdf(paper.pdfUrl, paper.title)"
-               [disabled]="isDownloadingPdf"
-               class="inline-flex items-center justify-center bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20 w-full sm:w-auto">
-              {{ isDownloadingPdf ? 'Đang tải xuống...' : 'Tải xuống tài liệu (.PDF)' }}
+                    type="button"
+                    (click)="downloadPdf(paper.pdfUrl, paper.title)"
+                    [disabled]="isDownloadingPdf"
+                    class="inline-flex items-center justify-center bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20 w-full sm:w-auto">
+              {{ isDownloadingPdf ? 'Dang tai xuong...' : 'Tai xuong tai lieu (.PDF)' }}
             </button>
             <ng-template #missingPdf>
               <button type="button"
                       disabled
                       class="inline-flex items-center justify-center bg-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 cursor-not-allowed">
-                Chưa có tệp PDF
+                Chua co tep PDF
               </button>
             </ng-template>
             <button class="border-2 border-hus-blue text-hus-blue text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-blue hover:text-white transition w-full sm:w-auto">
-              Liên hệ tác giả
+              Lien he tac gia
             </button>
           </footer>
-
         </div>
       </div>
     </div>
   `
 })
-export class ResearchDetailComponent implements OnDestroy {
-  private route = inject(ActivatedRoute);
+export class ResearchDetailComponent {
+  private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
-  private paperService = inject(ResearchPaperService);
-  private readonly sanitizer = inject(DomSanitizer);
-  private readonly forceExternalPdfView = this.shouldForceExternalPdfView();
+  private readonly paperService = inject(ResearchPaperService);
   private readonly frontendOrigin = this.resolveOrigin(typeof window !== 'undefined' ? window.location.origin : '');
   private readonly backendOrigin = this.resolveOrigin(API_CONFIG.BASE_URL);
   private readonly frontendProtocol = this.resolveProtocol(this.frontendOrigin);
   private readonly backendHost = this.resolveHost(this.backendOrigin);
+
   isAuth = authSignal.isAuth;
   isDownloadingPdf = false;
-  previewPdfUrl = '';
-  previewPdfSafeUrl: SafeResourceUrl = '';
-  isLoadingPreview = false;
-  private currentPreviewObjectUrl = '';
 
   paper$: Observable<ResearchPaper | undefined> = this.route.paramMap.pipe(
-    switchMap(params => this.paperService.getPaperById(params.get('id')!)),
-    tap((paper) => this.loadPreviewPdf(paper?.pdfUrl ?? ''))
+    switchMap((params) => this.paperService.getPaperById(params.get('id')!))
   );
 
   toggleBookmark(paper: ResearchPaper): void {
@@ -201,7 +160,7 @@ export class ResearchDetailComponent implements OnDestroy {
     request$.subscribe({
       next: () => {
         this.paper$ = this.route.paramMap.pipe(
-          switchMap(params => this.paperService.getPaperById(params.get('id')!))
+          switchMap((params) => this.paperService.getPaperById(params.get('id')!))
         );
       }
     });
@@ -213,10 +172,6 @@ export class ResearchDetailComponent implements OnDestroy {
 
   hasPdfUrl(url: string): boolean {
     return !!this.getDownloadUrl(url);
-  }
-
-  ngOnDestroy(): void {
-    this.revokePreviewObjectUrl();
   }
 
   downloadPdf(url: string, title: string): void {
@@ -260,7 +215,6 @@ export class ResearchDetailComponent implements OnDestroy {
       return `${API_CONFIG.BASE_URL}${value}`;
     }
 
-    // Backward compatibility: old records may store only MinIO object key.
     return `${API_CONFIG.BASE_URL}/api/public/storage/research-pdfs/${encodeURIComponent(value)}`;
   }
 
@@ -270,17 +224,6 @@ export class ResearchDetailComponent implements OnDestroy {
     } catch {
       return '';
     }
-  }
-
-  private shouldForceExternalPdfView(): boolean {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    const width = window.innerWidth || 0;
-    const userAgent = window.navigator?.userAgent ?? '';
-    const isMobileAgent = /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(userAgent);
-    return isMobileAgent || width < 1024;
   }
 
   private resolveProtocol(origin: string): string {
@@ -306,8 +249,6 @@ export class ResearchDetailComponent implements OnDestroy {
         return url;
       }
 
-      // Production traffic is HTTPS via Cloudflare/nginx. Convert legacy stored links
-      // that still use http://api... so browser can embed/download without mixed-content issues.
       if (this.frontendProtocol === 'https:' && !!this.backendHost && parsed.host === this.backendHost) {
         parsed.protocol = 'https:';
         return parsed.toString();
@@ -317,48 +258,6 @@ export class ResearchDetailComponent implements OnDestroy {
     }
 
     return url;
-  }
-
-  private loadPreviewPdf(rawUrl: string): void {
-    this.revokePreviewObjectUrl();
-
-    if (this.forceExternalPdfView) {
-      return;
-    }
-
-    const resolved = this.getDownloadUrl(rawUrl);
-    if (!resolved) {
-      return;
-    }
-
-    this.isLoadingPreview = true;
-    this.http.get(resolved, { responseType: 'blob' })
-      .pipe(finalize(() => {
-        this.isLoadingPreview = false;
-      }))
-      .subscribe({
-        next: (blob) => {
-          if (!blob || blob.size === 0) {
-            return;
-          }
-          this.currentPreviewObjectUrl = URL.createObjectURL(blob);
-          this.previewPdfUrl = this.currentPreviewObjectUrl;
-          this.previewPdfSafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.currentPreviewObjectUrl);
-        },
-        error: () => {
-          this.previewPdfUrl = '';
-          this.previewPdfSafeUrl = '';
-        }
-      });
-  }
-
-  private revokePreviewObjectUrl(): void {
-    if (this.currentPreviewObjectUrl) {
-      URL.revokeObjectURL(this.currentPreviewObjectUrl);
-      this.currentPreviewObjectUrl = '';
-    }
-    this.previewPdfUrl = '';
-    this.previewPdfSafeUrl = '';
   }
 
   private saveBlob(response: HttpResponse<Blob>, resolvedUrl: string, title: string): void {
