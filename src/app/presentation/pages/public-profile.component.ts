@@ -27,9 +27,23 @@ import { ProfileService } from '../../core/services/profile.service';
 
           <article *ngIf="vm.profile as profile" class="overflow-hidden border border-gray-100 bg-white">
             <div class="bg-hus-blue px-6 py-8 text-white">
-              <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">{{ roleLabel(profile) }}</p>
-              <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">{{ displayName(profile) }}</h1>
-              <p class="mt-3 max-w-2xl text-sm text-blue-50">{{ headline(profile) }}</p>
+              <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
+                <div class="h-24 w-24 overflow-hidden border-4 border-white/30 bg-white/10 shadow-lg">
+                  <img *ngIf="avatarUrl(profile)"
+                       [src]="avatarUrl(profile)"
+                       [alt]="displayName(profile)"
+                       class="h-full w-full object-cover">
+                  <div *ngIf="!avatarUrl(profile)" class="flex h-full w-full items-center justify-center text-3xl font-black uppercase text-white">
+                    {{ initials(profile) }}
+                  </div>
+                </div>
+
+                <div class="min-w-0">
+                  <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">{{ roleLabel(profile) }}</p>
+                  <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">{{ displayName(profile) }}</h1>
+                  <p class="mt-3 max-w-2xl overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-blue-50">{{ headline(profile) }}</p>
+                </div>
+              </div>
             </div>
 
             <div class="grid gap-6 px-6 py-6 lg:grid-cols-[2fr_1fr]">
@@ -48,7 +62,7 @@ import { ProfileService } from '../../core/services/profile.service';
 
                   <div>
                     <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Giới thiệu</p>
-                    <p class="mt-2 whitespace-pre-line text-sm leading-7 text-gray-700">{{ showValue(profile.lecturer?.bio) }}</p>
+                    <p class="mt-2 max-w-full overflow-hidden break-words [overflow-wrap:anywhere] whitespace-pre-line text-sm leading-7 text-gray-700">{{ showValue(profile.lecturer?.bio) }}</p>
                   </div>
 
                   <div>
@@ -81,12 +95,12 @@ import { ProfileService } from '../../core/services/profile.service';
 
                   <div>
                     <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Giới thiệu</p>
-                    <p class="mt-2 whitespace-pre-line text-sm leading-7 text-gray-700">{{ showValue(profile.student?.bio) }}</p>
+                    <p class="mt-2 max-w-full overflow-hidden break-words [overflow-wrap:anywhere] whitespace-pre-line text-sm leading-7 text-gray-700">{{ showValue(profile.student?.bio) }}</p>
                   </div>
 
                   <div>
                     <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Thành tích</p>
-                    <p class="mt-2 whitespace-pre-line text-sm leading-7 text-gray-700">{{ showValue(profile.student?.achievements) }}</p>
+                    <p class="mt-2 max-w-full overflow-hidden break-words [overflow-wrap:anywhere] whitespace-pre-line text-sm leading-7 text-gray-700">{{ showValue(profile.student?.achievements) }}</p>
                   </div>
                 </section>
 
@@ -104,7 +118,7 @@ import { ProfileService } from '../../core/services/profile.service';
 
                   <div>
                     <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Giới thiệu</p>
-                    <p class="mt-2 whitespace-pre-line text-sm leading-7 text-gray-700">{{ showValue(profile.company?.description) }}</p>
+                    <p class="mt-2 max-w-full overflow-hidden break-words [overflow-wrap:anywhere] whitespace-pre-line text-sm leading-7 text-gray-700">{{ showValue(profile.company?.description) }}</p>
                   </div>
                 </section>
 
@@ -220,6 +234,26 @@ export class PublicProfileComponent {
   showValue(value?: string | null): string {
     const normalized = value?.trim();
     return normalized ? normalized : 'Chưa có thông tin';
+  }
+
+  avatarUrl(profile: ProfileMeResponse): string {
+    if (this.isLecturer(profile)) {
+      return profile.lecturer?.avatarUrl?.trim() || profile.avatarUrl?.trim() || '';
+    }
+    return profile.avatarUrl?.trim() || '';
+  }
+
+  initials(profile: ProfileMeResponse): string {
+    const parts = this.displayName(profile)
+      .split(/\s+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (parts.length === 0) {
+      return 'U';
+    }
+
+    return parts.slice(0, 2).map((item) => item.charAt(0)).join('').toUpperCase();
   }
 
   private combineName(firstName?: string | null, lastName?: string | null): string {

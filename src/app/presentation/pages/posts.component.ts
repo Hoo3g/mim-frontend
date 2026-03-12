@@ -32,12 +32,6 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                 Kết nối sinh viên MIM với cơ hội nghề nghiệp
               </p>
             </div>
-
-            <a *ngIf="canManageRecruitmentPosts()"
-               [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
-               class="inline-flex items-center justify-center px-5 py-2.5 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors w-full sm:w-auto">
-              Quản lý bài đăng
-            </a>
           </div>
         </div>
       </div>

@@ -2,7 +2,6 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { catchError, forkJoin, map, Observable, of } from 'rxjs';
 import { PaperAuthor, ResearchPaper } from '../models/research-paper.model';
-import { MOCK_NEWS, MOCK_PAPERS } from '../../infrastructure/mock/data';
 import type { AuthUser } from '../signals/auth.signal';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
@@ -55,12 +54,10 @@ interface ResearchBookmarkApiModel {
 export class ResearchPaperService {
     private readonly http = inject(HttpClient);
 
-    private readonly mockPapers = MOCK_PAPERS.map((paper) => this.clonePaper(paper));
-
     getPapers(): Observable<ResearchPaper[]> {
         const papers$ = this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.LIST).pipe(
             map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
-            catchError(() => of(this.mockPapers.map((paper) => this.clonePaper(paper))))
+            catchError(() => of([]))
         );
 
         return forkJoin([papers$, this.getBookmarkedPaperIds()]).pipe(
@@ -74,10 +71,7 @@ export class ResearchPaperService {
     getPaperById(id: string): Observable<ResearchPaper | undefined> {
         const paper$ = this.http.get<ApiResponse<ResearchPaperApiModel>>(API_ENDPOINTS.RESEARCH.DETAIL(id)).pipe(
             map((response) => this.toPaperModel(this.unwrap(response))),
-            catchError(() => {
-                const fallback = this.mockPapers.find((paper) => paper.id === id);
-                return of(fallback ? this.clonePaper(fallback) : undefined);
-            })
+            catchError(() => of(undefined))
         );
 
         return forkJoin([paper$, this.getBookmarkedPaperIds()]).pipe(
@@ -99,31 +93,11 @@ export class ResearchPaperService {
         );
     }
 
-    getMyPapers(currentUser: AuthUser): Observable<ResearchPaper[]> {
+    getMyPapers(_currentUser: AuthUser): Observable<ResearchPaper[]> {
         return this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.MY_PAPERS).pipe(
             map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
-            catchError(() => of(this.mockPapers.filter((paper) => this.isOwnedByUser(paper, currentUser))
-                .map((paper) => this.clonePaper(paper))))
+            catchError(() => of([]))
         );
-    }
-
-    isOwnedByUser(paper: ResearchPaper, currentUser: AuthUser): boolean {
-        const mainAuthor = this.getMainAuthor(paper);
-        if (!mainAuthor) {
-            return false;
-        }
-
-        const normalizedAuthor = this.normalize(mainAuthor.name);
-        const normalizedEmailPrefix = this.normalize(this.emailPrefix(currentUser.email));
-
-        if (!normalizedEmailPrefix) {
-            return mainAuthor.studentId === currentUser.id;
-        }
-
-        return mainAuthor.studentId === currentUser.id
-            || normalizedAuthor === normalizedEmailPrefix
-            || normalizedAuthor.includes(normalizedEmailPrefix)
-            || normalizedEmailPrefix.includes(normalizedAuthor);
     }
 
     saveFromEditor(payload: ResearchEditorPayload, _currentUser: AuthUser): Observable<ResearchPaper | null> {
@@ -149,10 +123,6 @@ export class ResearchPaperService {
             map((response) => this.toPaperModel(this.unwrap(response))),
             catchError(() => of(null))
         );
-    }
-
-    getNews(): Observable<any[]> {
-        return of(MOCK_NEWS);
     }
 
     getBookmarkedPaperIds(): Observable<Set<string>> {
@@ -256,30 +226,5 @@ export class ResearchPaperService {
             }
         }
         return new Date();
-    }
-
-    private getMainAuthor(paper: ResearchPaper): PaperAuthor | undefined {
-        return paper.authors.find((author) => author.isMainAuthor) ?? paper.authors[0];
-    }
-
-    private clonePaper(paper: ResearchPaper): ResearchPaper {
-        return {
-            ...paper,
-            authors: paper.authors.map((author) => ({ ...author })),
-            createdAt: new Date(paper.createdAt),
-            updatedAt: new Date(paper.updatedAt)
-        };
-    }
-
-    private emailPrefix(email: string): string {
-        return email.split('@')[0]?.trim() ?? '';
-    }
-
-    private normalize(value: string): string {
-        return value
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, '');
     }
 }

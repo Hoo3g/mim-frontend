@@ -134,6 +134,16 @@ import { ROUTES } from '../../core/constants/route.const';
                 </a>
 
                 <a *ngIf="canManageRecruitmentPosts()"
+                   [routerLink]="ROUTES.RECRUITMENT_EDITOR"
+                   (click)="showProfileMenu = false"
+                   class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Tạo bài tuyển dụng
+                </a>
+
+                <a *ngIf="canManageRecruitmentPosts()"
                    [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
                    (click)="showProfileMenu = false"
                    class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
@@ -214,6 +224,12 @@ import { ROUTES } from '../../core/constants/route.const';
                    (click)="closeMobileMenu()"
                    class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
                   Bài đã lưu
+                </a>
+                <a *ngIf="canManageRecruitmentPosts()"
+                   [routerLink]="ROUTES.RECRUITMENT_EDITOR"
+                   (click)="closeMobileMenu()"
+                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
+                  Tạo bài tuyển dụng
                 </a>
                 <a *ngIf="canManageRecruitmentPosts()"
                    [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"

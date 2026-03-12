@@ -1,18 +1,18 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
-import { Observable, finalize, switchMap } from 'rxjs';
+import { Observable, finalize, switchMap, tap } from 'rxjs';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ResearchPaper } from '../../core/models/research-paper.model';
 import { authSignal } from '../../core/signals/auth.signal';
 import { API_CONFIG } from '../../core/config/api.config';
-import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-canvas-viewer.component';
 
 @Component({
   selector: 'app-research-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, PdfCanvasViewerComponent],
+  imports: [CommonModule, RouterModule],
   template: `
     <div *ngIf="paper$ | async as paper" class="min-h-screen bg-white pb-20">
       
@@ -52,7 +52,7 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
               </button>
             </div>
             
-            <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-6 sm:mb-8">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-6 sm:mb-8">
               {{ paper.title }}
             </h1>
             
@@ -71,6 +71,11 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
                    </div>
                  </div>
                </div>
+               
+               <div class="flex flex-wrap items-center gap-4 sm:gap-6 pt-4 border-t border-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                 <span>Tạp chí: <span class="text-hus-blue">{{ paper.journalConference || 'MIM - VNU HUS' }}</span></span>
+                 <span>ID: #{{ paper.id.slice(0,8).toUpperCase() }}</span>
+               </div>
             </div>
           </header>
 
@@ -82,7 +87,7 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
               <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] mb-6 inline-block border-b-4 border-hus-blue pb-1">
                 Tóm tắt Nghiên cứu
               </h2>
-              <div class="research-rich-content text-lg text-gray-700 leading-relaxed text-justify font-light"
+              <div class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-lg text-gray-700 leading-relaxed text-justify font-light whitespace-pre-wrap [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:ml-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:ml-4 [&_li]:mb-2 [&_p]:mb-4"
                    [innerHTML]="paper.abstract"></div>
             </section>
 
@@ -94,20 +99,45 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
                 </h2>
                 
               </div>
-              <div class="w-full aspect-[1/1.55] min-h-[560px] md:min-h-[720px] bg-gray-50 border-2 border-hus-blue/10">
-                <app-pdf-canvas-viewer *ngIf="hasPdfUrl(paper.pdfUrl); else missingInlinePdf"
-                                       [src]="getDownloadUrl(paper.pdfUrl)"
-                                       [title]="paper.title"
-                                       class="block w-full h-full">
-                </app-pdf-canvas-viewer>
-                <ng-template #missingInlinePdf>
+              <div class="w-full h-[72vh] md:h-[82vh] lg:h-[90vh] min-h-[420px] sm:min-h-[560px] bg-gray-50 border-2 border-hus-blue/10">
+                <div *ngIf="isLoadingPreview" class="w-full h-full flex items-center justify-center text-center px-6">
+                  <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
+                    Äang táº£i báº£n xem trÆ°á»›c PDF...
+                  </p>
+                </div>
+                <iframe *ngIf="!isLoadingPreview && previewPdfUrl; else cannotPreviewPdf"
+                        [src]="previewPdfSafeUrl"
+                        class="w-full h-full"
+                        frameborder="0"
+                        loading="lazy">
+                </iframe>
+                  <div *ngIf="false" class="w-full h-full flex flex-col items-center justify-center text-center px-6">
+                    <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
+                      Trình duyệt không hỗ trợ xem PDF trực tiếp.
+                    </p>
+                    <a *ngIf="hasPdfUrl(paper.pdfUrl)"
+                       [href]="getDownloadUrl(paper.pdfUrl)"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="mt-4 inline-flex items-center justify-center border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest px-4 py-2 hover:bg-hus-blue hover:text-white transition-colors">
+                      Mở PDF ở tab mới
+                    </a>
+                  </div>
+                <ng-template #cannotPreviewPdf>
                   <div class="w-full h-full flex flex-col items-center justify-center text-center px-6">
                     <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
-                      Chưa có PDF để hiển thị.
+                      Không thể nhúng PDF trực tiếp.
                     </p>
                     <p class="mt-2 text-xs text-gray-500 max-w-md">
-                      Bài nghiên cứu hiện chưa có file PDF công khai.
+                      Nguồn tệp hiện tại chặn hiển thị trong iframe. Vui lòng mở tệp ở tab mới để xem đầy đủ nội dung.
                     </p>
+                    <a *ngIf="hasPdfUrl(paper.pdfUrl)"
+                       [href]="getDownloadUrl(paper.pdfUrl)"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="mt-4 inline-flex items-center justify-center border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest px-4 py-2 hover:bg-hus-blue hover:text-white transition-colors">
+                      Mở PDF ở tab mới
+                    </a>
                   </div>
                 </ng-template>
               </div>
@@ -141,19 +171,26 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
     </div>
   `
 })
-export class ResearchDetailComponent {
+export class ResearchDetailComponent implements OnDestroy {
   private route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
   private paperService = inject(ResearchPaperService);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly forceExternalPdfView = this.shouldForceExternalPdfView();
   private readonly frontendOrigin = this.resolveOrigin(typeof window !== 'undefined' ? window.location.origin : '');
   private readonly backendOrigin = this.resolveOrigin(API_CONFIG.BASE_URL);
   private readonly frontendProtocol = this.resolveProtocol(this.frontendOrigin);
   private readonly backendHost = this.resolveHost(this.backendOrigin);
   isAuth = authSignal.isAuth;
   isDownloadingPdf = false;
+  previewPdfUrl = '';
+  previewPdfSafeUrl: SafeResourceUrl = '';
+  isLoadingPreview = false;
+  private currentPreviewObjectUrl = '';
 
   paper$: Observable<ResearchPaper | undefined> = this.route.paramMap.pipe(
-    switchMap(params => this.paperService.getPaperById(params.get('id')!))
+    switchMap(params => this.paperService.getPaperById(params.get('id')!)),
+    tap((paper) => this.loadPreviewPdf(paper?.pdfUrl ?? ''))
   );
 
   toggleBookmark(paper: ResearchPaper): void {
@@ -176,6 +213,10 @@ export class ResearchDetailComponent {
 
   hasPdfUrl(url: string): boolean {
     return !!this.getDownloadUrl(url);
+  }
+
+  ngOnDestroy(): void {
+    this.revokePreviewObjectUrl();
   }
 
   downloadPdf(url: string, title: string): void {
@@ -231,6 +272,17 @@ export class ResearchDetailComponent {
     }
   }
 
+  private shouldForceExternalPdfView(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    const width = window.innerWidth || 0;
+    const userAgent = window.navigator?.userAgent ?? '';
+    const isMobileAgent = /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(userAgent);
+    return isMobileAgent || width < 1024;
+  }
+
   private resolveProtocol(origin: string): string {
     try {
       return new URL(origin).protocol;
@@ -265,6 +317,48 @@ export class ResearchDetailComponent {
     }
 
     return url;
+  }
+
+  private loadPreviewPdf(rawUrl: string): void {
+    this.revokePreviewObjectUrl();
+
+    if (this.forceExternalPdfView) {
+      return;
+    }
+
+    const resolved = this.getDownloadUrl(rawUrl);
+    if (!resolved) {
+      return;
+    }
+
+    this.isLoadingPreview = true;
+    this.http.get(resolved, { responseType: 'blob' })
+      .pipe(finalize(() => {
+        this.isLoadingPreview = false;
+      }))
+      .subscribe({
+        next: (blob) => {
+          if (!blob || blob.size === 0) {
+            return;
+          }
+          this.currentPreviewObjectUrl = URL.createObjectURL(blob);
+          this.previewPdfUrl = this.currentPreviewObjectUrl;
+          this.previewPdfSafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.currentPreviewObjectUrl);
+        },
+        error: () => {
+          this.previewPdfUrl = '';
+          this.previewPdfSafeUrl = '';
+        }
+      });
+  }
+
+  private revokePreviewObjectUrl(): void {
+    if (this.currentPreviewObjectUrl) {
+      URL.revokeObjectURL(this.currentPreviewObjectUrl);
+      this.currentPreviewObjectUrl = '';
+    }
+    this.previewPdfUrl = '';
+    this.previewPdfSafeUrl = '';
   }
 
   private saveBlob(response: HttpResponse<Blob>, resolvedUrl: string, title: string): void {

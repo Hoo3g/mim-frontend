@@ -6,9 +6,11 @@ import { catchError, map, Observable, of } from 'rxjs';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import {
+    AuthApiUser,
     AuthResponse,
     GoogleLoginRequest,
     LoginRequest,
+    RegisterRequest,
     UserType
 } from '../../features/auth/models/auth.model';
 import { authSignal } from '../signals/auth.signal';
@@ -25,6 +27,12 @@ export class AuthService {
         return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.LOGIN, request, { withCredentials: true }).pipe(
             map((response) => this.unwrap(response)),
             map((auth) => this.persistAuth(auth))
+        );
+    }
+
+    register(request: RegisterRequest): Observable<AuthApiUser> {
+        return this.http.post<ApiResponse<AuthApiUser>>(API_ENDPOINTS.AUTH.REGISTER, request, { withCredentials: true }).pipe(
+            map((response) => this.unwrap(response))
         );
     }
 
@@ -95,11 +103,19 @@ export class AuthService {
     private pickRole(roles: string[]): Role {
         const normalizedRoles = roles
             .map((role) => role?.toUpperCase?.() ?? '')
+            .map((role) => role.startsWith('ROLE_') ? role.substring(5) : role)
             .filter((role) => !!role);
+        const dedupedRoles = [...new Set(normalizedRoles)];
 
-        if (normalizedRoles.includes(Role.ADMIN)) return Role.ADMIN;
-        if (normalizedRoles.includes(Role.LECTURER)) return Role.LECTURER;
-        if (normalizedRoles.includes(Role.COMPANY)) return Role.COMPANY;
+        if (dedupedRoles.length > 1) {
+            console.warn('Multiple roles detected for one account. Applying single-role mode with first role.', dedupedRoles);
+        }
+
+        const firstRole = dedupedRoles[0] ?? '';
+        if (firstRole === Role.ADMIN) return Role.ADMIN;
+        if (firstRole === Role.LECTURER) return Role.LECTURER;
+        if (firstRole === Role.COMPANY) return Role.COMPANY;
+        if (firstRole === Role.STUDENT) return Role.STUDENT;
         return Role.STUDENT;
     }
 
@@ -118,7 +134,8 @@ export class AuthService {
 
             authSignal.updateUserInfo({
                 fullName: this.buildDisplayNameFromProfile(profile),
-                avatarUrl: profile.avatarUrl ?? undefined
+                avatarUrl: profile.avatarUrl ?? undefined,
+                role: profile.role ?? undefined
             });
         });
     }

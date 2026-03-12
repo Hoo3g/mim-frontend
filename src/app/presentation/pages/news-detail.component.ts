@@ -43,7 +43,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
           </h1>
 
           <p *ngIf="news.summary"
-             class="mt-4 text-sm text-gray-500 font-semibold leading-relaxed">
+             class="mt-4 max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-500 font-semibold leading-relaxed">
             {{ news.summary }}
           </p>
 
@@ -53,7 +53,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                class="mt-6 w-full h-56 sm:h-72 object-cover border border-gray-100">
 
           <div class="mt-6 pt-6 border-t border-gray-100">
-            <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+            <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 leading-relaxed whitespace-pre-line">
               {{ news.content || news.summary || 'Nội dung đang được cập nhật.' }}
             </p>
           </div>

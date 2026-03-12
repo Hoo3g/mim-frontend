@@ -3,13 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { catchError, map, Observable, of, timeout } from 'rxjs';
 
 import { Post, PostDisplayInfo } from '../models/post.model';
-import { MOCK_POSTS } from '../../infrastructure/mock/data';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import { PendingApplicantResponse, PendingApplicationResponse } from '../models/profile.model';
-import { AuthUser, authSignal } from '../signals/auth.signal';
-
-const LOCAL_POSTS_STORAGE_KEY = 'mim.recruitment.local.posts';
+import { AuthUser } from '../signals/auth.signal';
 
 interface ApiResearchPaperLink {
     id?: string;
@@ -113,7 +110,7 @@ export class PostService {
                 }
                 return response.data.map((item) => this.toPostModel(item));
             }),
-            catchError(() => of(MOCK_POSTS.map((post) => this.clonePost(post))))
+            catchError(() => of([]))
         );
     }
 
@@ -126,7 +123,7 @@ export class PostService {
                 }
                 return response.data.map((item) => this.toPostModel(item));
             }),
-            catchError(() => this.getPosts()),
+            catchError(() => of([])),
             map((posts) => posts
                 .filter((post) => post.authorId === authorId)
                 .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()))
@@ -134,8 +131,6 @@ export class PostService {
     }
 
     getPostById(id: string): Observable<Post | undefined> {
-        const localPost = this.findLocalPost(id);
-
         return this.http.get<ApiResponse<ApiPostModel>>(API_ENDPOINTS.RECRUITMENT.DETAIL(id)).pipe(
             map((response) => {
                 if (!response.success || !response.data) {
@@ -143,14 +138,7 @@ export class PostService {
                 }
                 return this.toPostModel(response.data);
             }),
-            map((remotePost) => localPost ? this.clonePost(localPost) : remotePost),
-            catchError(() => {
-                if (localPost) {
-                    return of(this.clonePost(localPost));
-                }
-                const mock = MOCK_POSTS.find((post) => post.id === id);
-                return of(mock ? this.clonePost(mock) : undefined);
-            })
+            catchError(() => of(undefined))
         );
     }
 
@@ -214,37 +202,36 @@ export class PostService {
     }
 
     private toPostModel(item: ApiPostModel): Post {
-        const fallback = MOCK_POSTS.find((post) => post.id === item.id);
         const defaultCreatedAt = new Date();
         return {
             id: item.id,
-            authorId: item.authorId ?? fallback?.authorId ?? '',
-            authorName: item.authorName ?? fallback?.authorName ?? 'Unknown',
-            authorAvatarUrl: item.authorAvatarUrl ?? fallback?.authorAvatarUrl,
-            title: item.title ?? fallback?.title ?? 'Untitled',
-            description: item.description ?? fallback?.description ?? '',
-            requirements: item.requirements ?? fallback?.requirements,
-            achievements: item.achievements ?? fallback?.achievements,
-            benefits: item.benefits ?? fallback?.benefits,
-            postType: (item.postType ?? fallback?.postType ?? 'COMPANY_RECRUITING_JOB') as Post['postType'],
-            jobType: (item.jobType ?? fallback?.jobType ?? 'FULL_TIME') as Post['jobType'],
-            tags: item.tags ?? fallback?.tags ?? [],
-            studentCvUrl: item.studentCvUrl ?? fallback?.studentCvUrl,
-            contactEmail: item.contactEmail ?? fallback?.contactEmail,
-            contactPhone: item.contactPhone ?? fallback?.contactPhone,
+            authorId: item.authorId ?? '',
+            authorName: item.authorName ?? 'Unknown',
+            authorAvatarUrl: item.authorAvatarUrl,
+            title: item.title ?? 'Untitled',
+            description: item.description ?? '',
+            requirements: item.requirements,
+            achievements: item.achievements,
+            benefits: item.benefits,
+            postType: (item.postType ?? 'COMPANY_RECRUITING_JOB') as Post['postType'],
+            jobType: (item.jobType ?? 'FULL_TIME') as Post['jobType'],
+            tags: item.tags ?? [],
+            studentCvUrl: item.studentCvUrl,
+            contactEmail: item.contactEmail,
+            contactPhone: item.contactPhone,
             researchPaperLinks: item.researchPaperLinks?.map((paper) => ({
                 id: paper.id,
                 title: paper.title ?? '',
                 url: paper.url ?? ''
-            })) ?? fallback?.researchPaperLinks ?? [],
-            displayInfo: item.displayInfo ?? fallback?.displayInfo,
-            location: item.location ?? fallback?.location,
-            salaryRange: item.salaryRange ?? fallback?.salaryRange,
-            status: item.status ?? fallback?.status ?? 'OPEN',
+            })) ?? [],
+            displayInfo: item.displayInfo,
+            location: item.location,
+            salaryRange: item.salaryRange,
+            status: item.status ?? 'OPEN',
             approvalStatus: item.approvalStatus,
             moderationComment: item.moderationComment,
-            createdAt: this.toDate(item.createdAt, fallback?.createdAt ?? defaultCreatedAt),
-            updatedAt: this.toDate(item.updatedAt, fallback?.updatedAt ?? defaultCreatedAt)
+            createdAt: this.toDate(item.createdAt, defaultCreatedAt),
+            updatedAt: this.toDate(item.updatedAt, defaultCreatedAt)
         };
     }
 
@@ -254,11 +241,10 @@ export class PostService {
         user: AuthUser,
         existingId?: string
     ): Post {
-        const existing = existingId ? this.findLocalPost(existingId) : undefined;
         const now = new Date();
-        const hydrated: Post = {
+        return {
             ...post,
-            id: post.id || existingId || this.generateLocalId(),
+            id: post.id || existingId || '',
             authorId: post.authorId || user.id,
             authorName: post.authorName || user.fullName || this.emailName(user.email),
             authorAvatarUrl: post.authorAvatarUrl || user.avatarUrl,
@@ -277,201 +263,11 @@ export class PostService {
             salaryRange: payload.salaryRange,
             contactEmail: payload.contactEmail ?? user.email,
             contactPhone: payload.contactPhone,
-            status: payload.status ?? post.status ?? existing?.status ?? 'OPEN',
-            approvalStatus: post.approvalStatus ?? existing?.approvalStatus ?? 'PENDING',
-            createdAt: post.createdAt ?? existing?.createdAt ?? now,
+            status: payload.status ?? post.status ?? 'OPEN',
+            approvalStatus: post.approvalStatus ?? 'PENDING',
+            createdAt: post.createdAt ?? now,
             updatedAt: post.updatedAt ?? now
         };
-
-        this.persistLocalPost(hydrated);
-        return hydrated;
-    }
-
-    private createLocalPost(payload: PostEditorPayload, user: AuthUser): Post {
-        const now = new Date();
-        const localPost: Post = {
-            id: this.generateLocalId(),
-            authorId: user.id,
-            authorName: user.fullName || this.emailName(user.email),
-            authorAvatarUrl: user.avatarUrl,
-            title: payload.title,
-            description: payload.description,
-            requirements: payload.requirements,
-            achievements: payload.achievements,
-            benefits: payload.benefits,
-            postType: payload.postType,
-            jobType: payload.jobType,
-            tags: payload.tags ?? [],
-            studentCvUrl: payload.studentCvUrl,
-            contactEmail: payload.contactEmail ?? user.email,
-            contactPhone: payload.contactPhone,
-            researchPaperLinks: payload.researchPaperLinks ?? [],
-            displayInfo: payload.displayInfo,
-            location: payload.location ?? '',
-            salaryRange: payload.salaryRange,
-            status: payload.status ?? 'OPEN',
-            approvalStatus: 'PENDING',
-            createdAt: now,
-            updatedAt: now
-        };
-
-        this.persistLocalPost(localPost);
-        return this.clonePost(localPost);
-    }
-
-    private upsertLocalPost(postId: string, payload: PostEditorPayload, user: AuthUser): Post {
-        const current = this.findLocalPost(postId) ?? MOCK_POSTS.find((post) => post.id === postId);
-        const now = new Date();
-
-        const localPost: Post = {
-            id: postId,
-            authorId: user.id,
-            authorName: user.fullName || this.emailName(user.email),
-            authorAvatarUrl: user.avatarUrl,
-            title: payload.title,
-            description: payload.description,
-            requirements: payload.requirements,
-            achievements: payload.achievements,
-            benefits: payload.benefits,
-            postType: payload.postType,
-            jobType: payload.jobType,
-            tags: payload.tags ?? [],
-            studentCvUrl: payload.studentCvUrl ?? current?.studentCvUrl,
-            contactEmail: payload.contactEmail ?? user.email,
-            contactPhone: payload.contactPhone,
-            researchPaperLinks: payload.researchPaperLinks ?? current?.researchPaperLinks ?? [],
-            displayInfo: payload.displayInfo ?? current?.displayInfo,
-            location: payload.location ?? '',
-            salaryRange: payload.salaryRange,
-            status: payload.status ?? current?.status ?? 'OPEN',
-            approvalStatus: current?.approvalStatus ?? 'PENDING',
-            moderationComment: current?.moderationComment,
-            createdAt: current?.createdAt ? new Date(current.createdAt) : now,
-            updatedAt: now
-        };
-
-        this.persistLocalPost(localPost);
-        return this.clonePost(localPost);
-    }
-
-    private mergeWithLocalPosts(remotePosts: Post[]): Post[] {
-        const merged = new Map<string, Post>();
-        const currentUserId = authSignal.user()?.id;
-
-        remotePosts.forEach((post) => {
-            merged.set(post.id, this.clonePost(post));
-        });
-
-        this.readLocalPosts().forEach((post) => {
-            if (!currentUserId || post.authorId !== currentUserId) {
-                return;
-            }
-            merged.set(post.id, this.clonePost(post));
-        });
-
-        return Array.from(merged.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    }
-
-    private persistLocalPost(post: Post): void {
-        const localPosts = this.readLocalPosts();
-        const index = localPosts.findIndex((item) => item.id === post.id);
-        const cloned = this.clonePost(post);
-
-        if (index >= 0) {
-            localPosts[index] = cloned;
-        } else {
-            localPosts.push(cloned);
-        }
-
-        this.writeLocalPosts(localPosts);
-    }
-
-    private findLocalPost(postId: string): Post | undefined {
-        return this.readLocalPosts().find((post) => post.id === postId);
-    }
-
-    private readLocalPosts(): Post[] {
-        if (!this.canUseStorage()) {
-            return [];
-        }
-
-        try {
-            const raw = localStorage.getItem(LOCAL_POSTS_STORAGE_KEY);
-            if (!raw) {
-                return [];
-            }
-
-            const parsed = JSON.parse(raw);
-            if (!Array.isArray(parsed)) {
-                return [];
-            }
-
-            return parsed
-                .map((item: unknown) => this.mapStoragePost(item))
-                .filter((item): item is Post => !!item);
-        } catch {
-            return [];
-        }
-    }
-
-    private writeLocalPosts(posts: Post[]): void {
-        if (!this.canUseStorage()) {
-            return;
-        }
-
-        localStorage.setItem(
-            LOCAL_POSTS_STORAGE_KEY,
-            JSON.stringify(posts.map((item) => ({
-                ...item,
-                createdAt: item.createdAt.toISOString(),
-                updatedAt: item.updatedAt.toISOString()
-            })))
-        );
-    }
-
-    private mapStoragePost(input: unknown): Post | null {
-        if (!input || typeof input !== 'object') {
-            return null;
-        }
-
-        const item = input as Partial<Post>;
-        if (!item.id || !item.authorId || !item.title || !item.description || !item.postType || !item.jobType) {
-            return null;
-        }
-
-        const fallback = MOCK_POSTS[0];
-        return {
-            id: item.id,
-            authorId: item.authorId,
-            authorName: item.authorName ?? fallback.authorName,
-            authorAvatarUrl: item.authorAvatarUrl,
-            title: item.title,
-            description: item.description,
-            requirements: item.requirements,
-            achievements: item.achievements,
-            benefits: item.benefits,
-            postType: item.postType,
-            jobType: item.jobType,
-            tags: Array.isArray(item.tags) ? item.tags : [],
-            studentCvUrl: item.studentCvUrl,
-            contactEmail: item.contactEmail,
-            contactPhone: item.contactPhone,
-            researchPaperLinks: Array.isArray(item.researchPaperLinks)
-                ? item.researchPaperLinks.map((paper) => ({ ...paper }))
-                : [],
-            displayInfo: item.displayInfo,
-            location: item.location,
-            salaryRange: item.salaryRange,
-            status: item.status ?? 'OPEN',
-            approvalStatus: item.approvalStatus,
-            moderationComment: item.moderationComment,
-            createdAt: this.toDate(item.createdAt, new Date()),
-            updatedAt: this.toDate(item.updatedAt, new Date())
-        };
-    }
-
-    private canUseStorage(): boolean {
-        return typeof localStorage !== 'undefined';
     }
 
     private normalizeTags(tags?: string[]): string[] {
@@ -558,14 +354,6 @@ export class PostService {
             researchPaperLinks: payload.researchPaperLinks,
             displayInfo: payload.displayInfo
         };
-    }
-
-    private generateLocalId(): string {
-        if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-            return crypto.randomUUID();
-        }
-
-        return `local-${Date.now()}-${Math.round(Math.random() * 1_000_000)}`;
     }
 
     private emailName(email: string): string {
