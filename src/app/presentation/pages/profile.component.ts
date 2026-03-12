@@ -89,17 +89,17 @@ import { ResearchCategory } from '../../core/models/research-category.model';
 
                 <div>
                   <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Giới thiệu</p>
-                  <p class="text-sm text-gray-700 whitespace-pre-line">{{ showValue(me.student?.bio) }}</p>
+                  <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 whitespace-pre-line">{{ showValue(me.student?.bio) }}</p>
                 </div>
 
                 <div>
                   <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Thành tích</p>
-                  <p class="text-sm text-gray-700 whitespace-pre-line">{{ showValue(me.student?.achievements) }}</p>
+                  <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 whitespace-pre-line">{{ showValue(me.student?.achievements) }}</p>
                 </div>
 
                 <div>
                   <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Mong muốn nghề nghiệp</p>
-                  <p class="text-sm text-gray-700 whitespace-pre-line">{{ showValue(me.student?.careerGoal) }}</p>
+                  <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 whitespace-pre-line">{{ showValue(me.student?.careerGoal) }}</p>
                 </div>
               </div>
 
@@ -271,7 +271,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
                 </div>
                 <div>
                   <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-2">Giới thiệu</p>
-                  <p class="text-gray-700 whitespace-pre-line">{{ showValue(me.company?.description) }}</p>
+                  <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-gray-700 whitespace-pre-line">{{ showValue(me.company?.description) }}</p>
                 </div>
               </div>
 
@@ -388,7 +388,7 @@ import { ResearchCategory } from '../../core/models/research-category.model';
                 </div>
                 <div>
                   <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-2">Giới thiệu</p>
-                  <p class="text-gray-700 whitespace-pre-line">{{ showValue(me.lecturer?.bio) }}</p>
+                  <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-gray-700 whitespace-pre-line">{{ showValue(me.lecturer?.bio) }}</p>
                 </div>
                 <div>
                   <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-2">Hướng nghiên cứu</p>

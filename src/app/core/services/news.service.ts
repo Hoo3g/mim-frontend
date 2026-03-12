@@ -4,8 +4,7 @@ import { catchError, map, Observable, of } from 'rxjs';
 
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
-import { NewsItem, NewsStatus } from '../models/news.model';
-import { MOCK_NEWS } from '../../infrastructure/mock/data';
+import { NewsItem } from '../models/news.model';
 
 interface NewsApiModel {
     id?: string;
@@ -27,14 +26,14 @@ export class NewsService {
     getPublicNews(): Observable<NewsItem[]> {
         return this.http.get<ApiResponse<NewsApiModel[]>>(API_ENDPOINTS.NEWS.LIST).pipe(
             map((response) => this.unwrapList(response).map((item) => this.toNewsItem(item))),
-            catchError(() => of(this.fallbackNews()))
+            catchError(() => of([]))
         );
     }
 
     getPublicNewsById(newsId: string): Observable<NewsItem | null> {
         return this.http.get<ApiResponse<NewsApiModel>>(API_ENDPOINTS.NEWS.DETAIL(newsId)).pipe(
             map((response) => this.toNewsItem(this.unwrap(response))),
-            catchError(() => of(this.fallbackNews().find((item) => item.id === newsId) ?? null))
+            catchError(() => of(null))
         );
     }
 
@@ -78,18 +77,6 @@ export class NewsService {
             }
         }
         return new Date();
-    }
-
-    private fallbackNews(): NewsItem[] {
-        return MOCK_NEWS.map((item) => ({
-            id: item.id,
-            title: item.title,
-            content: item.summary,
-            summary: item.summary,
-            status: 'PUBLISHED' as NewsStatus,
-            pinned: false,
-            createdAt: this.toDate(item.date)
-        })).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     }
 
     private generateFallbackId(): string {

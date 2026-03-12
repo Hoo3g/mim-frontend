@@ -110,7 +110,7 @@ import { HttpErrorResponse } from '@angular/common/http';
                 <span class="w-1.5 h-1.5 bg-hus-blue"></span>
                 Giới thiệu chi tiết
               </h3>
-              <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line font-medium">
+              <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-600 leading-relaxed whitespace-pre-line font-medium">
                 {{ post.description }}
               </p>
             </section>
@@ -141,21 +141,21 @@ import { HttpErrorResponse } from '@angular/common/http';
 
               <div>
                 <h4 class="text-[10px] font-black text-gray-900 uppercase tracking-[0.18em] mb-3">Giới thiệu</h4>
-                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
                   {{ studentInfoValue('studentBio') }}
                 </p>
               </div>
 
               <div>
                 <h4 class="text-[10px] font-black text-hus-blue uppercase tracking-[0.18em] mb-3">Thành tích</h4>
-                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
                   {{ studentInfoValue('studentAchievements') }}
                 </p>
               </div>
 
               <div>
                 <h4 class="text-[10px] font-black text-gray-900 uppercase tracking-[0.18em] mb-3">Mong muốn nghề nghiệp</h4>
-                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
                   {{ studentInfoValue('studentCareerGoal') }}
                 </p>
               </div>
@@ -168,7 +168,7 @@ import { HttpErrorResponse } from '@angular/common/http';
                 Yêu cầu & Kỹ năng
               </h3>
               <div class="bg-gray-50 p-6 border-l-4 border-gray-900">
-                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
                   {{ post.requirements }}
                 </p>
               </div>
@@ -237,7 +237,7 @@ import { HttpErrorResponse } from '@angular/common/http';
                 <span class="w-1.5 h-1.5 bg-hus-blue"></span>
                 Quyền lợi hấp dẫn
               </h3>
-              <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line font-medium">
+              <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-600 leading-relaxed whitespace-pre-line font-medium">
                 {{ post.benefits }}
               </p>
             </section>
