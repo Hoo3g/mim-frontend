@@ -10,8 +10,7 @@ import { ROUTES } from '../../core/constants/route.const';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <header class="font-sans sticky top-0 z-50 transition-shadow duration-300"
-            [class.shadow-sm]="isCondensed">
+    <header class="font-sans fixed inset-x-0 top-0 z-50 transition-shadow duration-300 shadow-sm">
       <!-- Top Bar -->
       <div class="bg-hus-blue text-white text-[10px] uppercase tracking-widest py-1.5 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center justify-between gap-3 font-bold">
@@ -36,8 +35,8 @@ import { ROUTES } from '../../core/constants/route.const';
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex justify-between items-center h-16">
           <!-- Logo -->
-          <a routerLink="/" class="flex items-center gap-3 group">
-            <img src="assets/logo.png" alt="Logo" class="h-10 w-auto transition-transform group-hover:scale-110">
+          <a routerLink="/" class="flex items-center gap-2 sm:gap-3 group">
+            <img src="assets/logo.png" alt="Logo" class="h-8 sm:h-10 w-auto transition-transform group-hover:scale-110">
             <div class="hidden sm:flex flex-col border-l-2 border-hus-blue pl-3">
               <span class="text-gray-900 font-bold text-sm uppercase tracking-tighter leading-none group-hover:text-hus-blue transition-colors">
                 Khoa Toán - Cơ - Tin học
@@ -50,13 +49,13 @@ import { ROUTES } from '../../core/constants/route.const';
 
           <button type="button"
                   (click)="toggleMobileMenu($event)"
-                  class="md:hidden inline-flex items-center justify-center w-9 h-9 border border-gray-200 text-gray-500 hover:border-hus-blue hover:text-hus-blue transition-colors"
+                  class="md:hidden inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 border border-gray-200 text-gray-500 hover:border-hus-blue hover:text-hus-blue transition-colors"
                   [attr.aria-label]="showMobileMenu ? 'Đóng menu điều hướng' : 'Mở menu điều hướng'"
                   [attr.aria-expanded]="showMobileMenu">
-            <svg *ngIf="!showMobileMenu" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg *ngIf="!showMobileMenu" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
-            <svg *ngIf="showMobileMenu" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg *ngIf="showMobileMenu" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -72,7 +71,7 @@ import { ROUTES } from '../../core/constants/route.const';
             <a href="#" class="text-gray-500 hover:text-hus-blue font-bold text-[11px] uppercase tracking-widest h-full flex items-center border-b-[3px] border-transparent transition-all">
               ĐÀO TẠO
             </a>
-            <a href="#" class="text-gray-500 hover:text-hus-blue font-bold text-[11px] uppercase tracking-widest h-full flex items-center border-b-[3px] border-transparent transition-all">
+            <a routerLink="/news" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-500 hover:text-hus-blue font-bold text-[11px] uppercase tracking-widest h-full flex items-center border-b-[3px] border-transparent transition-all">
               TIN TỨC
             </a>
 
@@ -132,6 +131,16 @@ import { ROUTES } from '../../core/constants/route.const';
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                   Bài nghiên cứu của tôi
+                </a>
+
+                <a *ngIf="canManageRecruitmentPosts()"
+                   [routerLink]="ROUTES.RECRUITMENT_EDITOR"
+                   (click)="showProfileMenu = false"
+                   class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Tạo bài tuyển dụng
                 </a>
 
                 <a *ngIf="canManageRecruitmentPosts()"
@@ -217,6 +226,12 @@ import { ROUTES } from '../../core/constants/route.const';
                   Bài đã lưu
                 </a>
                 <a *ngIf="canManageRecruitmentPosts()"
+                   [routerLink]="ROUTES.RECRUITMENT_EDITOR"
+                   (click)="closeMobileMenu()"
+                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
+                  Tạo bài tuyển dụng
+                </a>
+                <a *ngIf="canManageRecruitmentPosts()"
                    [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
                    (click)="closeMobileMenu()"
                    class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
@@ -262,9 +277,11 @@ import { ROUTES } from '../../core/constants/route.const';
                class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
               Đào tạo
             </a>
-            <a href="#"
+            <a routerLink="/news"
+               routerLinkActive="text-hus-blue bg-blue-50"
+               (click)="closeMobileMenu()"
                class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
-              Tin tức
+              Bảng tin khoa
             </a>
           </div>
         </div>
@@ -344,52 +361,9 @@ export class NavComponent implements OnInit {
 
   @HostListener('window:scroll')
   onWindowScroll(): void {
-    const currentScrollY = this.document.defaultView?.scrollY ?? 0;
-
-    if (this.showMobileMenu) {
-      this.resetScrollTracking(currentScrollY);
-      return;
-    }
-
-    if (this.shouldUseTopOnlyNavMode()) {
-      this.updateMobileCondensedState(currentScrollY);
-      this.lastScrollY = currentScrollY;
-      return;
-    }
-
-    const delta = currentScrollY - this.lastScrollY;
-
-    if (Math.abs(delta) < this.minMeaningfulScrollDelta) {
-      this.lastScrollY = currentScrollY;
-      return;
-    }
-
-    if (currentScrollY <= this.topResetThreshold) {
-      this.setCondensed(false);
-      this.resetScrollTracking(currentScrollY);
-      return;
-    }
-
-    const direction: 'up' | 'down' = delta > 0 ? 'down' : 'up';
-    if (direction !== this.scrollDirection) {
-      this.scrollDirection = direction;
-      this.scrollTravelSinceDirectionChange = 0;
-    }
-
-    this.scrollTravelSinceDirectionChange += Math.abs(delta);
-
-    if (direction === 'down' &&
-      currentScrollY > this.hideNavMinScrollY &&
-      this.scrollTravelSinceDirectionChange >= this.hideNavTravelThreshold) {
-      this.setCondensed(true);
-      this.scrollTravelSinceDirectionChange = 0;
-    } else if (direction === 'up' &&
-      this.scrollTravelSinceDirectionChange >= this.showNavTravelThreshold) {
-      this.setCondensed(false);
-      this.scrollTravelSinceDirectionChange = 0;
-    }
-
-    this.lastScrollY = currentScrollY;
+    // Keep header fully fixed/expanded on every scroll position.
+    this.setCondensed(false);
+    this.lastScrollY = this.document.defaultView?.scrollY ?? 0;
   }
 
   @HostListener('document:click', ['$event'])
@@ -437,11 +411,8 @@ export class NavComponent implements OnInit {
   }
 
   private syncCondensedStateWithScroll(): void {
-    const currentScrollY = this.document.defaultView?.scrollY ?? 0;
-    if (!this.shouldUseTopOnlyNavMode()) {
-      return;
-    }
-    this.updateMobileCondensedState(currentScrollY);
+    this.setCondensed(false);
+    this.resetScrollTracking(this.document.defaultView?.scrollY ?? 0);
   }
 
   private shouldUseTopOnlyNavMode(): boolean {

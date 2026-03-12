@@ -15,16 +15,7 @@ import { authSignal } from '../../core/signals/auth.signal';
   template: `
     <div class="bg-white min-h-screen">
       <div class="bg-gray-50 border-b border-gray-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-          <div class="relative overflow-hidden border-2 border-hus-blue/10 bg-white p-8 md:p-10">
-            <h1 class="text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
-              Bài viết <span class="text-hus-blue">Nghiên cứu</span> của tôi
-            </h1>
-            <p class="mt-4 text-sm text-gray-400 font-bold uppercase tracking-widest max-w-2xl">
-              Quản lý danh sách công trình bạn đã tạo và tiếp tục hoàn thiện nội dung nghiên cứu.
-            </p>
-          </div>
-        </div>
+        
       </div>
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

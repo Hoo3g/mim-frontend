@@ -4,11 +4,12 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 
 import { NewsItem } from '../../core/models/news.model';
 import { NewsService } from '../../core/services/news.service';
+import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading-spinner.component';
 
 @Component({
     selector: 'app-news-detail',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, LoadingSpinnerComponent],
     template: `
     <div class="bg-white min-h-screen">
       <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-4 sm:px-6 lg:px-8">
@@ -21,7 +22,10 @@ import { NewsService } from '../../core/services/news.service';
 
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div *ngIf="loading" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
-          Đang tải tin tức...
+          <app-loading-spinner
+            [compact]="true"
+            [size]="50">
+          </app-loading-spinner>
         </div>
 
         <div *ngIf="!loading && errorMessage"

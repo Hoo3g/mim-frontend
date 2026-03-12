@@ -50,14 +50,7 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
                   {{ isCompanyRole ? 'Doanh nghiệp' : 'Sinh viên' }}
                 </span>
               </div>
-              <div class="mt-4 border border-gray-100 bg-gray-50 px-4 py-3 text-xs text-gray-500 leading-relaxed">
-                Bản xem trước sẽ mở khi bấm nút <span class="font-bold text-hus-blue">Xem preview</span> ở cuối biểu mẫu.
-              </div>
-
-              <div *ngIf="profilePrefilledNotice"
-                   class="mt-4 border border-hus-blue/20 bg-blue-50/40 text-hus-blue px-4 py-3 text-[10px] font-bold uppercase tracking-widest">
-                Đã tự động điền nội dung từ hồ sơ sinh viên.
-              </div>
+              
 
               <div *ngIf="roleBlocked"
                    class="mt-8 border border-red-200 bg-red-50 text-red-600 px-4 py-3 text-xs font-bold uppercase tracking-widest">
@@ -166,7 +159,7 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
                               *ngIf="studentProfile"
                               (click)="applyStudentProfilePrefill(true)"
                               class="px-3 py-1.5 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-colors">
-                        Lấy lại từ hồ sơ
+                        Lấy từ hồ sơ
                       </button>
                     </div>
                     <div class="grid sm:grid-cols-2 gap-4">
@@ -389,9 +382,6 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
                     <button type="button"
                             (click)="cancel()"
                             class="inline-flex items-center justify-center gap-2 h-11 px-4 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
                       Hủy
                     </button>
 
@@ -627,18 +617,18 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     jobType: Post['jobType'];
     status: Post['status'];
   } = {
-    title: '',
-    description: '',
-    requirements: '',
-    benefits: '',
-    achievements: '',
-    location: '',
-    salaryRange: '',
-    contactEmail: '',
-    contactPhone: '',
-    jobType: JobType.FULL_TIME,
-    status: 'OPEN'
-  };
+      title: '',
+      description: '',
+      requirements: '',
+      benefits: '',
+      achievements: '',
+      location: '',
+      salaryRange: '',
+      contactEmail: '',
+      contactPhone: '',
+      jobType: JobType.FULL_TIME,
+      status: 'OPEN'
+    };
 
   studentCardForm: {
     university: string;
@@ -647,12 +637,12 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     desiredPosition: string;
     careerGoal: string;
   } = {
-    university: '',
-    major: '',
-    studentType: '',
-    desiredPosition: '',
-    careerGoal: ''
-  };
+      university: '',
+      major: '',
+      studentType: '',
+      desiredPosition: '',
+      careerGoal: ''
+    };
 
   tagsText = '';
 

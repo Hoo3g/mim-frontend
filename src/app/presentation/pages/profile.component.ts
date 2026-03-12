@@ -2,14 +2,16 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, NgZone, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
+import { ROUTES } from '../../core/constants/route.const';
+import { Post } from '../../core/models/post.model';
 import { ProfileService } from '../../core/services/profile.service';
+import { PostService } from '../../core/services/post.service';
 import { SpecializationService } from '../../core/services/specialization.service';
 import { authSignal } from '../../core/signals/auth.signal';
 import {
   CollaboratorItem,
-  CompanyPostItem,
   LecturerPaperItem,
   PendingApplicantItem,
   PendingApplicationItem,
@@ -21,16 +23,19 @@ import {
   UpdateStudentProfileRequest
 } from '../../core/models/profile.model';
 import { ResearchCategory } from '../../core/models/research-category.model';
+import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading-spinner.component';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, LoadingSpinnerComponent],
   template: `
     <div class="bg-gray-50 min-h-screen">
       <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
         <div *ngIf="loading" class="text-center py-20 text-gray-400 text-xs uppercase tracking-widest">
-          Đang tải thông tin hồ sơ...
+          <app-loading-spinner
+            [size]="52">
+          </app-loading-spinner>
         </div>
 
         <div *ngIf="!loading && errorMessage" class="border border-red-200 bg-red-50 text-red-600 px-4 py-3 text-xs font-bold uppercase tracking-widest">
@@ -229,15 +234,54 @@ import { ResearchCategory } from '../../core/models/research-category.model';
 
             <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-1">Đăng bài tuyển dụng của bạn</h3>
-                <p class="text-xs text-gray-500 font-semibold">
-                  Viết và chỉnh sửa nội dung bài đăng tuyển dụng dành cho sinh viên ngay tại khu vực quản lý bài đăng.
-                </p>
+                <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-1">Bài tuyển dụng của bạn</h3>
+                
               </div>
-              <a [routerLink]="['/recruitment/my-posts']"
-                 class="inline-flex items-center justify-center px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
-                Mở quản lý bài đăng
-              </a>
+              <div class="flex flex-wrap items-center gap-2">
+                <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
+                   class="inline-flex items-center justify-center px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
+                  Mở quản lý bài đăng
+                </a>
+              </div>
+            </article>
+
+            <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div>
+                  <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Danh sách bài tuyển dụng</h3>
+                  <p class="mt-1 text-xs text-gray-500 font-semibold">
+                    Chọn trực tiếp một bài để mở màn hình chỉnh sửa.
+                  </p>
+                </div>
+                <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
+                   class="text-[10px] font-black uppercase tracking-widest text-hus-blue hover:underline">
+                  Xem tất cả
+                </a>
+              </div>
+
+              <div *ngIf="myRecruitmentPosts.length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
+                Bạn chưa có bài đăng tuyển dụng nào.
+              </div>
+
+              <div *ngFor="let post of myRecruitmentPosts" class="border border-gray-100 bg-gray-50 px-4 py-3 mb-3">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div class="min-w-0">
+                    <a [routerLink]="ROUTES.RECRUITMENT_EDITOR_EDIT(post.id)"
+                       class="text-sm font-bold text-gray-900 hover:text-hus-blue line-clamp-2">
+                      {{ post.title }}
+                    </a>
+                    <p class="mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                      {{ recruitmentStatusLabel(post.status) }}
+                      <span *ngIf="post.approvalStatus"> | {{ recruitmentApprovalLabel(post.approvalStatus) }}</span>
+                      <span *ngIf="post.updatedAt"> | cập nhật {{ post.updatedAt | date:'dd.MM.yyyy' }}</span>
+                    </p>
+                  </div>
+                  <a [routerLink]="ROUTES.RECRUITMENT_EDITOR_EDIT(post.id)"
+                     class="inline-flex items-center justify-center px-3 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
+                    Chỉnh sửa
+                  </a>
+                </div>
+              </div>
             </article>
           </div>
 
@@ -324,21 +368,32 @@ import { ResearchCategory } from '../../core/models/research-category.model';
             <article class="bg-white border border-gray-100 p-4 sm:p-6">
               <div class="flex items-center justify-between gap-2 mb-4">
                 <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Tin tuyển dụng đã đăng</h3>
-                <a [routerLink]="['/recruitment/my-posts']"
+                <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
                    class="text-[10px] font-black uppercase tracking-widest text-hus-blue hover:underline">
                   Quản lý
                 </a>
               </div>
-              <div *ngIf="companyPosts().length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
+              <div *ngIf="myRecruitmentPosts.length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
                 Chưa có bài đăng.
               </div>
-              <div *ngFor="let post of companyPosts()" class="border border-gray-100 bg-gray-50 px-4 py-3 mb-3">
-                <a [routerLink]="['/recruitment/my-posts']" class="text-sm font-bold text-gray-900 hover:text-hus-blue">{{ post.title }}</a>
-                <p class="mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                  {{ post.status || 'N/A' }}
-                  <span *ngIf="post.approvalStatus"> | {{ post.approvalStatus }}</span>
-                  <span *ngIf="post.pendingCount !== undefined"> | pending: {{ post.pendingCount }}</span>
-                </p>
+              <div *ngFor="let post of myRecruitmentPosts" class="border border-gray-100 bg-gray-50 px-4 py-3 mb-3">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div class="min-w-0">
+                    <a [routerLink]="ROUTES.RECRUITMENT_EDITOR_EDIT(post.id)"
+                       class="text-sm font-bold text-gray-900 hover:text-hus-blue line-clamp-2">
+                      {{ post.title }}
+                    </a>
+                    <p class="mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                      {{ recruitmentStatusLabel(post.status) }}
+                      <span *ngIf="post.approvalStatus"> | {{ recruitmentApprovalLabel(post.approvalStatus) }}</span>
+                      <span *ngIf="pendingCountForPost(post.id) !== null"> | pending: {{ pendingCountForPost(post.id) }}</span>
+                    </p>
+                  </div>
+                  <a [routerLink]="ROUTES.RECRUITMENT_EDITOR_EDIT(post.id)"
+                     class="inline-flex items-center justify-center px-3 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
+                    Chỉnh sửa
+                  </a>
+                </div>
               </div>
             </article>
           </div>
@@ -543,9 +598,12 @@ import { ResearchCategory } from '../../core/models/research-category.model';
 })
 export class ProfileComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
+  private readonly postService = inject(PostService);
   private readonly specializationService = inject(SpecializationService);
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
+
+  protected readonly ROUTES = ROUTES;
 
   loading = true;
   errorMessage = '';
@@ -559,6 +617,9 @@ export class ProfileComponent implements OnInit {
 
   me: ProfileMeResponse | null = null;
   dashboard: ProfileDashboardResponse | null = null;
+  myRecruitmentPosts: Post[] = [];
+  pendingApplicationsFromPostApi: PendingApplicationItem[] = [];
+  pendingApplicantsFromPostApi: PendingApplicantItem[] = [];
   specializations: ResearchCategory[] = [];
 
   studentForm: UpdateStudentProfileRequest = {
@@ -706,14 +767,16 @@ export class ProfileComponent implements OnInit {
   }
 
   pendingApplications(): PendingApplicationItem[] {
+    if (this.isStudent()) {
+      return this.pendingApplicationsFromPostApi;
+    }
     return this.dashboard?.student?.pendingApplications ?? [];
   }
 
-  companyPosts(): CompanyPostItem[] {
-    return this.dashboard?.company?.myPosts ?? [];
-  }
-
   pendingApplicants(): PendingApplicantItem[] {
+    if (this.isCompany()) {
+      return this.pendingApplicantsFromPostApi;
+    }
     return this.dashboard?.company?.pendingApplicants ?? [];
   }
 
@@ -870,18 +933,39 @@ export class ProfileComponent implements OnInit {
   }
 
   private reload(): void {
+    const currentUser = authSignal.user();
+    const canLoadRecruitmentPosts = currentUser?.role === 'STUDENT' || currentUser?.role === 'COMPANY';
+    const canLoadStudentPending = currentUser?.role === 'STUDENT';
+    const canLoadCompanyPending = currentUser?.role === 'COMPANY';
+
     this.loading = true;
     this.errorMessage = '';
 
     forkJoin({
       me: this.profileService.getMe(),
-      dashboard: this.profileService.getDashboard()
+      dashboard: this.profileService.getDashboard(),
+      myRecruitmentPosts: canLoadRecruitmentPosts && currentUser
+        ? this.postService.getMyPosts(currentUser.id)
+        : of([]),
+      pendingApplications: canLoadStudentPending
+        ? this.postService.getMyPendingApplications().pipe(
+          catchError(() => of([] as PendingApplicationItem[]))
+        )
+        : of([] as PendingApplicationItem[]),
+      pendingApplicants: canLoadCompanyPending
+        ? this.postService.getReceivedPendingApplications().pipe(
+          catchError(() => of([] as PendingApplicantItem[]))
+        )
+        : of([] as PendingApplicantItem[])
     }).subscribe({
-      next: ({ me, dashboard }) => {
+      next: ({ me, dashboard, myRecruitmentPosts, pendingApplications, pendingApplicants }) => {
         this.ngZone.run(() => {
           this.me = me;
           this.avatarLoadError = false;
           this.dashboard = dashboard;
+          this.myRecruitmentPosts = myRecruitmentPosts;
+          this.pendingApplicationsFromPostApi = pendingApplications;
+          this.pendingApplicantsFromPostApi = pendingApplicants;
           this.patchForms(me);
           this.loading = false;
           this.cdr.detectChanges();
@@ -890,6 +974,9 @@ export class ProfileComponent implements OnInit {
       error: (error) => {
         this.ngZone.run(() => {
           this.errorMessage = error?.error?.message || 'Không thể tải dữ liệu profile';
+          this.myRecruitmentPosts = [];
+          this.pendingApplicationsFromPostApi = [];
+          this.pendingApplicantsFromPostApi = [];
           this.loading = false;
           this.cdr.detectChanges();
         });
@@ -968,6 +1055,31 @@ export class ProfileComponent implements OnInit {
 
     const labels = permissions.map((permission) => this.permissionLabel(permission));
     return labels.length > 0 ? labels : ['Toàn quyền quản trị'];
+  }
+
+  recruitmentStatusLabel(status?: Post['status'] | string | null): string {
+    if (status === 'CLOSED') {
+      return 'Đã đóng';
+    }
+    if (status === 'DRAFT') {
+      return 'Nháp';
+    }
+    return 'Đang mở';
+  }
+
+  recruitmentApprovalLabel(status?: Post['approvalStatus'] | string | null): string {
+    if (status === 'APPROVED') {
+      return 'Đã duyệt';
+    }
+    if (status === 'REJECTED') {
+      return 'Bị từ chối';
+    }
+    return 'Chờ duyệt';
+  }
+
+  pendingCountForPost(postId: string): number | null {
+    const match = this.dashboard?.company?.myPosts?.find((item) => item.postId === postId);
+    return match?.pendingCount ?? null;
   }
 
   private normalizedRoleValue(): string {
