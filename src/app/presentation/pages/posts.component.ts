@@ -1,9 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PostService } from '../../core/services/post.service';
 import { Post } from '../../core/models/post.model';
-import { Observable, BehaviorSubject, combineLatest, map } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { PostDetailComponent } from './post-detail.component';
 import { SpecializationService } from '../../core/services/specialization.service';
@@ -141,7 +141,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div *ngFor="let post of posts" 
                      (click)="openDetail(post)"
-                     class="bg-white border border-gray-100 p-6 hover:border-hus-blue hover:shadow-lg transition-all duration-300 group flex h-[500px] flex-col relative cursor-pointer">
+                     class="bg-white border border-gray-100 p-6 hover:border-hus-blue hover:shadow-lg transition-all duration-300 group flex flex-col relative cursor-pointer self-start">
                   
                   <!-- Author Identity Section - Refined -->
                   <div class="flex items-start justify-between mb-6">
@@ -150,7 +150,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                       <div class="relative">
                         <div class="w-11 h-11 flex-shrink-0 bg-white border-2 border-gray-50 shadow-sm overflow-hidden group-hover:border-hus-blue/20 transition-all duration-500 transform group-hover:scale-105">
                           <img *ngIf="post.authorAvatarUrl" [src]="post.authorAvatarUrl" [alt]="post.authorName" class="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all">
-                          <div *ngIf="!post.authorAvatarUrl" class="w-full h-full flex items-center justify-center bg-gray-50 text-[12px] font-black text-hus-blue/40 uppercase">
+                          <div *ngIf="!post.authorAvatarUrl" class="w-full h-full flex items-center justify-center bg-gray-50 text-[13px] font-black text-hus-blue/40 uppercase">
                             {{ post.authorName.charAt(0) }}
                           </div>
                         </div>
@@ -161,43 +161,43 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                       </div>
                       
                       <div class="flex flex-col min-w-0">
-                        <div class="text-[13px] font-black text-gray-900 leading-tight mb-0.5 group-hover:text-hus-blue transition-colors truncate">
+                        <div class="text-[15px] sm:text-base font-black text-gray-900 leading-tight mb-1 group-hover:text-hus-blue transition-colors truncate">
                           {{ post.authorName }}
                         </div>
                         <div class="flex items-center gap-2">
                           <span [ngClass]="{
                             'text-hus-blue bg-blue-50/50': post.postType.includes('COMPANY'),
                             'text-gray-500 bg-gray-50': !post.postType.includes('COMPANY')
-                          }" class="text-[7.5px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5">
+                          }" class="text-[9px] font-bold uppercase tracking-[0.15em] px-2 py-0.5">
                             {{ post.postType.includes('COMPANY') ? 'Đối tác doanh nghiệp' : 'Ứng viên tiềm năng' }}
                           </span>
                         </div>
                       </div>
                     </div>
                     <div class="flex flex-col items-end gap-1">
-                       <span class="text-[9px] font-bold text-gray-300 uppercase tabular-nums">{{ post.createdAt | date:'dd.MM.yyyy' }}</span>
+                       <span class="text-[10px] font-bold text-gray-300 uppercase tabular-nums">{{ post.createdAt | date:'dd.MM.yyyy' }}</span>
                        <div class="w-4 h-0.5 bg-gray-100 group-hover:bg-hus-blue/30 transition-colors"></div>
                     </div>
                   </div>
 
-                  <h3 class="text-[15px] sm:text-base font-bold text-gray-900 mb-2 leading-tight group-hover:translate-x-1 transition-all duration-300 line-clamp-2 min-h-[2.5rem]">
+                  <h3 class="text-lg sm:text-[1.4rem] font-bold text-gray-900 mb-3 leading-tight group-hover:translate-x-1 transition-all duration-300 line-clamp-2 min-h-[3.2rem]">
                     {{ post.title }}
                   </h3>
                   
-                  <p class="text-[11px] text-gray-500 font-light leading-relaxed mb-4 line-clamp-2">{{ post.description }}</p>
+                  <p class="text-[13px] sm:text-sm text-gray-600 font-normal leading-7 mb-5 line-clamp-3">{{ post.description }}</p>
 
-                  <div class="space-y-4 mb-2 flex-grow">
+                  <div class="space-y-4 mb-2">
                     <div *ngIf="!post.postType.includes('COMPANY')" class="border border-gray-100 bg-gray-50/60 p-3">
                       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
                         <div>
-                          <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Trường</p>
-                          <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">
+                          <p class="text-[9px] font-black uppercase tracking-widest text-gray-400">Trường</p>
+                          <p class="text-[12px] font-bold text-gray-900 mt-1.5 line-clamp-1">
                             {{ studentDisplayValue(post, 'studentUniversity') }}
                           </p>
                         </div>
                         <div>
-                          <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">Chuyên ngành</p>
-                          <p class="text-[10px] font-bold text-gray-900 mt-1 line-clamp-1">
+                          <p class="text-[9px] font-black uppercase tracking-widest text-gray-400">Chuyên ngành</p>
+                          <p class="text-[12px] font-bold text-gray-900 mt-1.5 line-clamp-1">
                             {{ studentDisplayValue(post, 'studentMajor') }}
                           </p>
                         </div>
@@ -206,54 +206,44 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 
 
                     <div *ngIf="!post.postType.includes('COMPANY')" class="pt-3 border-t border-gray-50">
-                      <h4 class="text-[8px] font-bold text-hus-blue uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                      <h4 class="text-[9px] font-bold text-hus-blue uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
                         <span class="w-1 h-1 bg-hus-blue"></span>
                         Thành tích nổi bật
                       </h4>
-                      <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">
+                      <p class="text-[12px] text-gray-700 leading-6 font-medium line-clamp-3">
                         {{ studentDisplayValue(post, 'studentAchievements') }}
                       </p>
                     </div>
 
                     <div *ngIf="!post.postType.includes('COMPANY')" class="pt-3 border-t border-gray-50">
-                      <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                      <h4 class="text-[9px] font-bold text-gray-900 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
                         <span class="w-1 h-1 bg-gray-900"></span>
                         Mong muốn nghề nghiệp
                       </h4>
-                      <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">
+                      <p class="text-[12px] text-gray-700 leading-6 font-medium line-clamp-3">
                         {{ studentDisplayValue(post, 'studentCareerGoal') }}
                       </p>
                     </div>
 
                     <!-- Requirements (for Companies) -->
                     <div *ngIf="post.postType.includes('COMPANY') && post.requirements" class="pt-3 border-t border-gray-50">
-                      <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                      <h4 class="text-[9px] font-bold text-gray-900 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
                         <span class="w-1 h-1 bg-gray-900"></span>
                         Yêu cầu công việc
                       </h4>
-                      <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">
+                      <p class="text-[12px] text-gray-700 leading-6 font-medium line-clamp-3">
                         {{ post.requirements }}
                       </p>
                     </div>
                   </div>
 
-                  <div class="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                      <div class="flex items-center gap-1 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span>{{ post.location }}</span>
-                      </div>
-                      <div *ngIf="post.salaryRange" class="flex items-center gap-1 text-[9px] font-bold text-hus-blue uppercase tracking-widest">
+                  <div *ngIf="post.salaryRange" class="mt-4 pt-4 border-t border-gray-50 flex items-center">
+                    <div class="flex items-center gap-1 text-[10px] font-bold text-hus-blue uppercase tracking-widest">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span>{{ post.salaryRange }}</span>
-                      </div>
                     </div>
-                    <div class="text-[8px] font-black text-gray-200 uppercase tracking-widest group-hover:text-hus-blue transition-colors">Chi tiết</div>
                   </div>
 
                 </div>
@@ -276,24 +266,16 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
   `
 })
 export class PostsComponent implements OnInit {
-  private postService = inject(PostService);
-  private specializationService = inject(SpecializationService);
+  private readonly postService = inject(PostService);
+  private readonly specializationService = inject(SpecializationService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   protected readonly ROUTES = ROUTES;
 
-  private readonly specializationAliasMap: Record<string, string[]> = {
-    'tri tue nhan tao': ['ai', 'artificial intelligence'],
-    'khoa hoc du lieu': ['khdl', 'data science'],
-    'khoa hoc may tinh': ['khmt', 'computer science'],
-    'toan kinh te': ['tkt', 'actuary'],
-    'an ninh mang': ['cybersecurity', 'security']
-  };
-
   searchTerm = '';
-  filterTypeSelected$ = new BehaviorSubject<'COMPANY' | 'STUDENT'>('COMPANY');
-  subFilterSelected$ = new BehaviorSubject<string>('ALL');
   specializations: ResearchCategory[] = [];
 
-  filteredPosts$!: Observable<Post[]>;
+  filteredPosts$: Observable<Post[]> = of([]);
   filterType: 'COMPANY' | 'STUDENT' = 'COMPANY';
   subFilter: string = 'ALL';
   selectedPost: Post | null = null;
@@ -301,50 +283,36 @@ export class PostsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSpecializations();
+    this.route.queryParamMap.subscribe((params) => {
+      const type = params.get('type');
+      const keyword = params.get('q');
+      const selectedSpecializations = this.parseSpecializationsFromQuery(
+        params.getAll('specialization'),
+        params.get('specialization')
+      );
 
-    this.filteredPosts$ = combineLatest([
-      this.postService.getPosts(),
-      this.filterTypeSelected$,
-      this.subFilterSelected$
-    ]).pipe(
-      map(([posts, type, sub]) => {
-        const filtered = posts.filter(post => {
-          const term = this.searchTerm.toLowerCase();
-          const matchesSearch = !term ||
-            post.title.toLowerCase().includes(term) ||
-            post.description.toLowerCase().includes(term);
-
-          const matchesType = (type === 'COMPANY' && post.postType.includes('COMPANY')) ||
-            (type === 'STUDENT' && !post.postType.includes('COMPANY'));
-
-          let matchesSub = true;
-          if (sub !== 'ALL') {
-            matchesSub = this.matchesSpecialization(post, sub);
-          }
-
-          return matchesSearch && matchesType && matchesSub;
-        });
-        return filtered;
-      })
-    );
+      this.filterType = type === 'STUDENT' ? 'STUDENT' : 'COMPANY';
+      this.subFilter = selectedSpecializations[0] ?? 'ALL';
+      this.searchTerm = keyword?.trim() ?? '';
+      this.loadPosts();
+    });
   }
 
   onSearchChange(val: string): void {
     this.searchTerm = val;
-    this.filterTypeSelected$.next(this.filterType); // Trigger re-filter
+    this.syncFiltersToUrl();
   }
 
   setFilter(type: 'COMPANY' | 'STUDENT'): void {
     this.filterType = type;
     this.subFilter = 'ALL';
-    this.filterTypeSelected$.next(type);
-    this.subFilterSelected$.next('ALL');
+    this.syncFiltersToUrl();
     this.collapseMobileFiltersIfNeeded();
   }
 
   setSubFilter(sub: string): void {
     this.subFilter = sub;
-    this.subFilterSelected$.next(sub);
+    this.syncFiltersToUrl();
     this.collapseMobileFiltersIfNeeded();
   }
 
@@ -362,33 +330,6 @@ export class PostsComponent implements OnInit {
     this.specializationService.getActiveSpecializations().subscribe((items) => {
       this.specializations = items;
     });
-  }
-
-  private matchesSpecialization(post: Post, specializationName: string): boolean {
-    const tags = (post.tags ?? [])
-      .map((item) => this.normalize(item))
-      .filter((item) => !!item);
-    if (tags.length === 0) {
-      return false;
-    }
-
-    const normalizedSpecialization = this.normalize(specializationName);
-    const aliases = this.specializationAliasMap[normalizedSpecialization] ?? [];
-    const candidates = [normalizedSpecialization, ...aliases.map((item) => this.normalize(item))]
-      .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
-
-    return tags.some((tag) =>
-      candidates.some((candidate) =>
-        tag === candidate || tag.includes(candidate) || candidate.includes(tag)));
-  }
-
-  private normalize(value: string): string {
-    return (value ?? '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, ' ');
   }
 
   studentDisplayValue(post: Post, key: string): string {
@@ -426,6 +367,49 @@ export class PostsComponent implements OnInit {
     if (window.innerWidth < 1024) {
       this.showMobileFilters = false;
     }
+  }
+
+  private loadPosts(): void {
+    this.filteredPosts$ = this.postService.getPosts({
+      type: this.filterType,
+      specialization: this.subFilter !== 'ALL' ? [this.subFilter] : null,
+      q: this.searchTerm
+    });
+  }
+
+  private syncFiltersToUrl(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: this.buildPostQueryParams(),
+      queryParamsHandling: '',
+      replaceUrl: true
+    });
+  }
+
+  private parseSpecializationsFromQuery(specializations: string[], fallback: string | null): string[] {
+    if (specializations.length > 0) {
+      return specializations
+        .flatMap((item) => item.split(','))
+        .map((item) => item.trim())
+        .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
+    }
+
+    if (!fallback?.trim()) {
+      return [];
+    }
+
+    return fallback
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
+  }
+
+  private buildPostQueryParams(): { type: 'COMPANY' | 'STUDENT'; specialization: string[] | null; q: string | null } {
+    return {
+      type: this.filterType,
+      specialization: this.subFilter !== 'ALL' ? [this.subFilter] : null,
+      q: this.searchTerm.trim() || null
+    };
   }
 
   canManageRecruitmentPosts(): boolean {

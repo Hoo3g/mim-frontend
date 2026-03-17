@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, map, Observable, of, timeout } from 'rxjs';
 
 import { Post, PostDisplayInfo } from '../models/post.model';
@@ -96,14 +96,22 @@ export interface PostEditorPayload {
     displayInfo?: PostDisplayInfo;
 }
 
+export interface PostListQuery {
+    q?: string;
+    type?: 'COMPANY' | 'STUDENT' | null;
+    specialization?: string[] | null;
+}
+
 @Injectable({
     providedIn: 'root'
 })
 export class PostService {
     private readonly http = inject(HttpClient);
 
-    getPosts(): Observable<Post[]> {
-        return this.http.get<ApiResponse<ApiPostModel[]>>(API_ENDPOINTS.RECRUITMENT.LIST).pipe(
+    getPosts(query: PostListQuery = {}): Observable<Post[]> {
+        return this.http.get<ApiResponse<ApiPostModel[]>>(API_ENDPOINTS.RECRUITMENT.LIST, {
+            params: this.buildListParams(query)
+        }).pipe(
             map((response) => {
                 if (!response.success || !response.data) {
                     return [];
@@ -199,6 +207,27 @@ export class PostService {
             map((response) => this.unwrapList(response).map((item) => this.toPendingApplicant(item))),
             catchError(() => of([]))
         );
+    }
+
+    private buildListParams(query: PostListQuery): HttpParams {
+        let params = new HttpParams();
+        const keyword = (query.q ?? '').trim();
+        const type = (query.type ?? '').trim();
+        const specializations = (query.specialization ?? [])
+            .map((item) => (item ?? '').trim())
+            .filter((item) => !!item);
+
+        if (keyword) {
+            params = params.set('q', keyword);
+        }
+        if (type) {
+            params = params.set('type', type);
+        }
+        specializations.forEach((item) => {
+            params = params.append('specialization', item);
+        });
+
+        return params;
     }
 
     private toPostModel(item: ApiPostModel): Post {

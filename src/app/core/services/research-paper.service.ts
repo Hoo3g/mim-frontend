@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, forkJoin, map, Observable, of } from 'rxjs';
 import { PaperAuthor, ResearchPaper } from '../models/research-paper.model';
 import type { AuthUser } from '../signals/auth.signal';
@@ -14,6 +14,12 @@ export interface ResearchEditorPayload {
     abstract: string;
     researchArea: string;
     pdfUrl?: string;
+}
+
+export interface ResearchPaperListQuery {
+    q?: string;
+    type?: 'LECTURER' | 'STUDENT' | 'ALL' | null;
+    specialization?: string[] | null;
 }
 
 interface ResearchPdfUploadResponse {
@@ -55,8 +61,10 @@ interface ResearchBookmarkApiModel {
 export class ResearchPaperService {
     private readonly http = inject(HttpClient);
 
-    getPapers(): Observable<ResearchPaper[]> {
-        const papers$ = this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.LIST).pipe(
+    getPapers(query: ResearchPaperListQuery = {}): Observable<ResearchPaper[]> {
+        const papers$ = this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.LIST, {
+            params: this.buildListParams(query)
+        }).pipe(
             map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
             catchError(() => of([]))
         );
@@ -188,6 +196,27 @@ export class ResearchPaperService {
             return [];
         }
         return response.data;
+    }
+
+    private buildListParams(query: ResearchPaperListQuery): HttpParams {
+        let params = new HttpParams();
+        const keyword = (query.q ?? '').trim();
+        const type = query.type && query.type !== 'ALL' ? query.type : '';
+        const specializations = (query.specialization ?? [])
+            .map((item) => (item ?? '').trim())
+            .filter((item) => !!item);
+
+        if (keyword) {
+            params = params.set('q', keyword);
+        }
+        if (type) {
+            params = params.set('type', type);
+        }
+        specializations.forEach((item) => {
+            params = params.append('specialization', item);
+        });
+
+        return params;
     }
 
     private toPaperModel(apiPaper: ResearchPaperApiModel): ResearchPaper {

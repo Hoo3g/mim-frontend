@@ -18,7 +18,7 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
     <div *ngIf="paper$ | async as paper" class="min-h-screen bg-white pb-20">
       <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-          <a routerLink="/" class="text-hus-blue hover:text-hus-dark transition">Cong nghien cuu</a>
+          <a routerLink="/" class="text-hus-blue hover:text-hus-dark transition">Cổng nghiên cứu</a>
           <span class="text-gray-300">/</span>
           <span class="text-hus-blue opacity-70">{{ paper.researchArea }}</span>
         </div>
@@ -28,14 +28,14 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
         <div class="max-w-4xl mx-auto">
           <header class="mb-8 sm:mb-12 border-b-2 border-hus-blue pb-8 sm:pb-12">
             <div class="flex items-center gap-3 mb-6 text-[11px] font-bold uppercase tracking-tighter">
-              <span class="bg-hus-blue text-white px-3 py-1">{{ paper.category === 'LECTURER' ? 'GIANG VIEN' : 'SINH VIEN' }}</span>
+              <span class="bg-hus-blue text-white px-3 py-1">{{ paper.category === 'LECTURER' ? 'GIẢNG VIÊN' : 'SINH VIÊN' }}</span>
               <span class="text-gray-300">|</span>
               <span class="text-hus-blue">{{ paper.publicationYear }}</span>
               <button *ngIf="isAuth()"
                       (click)="toggleBookmark(paper)"
                       class="ml-auto w-9 h-9 inline-flex items-center justify-center border transition-colors"
-                      [attr.aria-label]="paper.isBookmarked ? 'Bo luu bai viet' : 'Luu bai viet'"
-                      [attr.title]="paper.isBookmarked ? 'Da luu' : 'Luu bai'"
+                      [attr.aria-label]="paper.isBookmarked ? 'Bỏ lưu bài viết' : 'Lưu bài viết'"
+                      [attr.title]="paper.isBookmarked ? 'Đã lưu' : 'Lưu bài'"
                       [ngClass]="paper.isBookmarked ? 'border-hus-blue bg-blue-50 text-hus-blue' : 'border-gray-200 text-gray-400 hover:border-hus-blue hover:text-hus-blue'">
                 <svg xmlns="http://www.w3.org/2000/svg"
                      class="h-4 w-4"
@@ -55,7 +55,7 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
 
             <div class="flex flex-col gap-6">
               <div class="flex flex-wrap gap-4 items-center">
-                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tac gia bien soan:</span>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tác giả biên soạn:</span>
                 <div class="flex flex-wrap gap-x-6 gap-y-2">
                   <div *ngFor="let author of paper.authors" class="text-sm font-bold text-gray-900">
                     <a *ngIf="author.isMainAuthor && author.studentId"
@@ -64,22 +64,18 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
                       {{ author.name }}
                     </a>
                     <span *ngIf="!author.isMainAuthor || !author.studentId">{{ author.name }}</span>
-                    <span *ngIf="author.isMainAuthor" class="ml-1 text-[9px] text-hus-blue uppercase tracking-tighter font-black">(Chu bien)</span>
+                    <span *ngIf="author.isMainAuthor" class="ml-1 text-[9px] text-hus-blue uppercase tracking-tighter font-black">(Chủ biên)</span>
                   </div>
                 </div>
               </div>
 
-              <div class="flex flex-wrap items-center gap-4 sm:gap-6 pt-4 border-t border-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                <span>Tap chi: <span class="text-hus-blue">{{ paper.journalConference || 'MIM - VNU HUS' }}</span></span>
-                <span>ID: #{{ paper.id.slice(0, 8).toUpperCase() }}</span>
-              </div>
             </div>
           </header>
 
           <div class="space-y-10 sm:space-y-16">
             <section>
               <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] mb-6 inline-block border-b-4 border-hus-blue pb-1">
-                Tom tat nghien cuu
+                Tóm tắt nghiên cứu
               </h2>
               <div class="research-rich-content max-w-full"
                    [innerHTML]="paper.abstract"></div>
@@ -88,7 +84,7 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
             <section>
               <div class="flex justify-between items-baseline mb-6">
                 <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] inline-block border-b-4 border-hus-blue pb-1">
-                  Van ban chi tiet (PDF)
+                  Văn bản chi tiết (PDF)
                 </h2>
               </div>
 
@@ -101,10 +97,10 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
                 <ng-template #missingInlinePdf>
                   <div class="w-full h-full flex flex-col items-center justify-center text-center px-6">
                     <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
-                      Chua co PDF de hien thi.
+                      Chưa có PDF để hiển thị.
                     </p>
                     <p class="mt-2 text-xs text-gray-500 max-w-md">
-                      Bai nghien cuu hien chua co file PDF cong khai.
+                      Bài nghiên cứu hiện chưa có file PDF công khai.
                     </p>
                   </div>
                 </ng-template>
@@ -118,17 +114,17 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
                     (click)="downloadPdf(paper.pdfUrl, paper.title)"
                     [disabled]="isDownloadingPdf"
                     class="inline-flex items-center justify-center bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20 w-full sm:w-auto">
-              {{ isDownloadingPdf ? 'Dang tai xuong...' : 'Tai xuong tai lieu (.PDF)' }}
+              {{ isDownloadingPdf ? 'Đang tải xuống...' : 'Tải xuống tài liệu (.PDF)' }}
             </button>
             <ng-template #missingPdf>
               <button type="button"
                       disabled
                       class="inline-flex items-center justify-center bg-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 cursor-not-allowed">
-                Chua co tep PDF
+                Chưa có tệp PDF
               </button>
             </ng-template>
             <button class="border-2 border-hus-blue text-hus-blue text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-blue hover:text-white transition w-full sm:w-auto">
-              Lien he tac gia
+              Liên hệ tác giả
             </button>
           </footer>
         </div>
