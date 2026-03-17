@@ -1,10 +1,11 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { catchError, map, Observable, of } from 'rxjs';
+import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import { NewsItem } from '../models/news.model';
+import { TimedObservableCache } from '../utils/timed-observable-cache.util';
 
 interface NewsApiModel {
     id?: string;
@@ -22,19 +23,45 @@ interface NewsApiModel {
 @Injectable({ providedIn: 'root' })
 export class NewsService {
     private readonly http = inject(HttpClient);
+    private readonly newsListCache = new TimedObservableCache<NewsItem[]>(60_000);
+    private readonly newsDetailCache = new TimedObservableCache<NewsItem | null>(60_000);
 
     getPublicNews(): Observable<NewsItem[]> {
-        return this.http.get<ApiResponse<NewsApiModel[]>>(API_ENDPOINTS.NEWS.LIST).pipe(
+        const cacheKey = 'public-news';
+        const cachedNews$ = this.newsListCache.get(cacheKey);
+        if (cachedNews$) {
+            return cachedNews$;
+        }
+
+        const request$ = this.http.get<ApiResponse<NewsApiModel[]>>(API_ENDPOINTS.NEWS.LIST).pipe(
             map((response) => this.unwrapList(response).map((item) => this.toNewsItem(item))),
-            catchError(() => of([]))
+            catchError(() => {
+                this.newsListCache.delete(cacheKey);
+                return of([]);
+            }),
+            shareReplay({ bufferSize: 1, refCount: false })
         );
+
+        return this.newsListCache.set(cacheKey, request$);
     }
 
     getPublicNewsById(newsId: string): Observable<NewsItem | null> {
-        return this.http.get<ApiResponse<NewsApiModel>>(API_ENDPOINTS.NEWS.DETAIL(newsId)).pipe(
+        const cacheKey = (newsId ?? '').trim();
+        const cachedNews$ = this.newsDetailCache.get(cacheKey);
+        if (cachedNews$) {
+            return cachedNews$;
+        }
+
+        const request$ = this.http.get<ApiResponse<NewsApiModel>>(API_ENDPOINTS.NEWS.DETAIL(newsId)).pipe(
             map((response) => this.toNewsItem(this.unwrap(response))),
-            catchError(() => of(null))
+            catchError(() => {
+                this.newsDetailCache.delete(cacheKey);
+                return of(null);
+            }),
+            shareReplay({ bufferSize: 1, refCount: false })
         );
+
+        return this.newsDetailCache.set(cacheKey, request$);
     }
 
     private unwrap<T>(response: ApiResponse<T>): T {

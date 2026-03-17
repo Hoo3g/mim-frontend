@@ -1,7 +1,9 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 import { ResearchCategory } from '../../core/models/research-category.model';
 import { ResearchPaper } from '../../core/models/research-paper.model';
@@ -224,8 +226,10 @@ export class ResearchFilterComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly researchCategoryService = inject(ResearchCategoryService);
   private readonly researchPaperService = inject(ResearchPaperService);
+  private readonly searchKeywordChanges = new Subject<string>();
 
   roleFilter: 'ALL' | 'LECTURER' | 'STUDENT' = 'ALL';
   selectedSpecializations: string[] = [];
@@ -235,6 +239,16 @@ export class ResearchFilterComponent implements OnInit {
   allPapers: ResearchPaper[] = [];
 
   ngOnInit(): void {
+    this.searchKeywordChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => {
+        this.syncFiltersToUrl();
+      });
+
     this.researchCategoryService.getActiveCategories().subscribe((items) => {
       this.specializations = items;
       this.isLoadingSpecializations = false;
@@ -267,7 +281,7 @@ export class ResearchFilterComponent implements OnInit {
 
   onSearchKeywordChange(value: string): void {
     this.searchKeyword = value;
-    this.syncFiltersToUrl();
+    this.searchKeywordChanges.next(value.trim());
   }
 
   setRoleFilter(value: 'ALL' | 'LECTURER' | 'STUDENT'): void {

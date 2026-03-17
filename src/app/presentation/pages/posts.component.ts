@@ -1,9 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PostService } from '../../core/services/post.service';
 import { Post } from '../../core/models/post.model';
-import { Observable, of } from 'rxjs';
+import { Observable, Subject, debounceTime, distinctUntilChanged, of } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { PostDetailComponent } from './post-detail.component';
 import { SpecializationService } from '../../core/services/specialization.service';
@@ -270,6 +271,8 @@ export class PostsComponent implements OnInit {
   private readonly specializationService = inject(SpecializationService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly searchTermChanges = new Subject<string>();
   protected readonly ROUTES = ROUTES;
 
   searchTerm = '';
@@ -282,6 +285,16 @@ export class PostsComponent implements OnInit {
   showMobileFilters = false;
 
   ngOnInit(): void {
+    this.searchTermChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => {
+        this.syncFiltersToUrl();
+      });
+
     this.loadSpecializations();
     this.route.queryParamMap.subscribe((params) => {
       const type = params.get('type');
@@ -300,7 +313,7 @@ export class PostsComponent implements OnInit {
 
   onSearchChange(val: string): void {
     this.searchTerm = val;
-    this.syncFiltersToUrl();
+    this.searchTermChanges.next(val.trim());
   }
 
   setFilter(type: 'COMPANY' | 'STUDENT'): void {

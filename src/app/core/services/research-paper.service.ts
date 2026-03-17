@@ -1,12 +1,13 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { catchError, forkJoin, map, Observable, of } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, shareReplay, tap } from 'rxjs';
 import { PaperAuthor, ResearchPaper } from '../models/research-paper.model';
 import type { AuthUser } from '../signals/auth.signal';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import { authSignal } from '../signals/auth.signal';
 import { normalizeRichTextHtml } from '../utils/rich-text.util';
+import { TimedObservableCache } from '../utils/timed-observable-cache.util';
 
 export interface ResearchEditorPayload {
     id?: string;
@@ -60,39 +61,49 @@ interface ResearchBookmarkApiModel {
 })
 export class ResearchPaperService {
     private readonly http = inject(HttpClient);
+    private readonly papersCache = new TimedObservableCache<ResearchPaper[]>(60_000);
+    private readonly paperDetailCache = new TimedObservableCache<ResearchPaper | undefined>(60_000);
+    private readonly myPapersCache = new TimedObservableCache<ResearchPaper[]>(30_000);
+    private readonly bookmarksCache = new TimedObservableCache<Set<string>>(30_000);
 
     getPapers(query: ResearchPaperListQuery = {}): Observable<ResearchPaper[]> {
-        const papers$ = this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.LIST, {
-            params: this.buildListParams(query)
-        }).pipe(
-            map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
-            catchError(() => of([]))
+        const cacheKey = this.buildListCacheKey(query);
+        const cachedPapers$ = this.papersCache.get(cacheKey);
+        const papers$ = cachedPapers$ ?? this.papersCache.set(cacheKey,
+            this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.LIST, {
+                params: this.buildListParams(query)
+            }).pipe(
+                map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
+                catchError(() => {
+                    this.papersCache.delete(cacheKey);
+                    return of([]);
+                }),
+                shareReplay({ bufferSize: 1, refCount: false })
+            )
         );
 
-        return forkJoin([papers$, this.getBookmarkedPaperIds()]).pipe(
-            map(([papers, bookmarkedIds]) => papers.map((paper) => ({
-                ...paper,
-                isBookmarked: bookmarkedIds.has(paper.id)
-            })))
-        );
+        return this.attachBookmarkState(papers$);
     }
 
     getPaperById(id: string): Observable<ResearchPaper | undefined> {
-        const paper$ = this.http.get<ApiResponse<ResearchPaperApiModel>>(API_ENDPOINTS.RESEARCH.DETAIL(id)).pipe(
-            map((response) => this.toPaperModel(this.unwrap(response))),
-            catchError(() => of(undefined))
+        const cacheKey = (id ?? '').trim();
+        const cachedPaper$ = this.paperDetailCache.get(cacheKey);
+        const paper$ = cachedPaper$ ?? this.paperDetailCache.set(cacheKey,
+            this.http.get<ApiResponse<ResearchPaperApiModel>>(API_ENDPOINTS.RESEARCH.DETAIL(id)).pipe(
+                map((response) => this.toPaperModel(this.unwrap(response))),
+                catchError(() => {
+                    this.paperDetailCache.delete(cacheKey);
+                    return of(undefined);
+                }),
+                shareReplay({ bufferSize: 1, refCount: false })
+            )
         );
 
         return forkJoin([paper$, this.getBookmarkedPaperIds()]).pipe(
-            map(([paper, bookmarkedIds]) => {
-                if (!paper) {
-                    return undefined;
-                }
-                return {
-                    ...paper,
-                    isBookmarked: bookmarkedIds.has(paper.id)
-                };
-            })
+            map(([paper, bookmarkedIds]) => paper ? {
+                ...paper,
+                isBookmarked: bookmarkedIds.has(paper.id)
+            } : undefined)
         );
     }
 
@@ -103,10 +114,22 @@ export class ResearchPaperService {
     }
 
     getMyPapers(_currentUser: AuthUser): Observable<ResearchPaper[]> {
-        return this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.MY_PAPERS).pipe(
+        const cacheKey = authSignal.user()?.id ?? 'anonymous';
+        const cachedPapers$ = this.myPapersCache.get(cacheKey);
+        if (cachedPapers$) {
+            return cachedPapers$;
+        }
+
+        const request$ = this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.MY_PAPERS).pipe(
             map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
-            catchError(() => of([]))
+            catchError(() => {
+                this.myPapersCache.delete(cacheKey);
+                return of([]);
+            }),
+            shareReplay({ bufferSize: 1, refCount: false })
         );
+
+        return this.myPapersCache.set(cacheKey, request$);
     }
 
     saveFromEditor(payload: ResearchEditorPayload, _currentUser: AuthUser): Observable<ResearchPaper | null> {
@@ -130,6 +153,7 @@ export class ResearchPaperService {
 
         return request$.pipe(
             map((response) => this.toPaperModel(this.unwrap(response))),
+            tap(() => this.invalidatePaperCaches()),
             catchError(() => of(null))
         );
     }
@@ -139,7 +163,13 @@ export class ResearchPaperService {
             return of(new Set<string>());
         }
 
-        return this.http.get<ApiResponse<ResearchBookmarkApiModel[]>>(API_ENDPOINTS.RESEARCH.BOOKMARKS_MY).pipe(
+        const cacheKey = authSignal.user()?.id ?? 'anonymous';
+        const cachedBookmarks$ = this.bookmarksCache.get(cacheKey);
+        if (cachedBookmarks$) {
+            return cachedBookmarks$;
+        }
+
+        const request$ = this.http.get<ApiResponse<ResearchBookmarkApiModel[]>>(API_ENDPOINTS.RESEARCH.BOOKMARKS_MY).pipe(
             map((response) => this.unwrapList(response)),
             map((items) => {
                 const ids = new Set<string>();
@@ -150,18 +180,26 @@ export class ResearchPaperService {
                 });
                 return ids;
             }),
-            catchError(() => of(new Set<string>()))
+            catchError(() => {
+                this.bookmarksCache.delete(cacheKey);
+                return of(new Set<string>());
+            }),
+            shareReplay({ bufferSize: 1, refCount: false })
         );
+
+        return this.bookmarksCache.set(cacheKey, request$);
     }
 
     bookmarkPaper(paperId: string): Observable<void> {
         return this.http.post<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.BOOKMARK(paperId), {}).pipe(
+            tap(() => this.bookmarksCache.clear()),
             map(() => void 0)
         );
     }
 
     unbookmarkPaper(paperId: string): Observable<void> {
         return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.BOOKMARK(paperId)).pipe(
+            tap(() => this.bookmarksCache.clear()),
             map(() => void 0)
         );
     }
@@ -219,6 +257,26 @@ export class ResearchPaperService {
         return params;
     }
 
+    private buildListCacheKey(query: ResearchPaperListQuery): string {
+        const keyword = (query.q ?? '').trim().toLowerCase();
+        const type = query.type && query.type !== 'ALL' ? query.type : '';
+        const specializations = (query.specialization ?? [])
+            .map((item) => (item ?? '').trim().toLowerCase())
+            .filter((item) => !!item)
+            .sort()
+            .join('|');
+        return `q=${keyword};type=${type};specialization=${specializations}`;
+    }
+
+    private attachBookmarkState(papers$: Observable<ResearchPaper[]>): Observable<ResearchPaper[]> {
+        return forkJoin([papers$, this.getBookmarkedPaperIds()]).pipe(
+            map(([papers, bookmarkedIds]) => papers.map((paper) => ({
+                ...paper,
+                isBookmarked: bookmarkedIds.has(paper.id)
+            })))
+        );
+    }
+
     private toPaperModel(apiPaper: ResearchPaperApiModel): ResearchPaper {
         const authors = Array.isArray(apiPaper.authors) ? apiPaper.authors : [];
         const mappedAuthors: PaperAuthor[] = authors.map((author, index) => ({
@@ -256,5 +314,11 @@ export class ResearchPaperService {
             }
         }
         return new Date();
+    }
+
+    private invalidatePaperCaches(): void {
+        this.papersCache.clear();
+        this.paperDetailCache.clear();
+        this.myPapersCache.clear();
     }
 }

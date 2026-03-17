@@ -1,12 +1,13 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { catchError, map, Observable, of, timeout } from 'rxjs';
+import { catchError, map, Observable, of, shareReplay, tap, timeout } from 'rxjs';
 
 import { Post, PostDisplayInfo } from '../models/post.model';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import { PendingApplicantResponse, PendingApplicationResponse } from '../models/profile.model';
-import { AuthUser } from '../signals/auth.signal';
+import { AuthUser, authSignal } from '../signals/auth.signal';
+import { TimedObservableCache } from '../utils/timed-observable-cache.util';
 
 interface ApiResearchPaperLink {
     id?: string;
@@ -107,9 +108,18 @@ export interface PostListQuery {
 })
 export class PostService {
     private readonly http = inject(HttpClient);
+    private readonly postsCache = new TimedObservableCache<Post[]>(60_000);
+    private readonly postDetailCache = new TimedObservableCache<Post | undefined>(60_000);
+    private readonly myPostsCache = new TimedObservableCache<Post[]>(30_000);
 
     getPosts(query: PostListQuery = {}): Observable<Post[]> {
-        return this.http.get<ApiResponse<ApiPostModel[]>>(API_ENDPOINTS.RECRUITMENT.LIST, {
+        const cacheKey = this.buildListCacheKey(query);
+        const cachedPosts$ = this.postsCache.get(cacheKey);
+        if (cachedPosts$) {
+            return cachedPosts$;
+        }
+
+        const request$ = this.http.get<ApiResponse<ApiPostModel[]>>(API_ENDPOINTS.RECRUITMENT.LIST, {
             params: this.buildListParams(query)
         }).pipe(
             map((response) => {
@@ -118,12 +128,24 @@ export class PostService {
                 }
                 return response.data.map((item) => this.toPostModel(item));
             }),
-            catchError(() => of([]))
+            catchError(() => {
+                this.postsCache.delete(cacheKey);
+                return of([]);
+            }),
+            shareReplay({ bufferSize: 1, refCount: false })
         );
+
+        return this.postsCache.set(cacheKey, request$);
     }
 
     getMyPosts(authorId: string): Observable<Post[]> {
-        return this.http.get<ApiResponse<ApiPostModel[]>>(API_ENDPOINTS.RECRUITMENT.MY_POSTS).pipe(
+        const cacheKey = authorId.trim() || authSignal.user()?.id || 'anonymous';
+        const cachedPosts$ = this.myPostsCache.get(cacheKey);
+        if (cachedPosts$) {
+            return cachedPosts$;
+        }
+
+        const request$ = this.http.get<ApiResponse<ApiPostModel[]>>(API_ENDPOINTS.RECRUITMENT.MY_POSTS).pipe(
             timeout(15000),
             map((response) => {
                 if (!response.success || !response.data) {
@@ -131,23 +153,42 @@ export class PostService {
                 }
                 return response.data.map((item) => this.toPostModel(item));
             }),
-            catchError(() => of([])),
+            catchError(() => {
+                this.myPostsCache.delete(cacheKey);
+                return of([]);
+            }),
             map((posts) => posts
                 .filter((post) => post.authorId === authorId)
-                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()))
+                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())),
+            shareReplay({ bufferSize: 1, refCount: false })
         );
+
+        return this.myPostsCache.set(cacheKey, request$);
     }
 
     getPostById(id: string): Observable<Post | undefined> {
-        return this.http.get<ApiResponse<ApiPostModel>>(API_ENDPOINTS.RECRUITMENT.DETAIL(id)).pipe(
+        const viewerKey = authSignal.user()?.id ?? 'anonymous';
+        const cacheKey = `${viewerKey}:${(id ?? '').trim()}`;
+        const cachedPost$ = this.postDetailCache.get(cacheKey);
+        if (cachedPost$) {
+            return cachedPost$;
+        }
+
+        const request$ = this.http.get<ApiResponse<ApiPostModel>>(API_ENDPOINTS.RECRUITMENT.DETAIL(id)).pipe(
             map((response) => {
                 if (!response.success || !response.data) {
                     return undefined;
                 }
                 return this.toPostModel(response.data);
             }),
-            catchError(() => of(undefined))
+            catchError(() => {
+                this.postDetailCache.delete(cacheKey);
+                return of(undefined);
+            }),
+            shareReplay({ bufferSize: 1, refCount: false })
         );
+
+        return this.postDetailCache.set(cacheKey, request$);
     }
 
     saveMyPost(payload: PostEditorPayload, user: AuthUser, postId?: string): Observable<Post> {
@@ -174,6 +215,7 @@ export class PostService {
             return this.http.put<ApiResponse<ApiPostModel>>(API_ENDPOINTS.RECRUITMENT.UPDATE(postId), apiPayload).pipe(
                 timeout(20000),
                 map((response) => this.toPostModel(this.unwrap(response))),
+                tap(() => this.invalidatePostCaches()),
                 map((post) => this.hydrateSavedPost(post, sanitizedPayload, user, postId))
             );
         }
@@ -181,6 +223,7 @@ export class PostService {
         return this.http.post<ApiResponse<ApiPostModel>>(API_ENDPOINTS.RECRUITMENT.CREATE, apiPayload).pipe(
             timeout(20000),
             map((response) => this.toPostModel(this.unwrap(response))),
+            tap(() => this.invalidatePostCaches()),
             map((post) => this.hydrateSavedPost(post, sanitizedPayload, user))
         );
     }
@@ -228,6 +271,17 @@ export class PostService {
         });
 
         return params;
+    }
+
+    private buildListCacheKey(query: PostListQuery): string {
+        const keyword = (query.q ?? '').trim().toLowerCase();
+        const type = (query.type ?? '').trim().toLowerCase();
+        const specializations = (query.specialization ?? [])
+            .map((item) => (item ?? '').trim().toLowerCase())
+            .filter((item) => !!item)
+            .sort()
+            .join('|');
+        return `q=${keyword};type=${type};specialization=${specializations}`;
     }
 
     private toPostModel(item: ApiPostModel): Post {
@@ -468,5 +522,11 @@ export class PostService {
             createdAt: new Date(post.createdAt),
             updatedAt: new Date(post.updatedAt)
         };
+    }
+
+    private invalidatePostCaches(): void {
+        this.postsCache.clear();
+        this.postDetailCache.clear();
+        this.myPostsCache.clear();
     }
 }
