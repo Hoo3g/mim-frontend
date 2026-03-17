@@ -2,20 +2,49 @@ import { Component, inject } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { Observable, finalize, switchMap } from 'rxjs';
+import { Observable, BehaviorSubject, catchError, combineLatest, finalize, map, of, startWith, switchMap } from 'rxjs';
 
 import { ResearchPaper } from '../../core/models/research-paper.model';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
 import { authSignal } from '../../core/signals/auth.signal';
 import { API_CONFIG } from '../../core/config/api.config';
 import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-canvas-viewer.component';
+import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading-spinner.component';
+
+interface PaperDetailState {
+  status: 'loading' | 'ready' | 'not-found';
+  paper?: ResearchPaper;
+}
 
 @Component({
   selector: 'app-research-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, PdfCanvasViewerComponent],
+  imports: [CommonModule, RouterModule, PdfCanvasViewerComponent, LoadingSpinnerComponent],
   template: `
-    <div *ngIf="paper$ | async as paper" class="min-h-screen bg-white pb-20">
+    <ng-container *ngIf="paperState$ | async as state">
+      <div *ngIf="state.status === 'loading'" class="min-h-screen bg-white flex items-center justify-center px-6">
+        <app-loading-spinner [size]="54"></app-loading-spinner>
+      </div>
+
+      <div *ngIf="state.status === 'not-found'" class="min-h-screen bg-white flex items-center justify-center px-6">
+        <div class="max-w-xl text-center space-y-5">
+          <p class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-400">
+            Không tải được bài nghiên cứu
+          </p>
+          <h1 class="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tight">
+            Bài viết không tồn tại hoặc chưa sẵn sàng hiển thị
+          </h1>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Trang chi tiết không lấy được dữ liệu bài nghiên cứu. Bạn có thể quay lại danh sách để thử mở lại bài viết.
+          </p>
+          <a routerLink="/research"
+             class="inline-flex items-center justify-center bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest px-6 py-3 hover:bg-hus-dark transition">
+            Quay lại trang nghiên cứu
+          </a>
+        </div>
+      </div>
+
+      <div *ngIf="state.paper as paper" class="min-h-screen bg-white pb-20">
       <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
           <a routerLink="/" class="text-hus-blue hover:text-hus-dark transition">Cổng nghiên cứu</a>
@@ -49,11 +78,33 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
               </button>
             </div>
 
-            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-6 sm:mb-8">
+            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-6 sm:mb-8">
               {{ paper.title }}
             </h1>
 
             <div class="flex flex-col gap-6">
+              <div class="flex flex-wrap gap-x-5 gap-y-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                <span class="inline-flex items-center gap-1.5" title="Lượt xem">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span class="tabular-nums">{{ paper.viewCount }}</span>
+                </span>
+                <span class="inline-flex items-center gap-1.5" title="Lượt tải xuống">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M7 10l5 5m0 0 5-5m-5 5V3" />
+                  </svg>
+                  <span class="tabular-nums">{{ paper.downloadCount }}</span>
+                </span>
+                <span class="inline-flex items-center gap-1.5" title="Đã lưu">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                  <span class="tabular-nums">{{ paper.bookmarkCount }}</span>
+                </span>
+              </div>
+
               <div class="flex flex-wrap gap-4 items-center">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tác giả biên soạn:</span>
                 <div class="flex flex-wrap gap-x-6 gap-y-2">
@@ -111,7 +162,7 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
           <footer class="mt-8 sm:mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             <button *ngIf="hasPdfUrl(paper.pdfUrl); else missingPdf"
                     type="button"
-                    (click)="downloadPdf(paper.pdfUrl, paper.title)"
+                    (click)="downloadPdf(paper)"
                     [disabled]="isDownloadingPdf"
                     class="inline-flex items-center justify-center bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20 w-full sm:w-auto">
               {{ isDownloadingPdf ? 'Đang tải xuống...' : 'Tải xuống tài liệu (.PDF)' }}
@@ -129,23 +180,47 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
           </footer>
         </div>
       </div>
-    </div>
+      </div>
+    </ng-container>
   `
 })
 export class ResearchDetailComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
   private readonly paperService = inject(ResearchPaperService);
+  private readonly reloadToken$ = new BehaviorSubject(0);
   private readonly frontendOrigin = this.resolveOrigin(typeof window !== 'undefined' ? window.location.origin : '');
   private readonly backendOrigin = this.resolveOrigin(API_CONFIG.BASE_URL);
   private readonly frontendProtocol = this.resolveProtocol(this.frontendOrigin);
   private readonly backendHost = this.resolveHost(this.backendOrigin);
+  private trackedPaperId: string | null = null;
 
   isAuth = authSignal.isAuth;
   isDownloadingPdf = false;
 
-  paper$: Observable<ResearchPaper | undefined> = this.route.paramMap.pipe(
-    switchMap((params) => this.paperService.getPaperById(params.get('id')!))
+  paperState$: Observable<PaperDetailState> = combineLatest([
+    this.route.paramMap,
+    this.reloadToken$
+  ]).pipe(
+    switchMap(([params]) => {
+      const paperId = (params.get('id') ?? '').trim();
+      const shouldTrackView = !!paperId && paperId !== this.trackedPaperId;
+      if (shouldTrackView) {
+        this.trackedPaperId = paperId;
+      }
+
+      const trackView$ = shouldTrackView
+        ? this.paperService.trackView(paperId).pipe(catchError(() => of(void 0)))
+        : of(void 0);
+
+      return trackView$.pipe(
+        switchMap(() => this.paperService.getPaperById(paperId)),
+        map((paper) => paper
+          ? ({ status: 'ready', paper } as PaperDetailState)
+          : ({ status: 'not-found' } as PaperDetailState)),
+        startWith({ status: 'loading' } as PaperDetailState)
+      );
+    })
   );
 
   toggleBookmark(paper: ResearchPaper): void {
@@ -155,9 +230,7 @@ export class ResearchDetailComponent {
 
     request$.subscribe({
       next: () => {
-        this.paper$ = this.route.paramMap.pipe(
-          switchMap((params) => this.paperService.getPaperById(params.get('id')!))
-        );
+        this.reloadToken$.next(this.reloadToken$.value + 1);
       }
     });
   }
@@ -170,20 +243,28 @@ export class ResearchDetailComponent {
     return !!this.getDownloadUrl(url);
   }
 
-  downloadPdf(url: string, title: string): void {
-    const resolved = this.getDownloadUrl(url);
+  downloadPdf(paper: ResearchPaper): void {
+    const resolved = this.getDownloadUrl(paper.pdfUrl);
     if (!resolved || this.isDownloadingPdf) {
       return;
     }
 
     this.isDownloadingPdf = true;
-    this.http.get(resolved, { observe: 'response', responseType: 'blob' })
-      .pipe(finalize(() => {
+    this.paperService.trackDownload(paper.id).pipe(
+      catchError(() => of(void 0)),
+      switchMap(() => this.http.get(resolved, { observe: 'response', responseType: 'blob' })),
+      finalize(() => {
         this.isDownloadingPdf = false;
-      }))
-      .subscribe({
-        next: (response) => this.saveBlob(response, resolved, title),
-        error: () => window.open(resolved, '_blank', 'noopener')
+      })
+    ).subscribe({
+        next: (response) => {
+          this.saveBlob(response, resolved, paper.title);
+          this.reloadToken$.next(this.reloadToken$.value + 1);
+        },
+        error: () => {
+          window.open(resolved, '_blank', 'noopener');
+          this.reloadToken$.next(this.reloadToken$.value + 1);
+        }
       });
   }
 

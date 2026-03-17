@@ -96,6 +96,9 @@ export const MOCK_PAPERS: ResearchPaper[] = [
         journalConference: 'Hội nghị Quốc tế về Xử lý Ngôn ngữ Tự nhiên (NLP 2023)',
         researchArea: 'Trí tuệ nhân tạo',
         category: 'LECTURER',
+        viewCount: 128,
+        downloadCount: 24,
+        bookmarkCount: 9,
         authors: [
             { studentId: 'l1', name: 'PGS.TS. Lê Kim Long', isMainAuthor: true, authorOrder: 1 },
             { studentId: 'u10', name: 'Nguyễn Thị Hoa', isMainAuthor: false, authorOrder: 2 }
@@ -112,6 +115,9 @@ export const MOCK_PAPERS: ResearchPaper[] = [
         journalConference: 'Tạp chí Khoa học & Công nghệ VNU',
         researchArea: 'Cơ học',
         category: 'STUDENT',
+        viewCount: 76,
+        downloadCount: 18,
+        bookmarkCount: 5,
         authors: [
             { studentId: 'u3', name: 'Phạm Thành Nam', isMainAuthor: true, authorOrder: 1 },
             { studentId: 'l2', name: 'GS.TS. Nguyễn Hữu Đức', isMainAuthor: false, authorOrder: 2 }
@@ -128,6 +134,9 @@ export const MOCK_PAPERS: ResearchPaper[] = [
         journalConference: 'Journal of Mathematical Analysis and Applications',
         researchArea: 'Toán ứng dụng',
         category: 'LECTURER',
+        viewCount: 94,
+        downloadCount: 31,
+        bookmarkCount: 7,
         authors: [
             { studentId: 'l3', name: 'TS. Hoàng Xuân Sính', isMainAuthor: true, authorOrder: 1 }
         ],
@@ -143,6 +152,9 @@ export const MOCK_PAPERS: ResearchPaper[] = [
         journalConference: 'Kỷ yếu Hội thảo Sinh viên Nghiên cứu Khoa học',
         researchArea: 'An ninh mạng',
         category: 'STUDENT',
+        viewCount: 61,
+        downloadCount: 12,
+        bookmarkCount: 4,
         authors: [
             { studentId: 'u4', name: 'Đặng Minh Châu', isMainAuthor: true, authorOrder: 1 }
         ],

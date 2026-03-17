@@ -12,6 +12,8 @@ export const API_ENDPOINTS = {
         LIST: `${API_CONFIG.PREFIX}/research-papers`,
         MY_PAPERS: `${API_CONFIG.PREFIX}/research-papers/my`,
         DETAIL: (id: string) => `${API_CONFIG.PREFIX}/research-papers/${id}`,
+        TRACK_VIEW: (id: string) => `${API_CONFIG.PREFIX}/research-papers/${id}/views`,
+        TRACK_DOWNLOAD: (id: string) => `${API_CONFIG.PREFIX}/research-papers/${id}/downloads`,
         BOOKMARKS_MY: `${API_CONFIG.PREFIX}/research-papers/bookmarks/me`,
         BOOKMARK: (id: string) => `${API_CONFIG.PREFIX}/research-papers/${id}/bookmarks`,
         CATEGORIES: `${API_CONFIG.PREFIX}/research-categories`,

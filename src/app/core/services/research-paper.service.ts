@@ -45,6 +45,9 @@ interface ResearchPaperApiModel {
     journalConference?: string;
     researchArea?: string;
     category?: 'LECTURER' | 'STUDENT';
+    viewCount?: number;
+    downloadCount?: number;
+    bookmarkCount?: number;
     approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
     moderationComment?: string;
     authors?: ResearchPaperApiAuthor[];
@@ -87,13 +90,19 @@ export class ResearchPaperService {
 
     getPaperById(id: string): Observable<ResearchPaper | undefined> {
         const cacheKey = (id ?? '').trim();
+        if (!cacheKey) {
+            return of(undefined);
+        }
+
         const cachedPaper$ = this.paperDetailCache.get(cacheKey);
         const paper$ = cachedPaper$ ?? this.paperDetailCache.set(cacheKey,
             this.http.get<ApiResponse<ResearchPaperApiModel>>(API_ENDPOINTS.RESEARCH.DETAIL(id)).pipe(
                 map((response) => this.toPaperModel(this.unwrap(response))),
                 catchError(() => {
                     this.paperDetailCache.delete(cacheKey);
-                    return of(undefined);
+                    return this.getPapers().pipe(
+                        map((papers) => papers.find((paper) => paper.id === cacheKey))
+                    );
                 }),
                 shareReplay({ bufferSize: 1, refCount: false })
             )
@@ -192,14 +201,34 @@ export class ResearchPaperService {
 
     bookmarkPaper(paperId: string): Observable<void> {
         return this.http.post<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.BOOKMARK(paperId), {}).pipe(
-            tap(() => this.bookmarksCache.clear()),
+            tap(() => {
+                this.bookmarksCache.clear();
+                this.invalidatePublicPaperCaches(paperId);
+            }),
             map(() => void 0)
         );
     }
 
     unbookmarkPaper(paperId: string): Observable<void> {
         return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.BOOKMARK(paperId)).pipe(
-            tap(() => this.bookmarksCache.clear()),
+            tap(() => {
+                this.bookmarksCache.clear();
+                this.invalidatePublicPaperCaches(paperId);
+            }),
+            map(() => void 0)
+        );
+    }
+
+    trackView(paperId: string): Observable<void> {
+        return this.http.post<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.TRACK_VIEW(paperId), {}).pipe(
+            tap(() => this.invalidatePublicPaperCaches(paperId)),
+            map(() => void 0)
+        );
+    }
+
+    trackDownload(paperId: string): Observable<void> {
+        return this.http.post<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.TRACK_DOWNLOAD(paperId), {}).pipe(
+            tap(() => this.invalidatePublicPaperCaches(paperId)),
             map(() => void 0)
         );
     }
@@ -295,6 +324,9 @@ export class ResearchPaperService {
             journalConference: apiPaper.journalConference ?? 'MIM Draft',
             researchArea: apiPaper.researchArea ?? 'Chưa phân loại',
             category: apiPaper.category === 'LECTURER' ? 'LECTURER' : 'STUDENT',
+            viewCount: apiPaper.viewCount ?? 0,
+            downloadCount: apiPaper.downloadCount ?? 0,
+            bookmarkCount: apiPaper.bookmarkCount ?? 0,
             approvalStatus: apiPaper.approvalStatus,
             moderationComment: apiPaper.moderationComment,
             authors: mappedAuthors,
@@ -320,5 +352,14 @@ export class ResearchPaperService {
         this.papersCache.clear();
         this.paperDetailCache.clear();
         this.myPapersCache.clear();
+    }
+
+    private invalidatePublicPaperCaches(paperId?: string): void {
+        this.papersCache.clear();
+        if (paperId) {
+            this.paperDetailCache.delete((paperId ?? '').trim());
+        } else {
+            this.paperDetailCache.clear();
+        }
     }
 }

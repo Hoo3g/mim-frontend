@@ -80,11 +80,6 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                     </button>
                     <!-- Sub-filters for COMPANY -->
                     <div *ngIf="filterType === 'COMPANY'" class="mt-2 ml-3 space-y-1 border-l border-gray-100 pl-3">
-                      <button (click)="setSubFilter('ALL')" 
-                              [class.text-hus-blue]="subFilter === 'ALL'"
-                              class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
-                        ▪ Tất cả
-                      </button>
                       <button *ngFor="let specialization of specializations"
                               (click)="setSubFilter(specialization.name)" 
                               [class.text-hus-blue]="subFilter === specialization.name"
@@ -105,11 +100,6 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                     </button>
                     <!-- Sub-filters for STUDENT -->
                     <div *ngIf="filterType === 'STUDENT'" class="mt-2 ml-3 space-y-1 border-l border-gray-100 pl-3">
-                      <button (click)="setSubFilter('ALL')" 
-                              [class.text-hus-blue]="subFilter === 'ALL'"
-                              class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
-                        ▪ Tất cả
-                      </button>
                       <button *ngFor="let specialization of specializations"
                               (click)="setSubFilter(specialization.name)" 
                               [class.text-hus-blue]="subFilter === specialization.name"
@@ -140,7 +130,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
               </div>
               
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div *ngFor="let post of posts" 
+                <div *ngFor="let post of posts | slice:0:visiblePostCount" 
                      (click)="openDetail(post)"
                      class="bg-white border border-gray-100 p-6 hover:border-hus-blue hover:shadow-lg transition-all duration-300 group flex flex-col relative cursor-pointer self-start">
                   
@@ -249,6 +239,16 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 
                 </div>
               </div>
+
+              <div *ngIf="posts.length > visiblePostCount" class="pt-8 flex justify-center">
+                <button
+                  type="button"
+                  (click)="loadMorePosts()"
+                  class="inline-flex items-center justify-center gap-2 min-w-[110px] border border-gray-200 px-5 py-3 text-[10px] font-black uppercase tracking-widest text-hus-blue hover:border-hus-blue hover:bg-blue-50/40 transition-colors">
+                  <span>Xem thêm</span>
+                  <span aria-hidden="true">+</span>
+                </button>
+              </div>
             </div>
 
             <ng-template #loading>
@@ -280,9 +280,11 @@ export class PostsComponent implements OnInit {
 
   filteredPosts$: Observable<Post[]> = of([]);
   filterType: 'COMPANY' | 'STUDENT' = 'COMPANY';
-  subFilter: string = 'ALL';
+  subFilter: string | null = null;
   selectedPost: Post | null = null;
   showMobileFilters = false;
+  visiblePostCount = 10;
+  private readonly pageSize = 10;
 
   ngOnInit(): void {
     this.searchTermChanges
@@ -305,8 +307,9 @@ export class PostsComponent implements OnInit {
       );
 
       this.filterType = type === 'STUDENT' ? 'STUDENT' : 'COMPANY';
-      this.subFilter = selectedSpecializations[0] ?? 'ALL';
+      this.subFilter = selectedSpecializations[0] ?? null;
       this.searchTerm = keyword?.trim() ?? '';
+      this.resetVisiblePosts();
       this.loadPosts();
     });
   }
@@ -318,15 +321,19 @@ export class PostsComponent implements OnInit {
 
   setFilter(type: 'COMPANY' | 'STUDENT'): void {
     this.filterType = type;
-    this.subFilter = 'ALL';
+    this.subFilter = null;
     this.syncFiltersToUrl();
     this.collapseMobileFiltersIfNeeded();
   }
 
   setSubFilter(sub: string): void {
-    this.subFilter = sub;
+    this.subFilter = this.subFilter === sub ? null : sub;
     this.syncFiltersToUrl();
     this.collapseMobileFiltersIfNeeded();
+  }
+
+  loadMorePosts(): void {
+    this.visiblePostCount += this.pageSize;
   }
 
   openDetail(post: Post): void {
@@ -385,7 +392,7 @@ export class PostsComponent implements OnInit {
   private loadPosts(): void {
     this.filteredPosts$ = this.postService.getPosts({
       type: this.filterType,
-      specialization: this.subFilter !== 'ALL' ? [this.subFilter] : null,
+      specialization: this.subFilter ? [this.subFilter] : null,
       q: this.searchTerm
     });
   }
@@ -420,9 +427,13 @@ export class PostsComponent implements OnInit {
   private buildPostQueryParams(): { type: 'COMPANY' | 'STUDENT'; specialization: string[] | null; q: string | null } {
     return {
       type: this.filterType,
-      specialization: this.subFilter !== 'ALL' ? [this.subFilter] : null,
+      specialization: this.subFilter ? [this.subFilter] : null,
       q: this.searchTerm.trim() || null
     };
+  }
+
+  private resetVisiblePosts(): void {
+    this.visiblePostCount = this.pageSize;
   }
 
   canManageRecruitmentPosts(): boolean {

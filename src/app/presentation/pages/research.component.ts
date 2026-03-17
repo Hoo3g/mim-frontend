@@ -129,19 +129,19 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
-                            <span class="tabular-nums">1245</span>
+                            <span class="tabular-nums">{{ paper.viewCount }}</span>
                           </span>
                           <span class="inline-flex items-center gap-1.5" title="Lượt tải xuống">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M7 10l5 5m0 0 5-5m-5 5V3" />
                             </svg>
-                            <span class="tabular-nums">32</span>
+                            <span class="tabular-nums">{{ paper.downloadCount }}</span>
                           </span>
                           <span class="inline-flex items-center gap-1.5" title="Đã lưu">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                             </svg>
-                            <span class="tabular-nums">5</span>
+                            <span class="tabular-nums">{{ paper.bookmarkCount }}</span>
                           </span>
                         </div>
                      </div>
@@ -232,8 +232,8 @@ export class ResearchComponent implements OnInit {
   currentFilter: 'ALL' | 'LECTURER' | 'STUDENT' = 'ALL';
   selectedSpecializations: string[] = [];
   searchKeyword = '';
-  visiblePaperCount = 6;
-  private readonly pageSize = 6;
+  visiblePaperCount = 10;
+  private readonly pageSize = 10;
 
   ngOnInit(): void {
     this.hero$ = this.contentService.getResearchHeroContent();

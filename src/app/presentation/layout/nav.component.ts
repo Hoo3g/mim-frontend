@@ -47,18 +47,33 @@ import { ROUTES } from '../../core/constants/route.const';
             </div>
           </a>
 
-          <button type="button"
-                  (click)="toggleMobileMenu($event)"
-                  class="md:hidden inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 border border-gray-200 text-gray-500 hover:border-hus-blue hover:text-hus-blue transition-colors"
-                  [attr.aria-label]="showMobileMenu ? 'Đóng menu điều hướng' : 'Mở menu điều hướng'"
-                  [attr.aria-expanded]="showMobileMenu">
-            <svg *ngIf="!showMobileMenu" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            <svg *ngIf="showMobileMenu" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div class="md:hidden flex items-center gap-2">
+            <ng-container *ngIf="!isAuth()">
+              <a
+                [routerLink]="ROUTES.AUTH.LOGIN"
+                class="inline-flex items-center justify-center px-2.5 py-2 text-[9px] font-black uppercase tracking-widest text-gray-600 border border-gray-200 hover:border-hus-blue hover:text-hus-blue transition-colors">
+                Đăng nhập
+              </a>
+              <a
+                [routerLink]="ROUTES.AUTH.REGISTER"
+                class="inline-flex items-center justify-center px-2.5 py-2 text-[9px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors">
+                Đăng ký
+              </a>
+            </ng-container>
+
+            <button type="button"
+                    (click)="toggleMobileMenu($event)"
+                    class="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 border border-gray-200 text-gray-500 hover:border-hus-blue hover:text-hus-blue transition-colors"
+                    [attr.aria-label]="showMobileMenu ? 'Đóng menu điều hướng' : 'Mở menu điều hướng'"
+                    [attr.aria-expanded]="showMobileMenu">
+              <svg *ngIf="!showMobileMenu" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              <svg *ngIf="showMobileMenu" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
           <!-- Nav Links Desktop -->
           <div class="hidden md:flex space-x-6 h-full items-center">
@@ -173,7 +188,7 @@ import { ROUTES } from '../../core/constants/route.const';
 
           <!-- Mobile Menu -->
           <div *ngIf="showMobileMenu" class="md:hidden border-t border-gray-100 py-3 space-y-1">
-            <div *ngIf="isAuth(); else mobileGuestEntry" class="pb-3 mb-2 border-b border-gray-100">
+            <div *ngIf="isAuth()" class="pb-3 mb-2 border-b border-gray-100">
               <button type="button"
                       (click)="toggleMobileProfileSection($event)"
                       class="w-full flex items-center justify-between gap-3 px-3 py-2 border border-gray-100 bg-gray-50/70 hover:bg-gray-50 transition-colors">
@@ -202,87 +217,102 @@ import { ROUTES } from '../../core/constants/route.const';
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
+            </div>
 
-              <div *ngIf="showMobileProfileSection" class="pt-1 pb-1 space-y-1">
-                <a *ngIf="canAccessAdmin()"
-                   routerLink="/admin"
+            <div class="space-y-0">
+              <div
+                *ngIf="isAuth()"
+                class="overflow-hidden transition-all duration-300 ease-out"
+                [style.maxHeight.px]="mobileAccountLinksMaxHeight()"
+                [style.opacity]="isMobileAccountMenuVisible() ? 1 : 0"
+                [style.transform]="isMobileAccountMenuVisible() ? 'translateY(0)' : 'translateY(-8px)'"
+                [style.pointerEvents]="isMobileAccountMenuVisible() ? 'auto' : 'none'">
+                <div class="space-y-1 pt-1">
+                  <a *ngIf="canAccessAdmin()"
+                     routerLink="/admin"
+                     (click)="closeMobileMenu()"
+                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-hus-blue bg-blue-50 hover:bg-blue-100 transition-colors">
+                    Hệ thống Quản trị
+                  </a>
+                  <a [routerLink]="ROUTES.PROFILE"
+                     (click)="closeMobileMenu()"
+                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
+                    Thông tin cá nhân
+                  </a>
+                  <a [routerLink]="ROUTES.RESEARCH_MY_PAPERS"
+                     (click)="closeMobileMenu()"
+                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
+                    Bài viết của tôi
+                  </a>
+                  <a [routerLink]="ROUTES.PROFILE"
+                     (click)="closeMobileMenu()"
+                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
+                    Bài đã lưu
+                  </a>
+                  <a *ngIf="canManageRecruitmentPosts()"
+                     [routerLink]="ROUTES.RECRUITMENT_EDITOR"
+                     (click)="closeMobileMenu()"
+                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
+                    Tạo bài tuyển dụng
+                  </a>
+                  <a *ngIf="canManageRecruitmentPosts()"
+                     [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
+                     (click)="closeMobileMenu()"
+                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
+                    Bài tuyển dụng của tôi
+                  </a>
+                  <button type="button"
+                          (click)="logout()"
+                          class="w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors">
+                    Đăng xuất
+                  </button>
+                </div>
+              </div>
+
+              <div
+                class="overflow-hidden transition-all duration-300 ease-out"
+                [style.maxHeight.px]="mobilePrimaryLinksMaxHeight()"
+                [style.opacity]="isMobileAccountMenuVisible() ? 0 : 1"
+                [style.transform]="isMobileAccountMenuVisible() ? 'translateY(-8px)' : 'translateY(0)'"
+                [style.pointerEvents]="isMobileAccountMenuVisible() ? 'none' : 'auto'">
+                <a routerLink="/"
+                   [routerLinkActiveOptions]="{exact: true}"
+                   routerLinkActive="text-hus-blue bg-blue-50"
                    (click)="closeMobileMenu()"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-hus-blue bg-blue-50 hover:bg-blue-100 transition-colors">
-                  Hệ thống Quản trị
+                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
+                  Nghiên cứu
                 </a>
-                <a [routerLink]="ROUTES.PROFILE"
+                <a routerLink="/recruitment"
+                   routerLinkActive="text-hus-blue bg-blue-50"
                    (click)="closeMobileMenu()"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
-                  Thông tin cá nhân
+                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
+                  Tuyển dụng
                 </a>
-                <a [routerLink]="ROUTES.RESEARCH_MY_PAPERS"
+                <a href="#"
+                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
+                  Đào tạo
+                </a>
+                <a routerLink="/news"
+                   routerLinkActive="text-hus-blue bg-blue-50"
                    (click)="closeMobileMenu()"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
-                  Bài viết của tôi
+                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
+                  Bảng tin khoa
                 </a>
-                <a [routerLink]="ROUTES.PROFILE"
-                   (click)="closeMobileMenu()"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
-                  Bài đã lưu
-                </a>
-                <a *ngIf="canManageRecruitmentPosts()"
-                   [routerLink]="ROUTES.RECRUITMENT_EDITOR"
-                   (click)="closeMobileMenu()"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
-                  Tạo bài tuyển dụng
-                </a>
-                <a *ngIf="canManageRecruitmentPosts()"
-                   [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
-                   (click)="closeMobileMenu()"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
-                  Bài tuyển dụng của tôi
-                </a>
-                <button type="button"
-                        (click)="logout()"
-                        class="w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors">
-                  Đăng xuất
-                </button>
               </div>
             </div>
 
-            <ng-template #mobileGuestEntry>
-              <div class="pb-3 mb-2 border-b border-gray-100 space-y-1">
-                <a [routerLink]="ROUTES.AUTH.LOGIN"
-                   (click)="closeMobileMenu()"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
-                  Đăng nhập
-                </a>
-                <a [routerLink]="ROUTES.AUTH.REGISTER"
-                   (click)="closeMobileMenu()"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors text-center">
-                  Đăng ký
-                </a>
-              </div>
-            </ng-template>
-
-            <a routerLink="/"
-               [routerLinkActiveOptions]="{exact: true}"
-               routerLinkActive="text-hus-blue bg-blue-50"
-               (click)="closeMobileMenu()"
-               class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
-              Nghiên cứu
-            </a>
-            <a routerLink="/recruitment"
-               routerLinkActive="text-hus-blue bg-blue-50"
-               (click)="closeMobileMenu()"
-               class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
-              Tuyển dụng
-            </a>
-            <a href="#"
-               class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
-              Đào tạo
-            </a>
-            <a routerLink="/news"
-               routerLinkActive="text-hus-blue bg-blue-50"
-               (click)="closeMobileMenu()"
-               class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
-              Bảng tin khoa
-            </a>
+            <div *ngIf="!isAuth()" class="pt-3 mt-2 border-t border-gray-100 space-y-1">
+              <a [routerLink]="ROUTES.AUTH.LOGIN"
+                 (click)="closeMobileMenu()"
+                 class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
+                Đăng nhập
+              </a>
+              <a [routerLink]="ROUTES.AUTH.REGISTER"
+                 (click)="closeMobileMenu()"
+                 class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors text-center">
+                Đăng ký
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -468,5 +498,17 @@ export class NavComponent implements OnInit {
   mobileUserInitial(): string {
     const name = this.mobileUserName();
     return name.charAt(0)?.toUpperCase() || 'U';
+  }
+
+  isMobileAccountMenuVisible(): boolean {
+    return this.isAuth() && this.showMobileProfileSection;
+  }
+
+  mobilePrimaryLinksMaxHeight(): number {
+    return this.isMobileAccountMenuVisible() ? 0 : 220;
+  }
+
+  mobileAccountLinksMaxHeight(): number {
+    return this.isMobileAccountMenuVisible() ? 420 : 0;
   }
 }

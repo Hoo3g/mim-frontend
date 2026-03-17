@@ -14,6 +14,9 @@ export interface ResearchPaper {
     journalConference?: string;
     researchArea: string;
     category: 'LECTURER' | 'STUDENT';
+    viewCount: number;
+    downloadCount: number;
+    bookmarkCount: number;
     approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
     moderationComment?: string;
     isBookmarked?: boolean;
