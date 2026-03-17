@@ -6,6 +6,7 @@ import type { AuthUser } from '../signals/auth.signal';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import { authSignal } from '../signals/auth.signal';
+import { normalizeRichTextHtml } from '../utils/rich-text.util';
 
 export interface ResearchEditorPayload {
     id?: string;
@@ -102,7 +103,7 @@ export class ResearchPaperService {
 
     saveFromEditor(payload: ResearchEditorPayload, _currentUser: AuthUser): Observable<ResearchPaper | null> {
         const title = payload.title.trim();
-        const abstract = payload.abstract.trim();
+        const abstract = normalizeRichTextHtml(payload.abstract).trim();
         const researchArea = payload.researchArea?.trim();
         if (!title || !abstract || !researchArea) {
             return of(null);
@@ -201,7 +202,7 @@ export class ResearchPaperService {
         return {
             id: apiPaper.id,
             title: apiPaper.title ?? 'Untitled',
-            abstract: apiPaper.abstract ?? '',
+            abstract: normalizeRichTextHtml(apiPaper.abstract ?? ''),
             pdfUrl: apiPaper.pdfUrl ?? '',
             publicationYear: apiPaper.publicationYear ?? new Date().getFullYear(),
             journalConference: apiPaper.journalConference ?? 'MIM Draft',

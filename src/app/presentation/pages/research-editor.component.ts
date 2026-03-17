@@ -11,6 +11,7 @@ import { authSignal } from '../../core/signals/auth.signal';
 import { ResearchEditorPayload, ResearchPaperService } from '../../core/services/research-paper.service';
 import { ResearchCategoryService } from '../../core/services/research-category.service';
 import { ResearchCategory } from '../../core/models/research-category.model';
+import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
 
 @Component({
   selector: 'app-research-editor',
@@ -79,11 +80,11 @@ import { ResearchCategory } from '../../core/models/research-category.model';
               </p>
             </div>
 
-            <div>
+            <div class="max-w-4xl">
               <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
                 Tóm tắt
               </label>
-              <div class="border border-gray-200 bg-white overflow-hidden">
+              <div class="w-full border border-gray-200 bg-white overflow-hidden">
                 <ng-container *ngIf="isEditorReady; else editorLoadingTpl">
                 <quill-editor
                   class="research-quill"
@@ -91,14 +92,13 @@ import { ResearchCategory } from '../../core/models/research-category.model';
                   format="html"
                   theme="snow"
                   [modules]="quillModules"
-                  [styles]="{ height: '460px' }"
                   [(ngModel)]="abstract"
                   (ngModelChange)="onAbstractChange()"
                   placeholder="Nhập nội dung tóm tắt công trình nghiên cứu...">
                 </quill-editor>
                 </ng-container>
                 <ng-template #editorLoadingTpl>
-                  <div class="h-[460px] px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-gray-300">
+                  <div class="min-h-[220px] px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-gray-300">
                     Đang tải nội dung tóm tắt...
                   </div>
                 </ng-template>
@@ -257,7 +257,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       }
 
       this.title = paper.title;
-      this.abstract = this.normalizeToEditorHtml(paper.abstract);
+      this.abstract = this.normalizeToEditorHtml(normalizeRichTextHtml(paper.abstract));
       this.existingPdfUrl = paper.pdfUrl?.trim() ? paper.pdfUrl.trim() : null;
       this.selectedResearchArea = paper.researchArea ?? '';
       this.cdr.detectChanges();
@@ -272,7 +272,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     }
 
     const trimmedTitle = this.title.trim();
-    const abstractHtml = (this.abstract ?? '').trim();
+    const abstractHtml = normalizeRichTextHtml((this.abstract ?? '').trim());
     const abstractPlainText = this.toPlainText(abstractHtml);
     const trimmedResearchArea = this.selectedResearchArea.trim();
 
