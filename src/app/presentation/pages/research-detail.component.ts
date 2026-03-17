@@ -81,7 +81,7 @@ import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-
               <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] mb-6 inline-block border-b-4 border-hus-blue pb-1">
                 Tom tat nghien cuu
               </h2>
-              <div class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-lg text-gray-700 leading-relaxed text-justify font-light whitespace-pre-wrap [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:ml-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:ml-4 [&_li]:mb-2 [&_p]:mb-4"
+              <div class="research-rich-content max-w-full"
                    [innerHTML]="paper.abstract"></div>
             </section>
 

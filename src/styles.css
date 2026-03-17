@@ -23,6 +23,11 @@ body {
     @apply rounded-none;
 }
 
+.research-quill {
+    display: block;
+    width: 100%;
+}
+
 .research-quill .ql-toolbar.ql-snow {
     border: 0;
     border-bottom: 1px solid rgb(229 231 235);
@@ -30,11 +35,20 @@ body {
 }
 
 .research-quill .ql-container.ql-snow {
+    width: 100%;
+    box-sizing: border-box;
     border: 0;
     font-size: 0.95rem;
+    height: auto;
+    min-height: 220px;
 }
 
 .research-quill .ql-editor {
+    width: 100%;
+    box-sizing: border-box;
+    height: auto;
+    min-height: 220px;
+    overflow-y: visible;
     line-height: 1.8;
     color: rgb(17 24 39);
 }
@@ -46,8 +60,30 @@ body {
 
 .research-rich-content {
     padding: 0;
-    line-height: 1.9;
-    color: rgb(55 65 81);
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: rgb(17 24 39);
+    word-break: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    hyphens: none !important;
+}
+
+.research-rich-content p,
+.research-rich-content li,
+.research-rich-content blockquote,
+.research-rich-content h1,
+.research-rich-content h2,
+.research-rich-content h3,
+.research-rich-content h4,
+.research-rich-content h5,
+.research-rich-content h6 {
+    word-break: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    hyphens: none !important;
 }
 
 .research-rich-content p {
