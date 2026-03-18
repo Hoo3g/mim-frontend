@@ -7,6 +7,8 @@ export const API_ENDPOINTS = {
         REGISTER: `${API_CONFIG.PREFIX}/auth/register`,
         REFRESH: `${API_CONFIG.PREFIX}/auth/refresh-token`,
         LOGOUT: `${API_CONFIG.PREFIX}/auth/logout`,
+        VERIFY_EMAIL: `${API_CONFIG.PREFIX}/auth/verify-email`,
+        RESEND_VERIFY_EMAIL: `${API_CONFIG.PREFIX}/auth/verify-email/resend`,
     },
     RESEARCH: {
         LIST: `${API_CONFIG.PREFIX}/research-papers`,

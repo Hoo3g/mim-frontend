@@ -230,6 +230,11 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!authSignal.canCreateContent()) {
+      this.redirectToMyPapers('Tài khoản chưa xác thực email. Bạn chưa thể tạo hoặc cập nhật bài viết.');
+      return;
+    }
+
     this.loadResearchCategories();
 
     const paperId = this.route.snapshot.paramMap.get('id');
@@ -268,6 +273,11 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     const currentUser = authSignal.user();
     if (!currentUser) {
       this.redirectToMyPapers('Vui lòng đăng nhập để thao tác bài viết.');
+      return;
+    }
+
+    if (!authSignal.canCreateContent()) {
+      this.errorMessage = 'Tài khoản chưa xác thực email. Bạn chưa thể tạo hoặc cập nhật bài viết.';
       return;
     }
 
@@ -325,8 +335,8 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             : 'Đã tạo bài viết nghiên cứu mới.';
           this.router.navigateByUrl(ROUTES.RESEARCH_MY_PAPERS, { state: { notice } });
         },
-        error: () => {
-          this.errorMessage = 'Lưu bài viết thất bại. Vui lòng thử lại.';
+        error: (error: { error?: { message?: string } }) => {
+          this.errorMessage = error?.error?.message || 'Lưu bài viết thất bại. Vui lòng thử lại.';
         }
       });
   }

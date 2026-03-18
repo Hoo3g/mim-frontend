@@ -168,8 +168,7 @@ export class ResearchPaperService {
 
         return request$.pipe(
             map((response) => this.toPaperModel(this.unwrap(response))),
-            tap(() => this.invalidatePaperCaches()),
-            catchError(() => of(null))
+            tap(() => this.invalidatePaperCaches())
         );
     }
 

@@ -6,6 +6,7 @@ export interface LoginRequest {
 }
 
 export type UserType = 'STUDENT' | 'LECTURER' | 'COMPANY' | 'ADMIN';
+export type AccountStatus = 'PENDING' | 'APPROVED' | 'BLOCKED' | string;
 
 export interface RegisterRequest {
     email: string;
@@ -23,7 +24,7 @@ export interface GoogleLoginRequest {
 export interface AuthApiUser {
     id: string;
     email: string;
-    status: string;
+    status: AccountStatus;
     fullName?: string | null;
     avatarUrl?: string | null;
     roles: string[];

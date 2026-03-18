@@ -91,7 +91,8 @@ export class AuthService {
                 fullName,
                 role: primaryRole,
                 permissions,
-                avatarUrl: auth.user.avatarUrl ?? undefined
+                avatarUrl: auth.user.avatarUrl ?? undefined,
+                accountStatus: this.normalizeAccountStatus(auth.user.status)
             },
             auth.accessToken
         );
@@ -135,9 +136,36 @@ export class AuthService {
             authSignal.updateUserInfo({
                 fullName: this.buildDisplayNameFromProfile(profile),
                 avatarUrl: profile.avatarUrl ?? undefined,
-                role: profile.role ?? undefined
+                role: profile.role ?? undefined,
+                accountStatus: profile.accountStatus ?? undefined
             });
         });
+    }
+
+    verifyEmail(token: string): Observable<AuthApiUser> {
+        return this.http.post<ApiResponse<AuthApiUser>>(
+            API_ENDPOINTS.AUTH.VERIFY_EMAIL,
+            { token },
+            { withCredentials: true }
+        ).pipe(
+            map((response) => this.unwrap(response)),
+            map((user) => {
+                if (authSignal.isAuth()) {
+                    authSignal.updateUserInfo({ accountStatus: user.status });
+                }
+                return user;
+            })
+        );
+    }
+
+    resendVerificationEmail(): Observable<void> {
+        return this.http.post<ApiResponse<null>>(
+            API_ENDPOINTS.AUTH.RESEND_VERIFY_EMAIL,
+            {},
+            { withCredentials: true }
+        ).pipe(
+            map(() => void 0)
+        );
     }
 
     private buildDisplayName(email: string, fullName?: string): string {
@@ -167,5 +195,12 @@ export class AuthService {
         }
 
         return emailFallback;
+    }
+
+    private normalizeAccountStatus(status?: string | null): 'PENDING' | 'APPROVED' | 'BLOCKED' | string {
+        const normalized = (status ?? '').toString().trim().toUpperCase();
+        if (normalized === 'PENDING') return 'PENDING';
+        if (normalized === 'BLOCKED') return 'BLOCKED';
+        return 'APPROVED';
     }
 }

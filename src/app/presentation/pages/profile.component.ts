@@ -2,10 +2,11 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, NgZone, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
 
 import { ROUTES } from '../../core/constants/route.const';
 import { Post } from '../../core/models/post.model';
+import { AuthService } from '../../core/services/auth.service';
 import { ProfileService } from '../../core/services/profile.service';
 import { PostService } from '../../core/services/post.service';
 import { SpecializationService } from '../../core/services/specialization.service';
@@ -48,38 +49,54 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
             {{ feedbackMessage }}
           </div>
 
+          
+
           <div *ngIf="isStudent()" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 space-y-5">
               <div class="flex items-start justify-between gap-3">
                 <h3 class="min-w-0 text-lg font-black uppercase tracking-tight text-gray-900">Hồ sơ sinh viên</h3>
                 <div class="shrink-0 flex flex-wrap items-center gap-2">
-                  <button *ngIf="!editingStudent"
+                  <button *ngIf="canEditProfile() && !editingStudent"
                           (click)="beginEditStudent()"
                           class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
                     Chỉnh sửa
                   </button>
-                  <button *ngIf="editingStudent"
+                  <button *ngIf="canEditProfile() && editingStudent"
                           (click)="cancelEditStudent()"
                           class="px-4 py-2 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:border-gray-300 hover:text-gray-700 transition-colors">
                     Hủy
                   </button>
+                  <p *ngIf="!canEditProfile()" class="text-[10px] font-black uppercase tracking-widest text-amber-700">
+                    Chỉ xem
+                  </p>
                 </div>
               </div>
 
               <div *ngIf="!editingStudent" class="space-y-5">
                 <div class="bg-gray-50 border border-gray-100 p-5">
-                  <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 bg-white border border-gray-200 overflow-hidden flex items-center justify-center text-hus-blue text-lg font-black">
-                      <img *ngIf="me.avatarUrl && !avatarLoadError"
-                           [src]="me.avatarUrl!"
-                           alt="Avatar"
-                           class="w-full h-full object-cover"
-                           (error)="onAvatarImageError()" />
-                      <span *ngIf="!me.avatarUrl || avatarLoadError">{{ initials() }}</span>
+                  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+                    <div class="flex items-center gap-4 min-w-0">
+                      <div class="w-12 h-12 bg-white border border-gray-200 overflow-hidden flex items-center justify-center text-hus-blue text-lg font-black">
+                        <img *ngIf="me.avatarUrl && !avatarLoadError"
+                             [src]="me.avatarUrl!"
+                             alt="Avatar"
+                             class="w-full h-full object-cover"
+                             (error)="onAvatarImageError()" />
+                        <span *ngIf="!me.avatarUrl || avatarLoadError">{{ initials() }}</span>
+                      </div>
+                      <div class="min-w-0">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-hus-blue">Sinh viên</p>
+                        <p class="text-base font-bold text-gray-900 break-words">{{ displayName() }}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p class="text-[10px] font-black uppercase tracking-widest text-hus-blue">Sinh viên</p>
-                      <p class="text-base font-bold text-gray-900">{{ displayName() }}</p>
+                    <div *ngIf="needsEmailVerification() && !verificationLinkRequested"
+                         class="shrink-0">
+                      <button type="button"
+                              (click)="resendVerificationEmail()"
+                              [disabled]="resendingVerification"
+                              class="px-4 py-2 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                        {{ resendingVerification ? 'Đang gửi...' : 'Xác thực email' }}
+                      </button>
                     </div>
                   </div>
 
@@ -306,16 +323,19 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 class="text-lg font-black uppercase tracking-tight text-gray-900">Hồ sơ doanh nghiệp</h3>
                 <div class="flex flex-wrap items-center gap-2">
-                  <button *ngIf="!editingCompany"
+                  <button *ngIf="canEditProfile() && !editingCompany"
                           (click)="beginEditCompany()"
                           class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
                     Chỉnh sửa
                   </button>
-                  <button *ngIf="editingCompany"
+                  <button *ngIf="canEditProfile() && editingCompany"
                           (click)="cancelEditCompany()"
                           class="px-4 py-2 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:border-gray-300 hover:text-gray-700 transition-colors">
                     Hủy
                   </button>
+                  <p *ngIf="!canEditProfile()" class="text-[10px] font-black uppercase tracking-widest text-amber-700">
+                    Chỉ xem
+                  </p>
                 </div>
               </div>
 
@@ -434,16 +454,19 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 class="text-lg font-black uppercase tracking-tight text-gray-900">Hồ sơ giảng viên</h3>
                 <div class="flex flex-wrap items-center gap-2">
-                  <button *ngIf="!editingLecturer"
+                  <button *ngIf="canEditProfile() && !editingLecturer"
                           (click)="beginEditLecturer()"
                           class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
                     Chỉnh sửa
                   </button>
-                  <button *ngIf="editingLecturer"
+                  <button *ngIf="canEditProfile() && editingLecturer"
                           (click)="cancelEditLecturer()"
                           class="px-4 py-2 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:border-gray-300 hover:text-gray-700 transition-colors">
                     Hủy
                   </button>
+                  <p *ngIf="!canEditProfile()" class="text-[10px] font-black uppercase tracking-widest text-amber-700">
+                    Chỉ xem
+                  </p>
                 </div>
               </div>
 
@@ -613,6 +636,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
   `
 })
 export class ProfileComponent implements OnInit {
+  private readonly authService = inject(AuthService);
   private readonly profileService = inject(ProfileService);
   private readonly postService = inject(PostService);
   private readonly specializationService = inject(SpecializationService);
@@ -626,6 +650,8 @@ export class ProfileComponent implements OnInit {
   feedbackMessage = '';
   feedbackError = false;
   avatarLoadError = false;
+  resendingVerification = false;
+  verificationLinkRequested = false;
 
   editingStudent = false;
   editingCompany = false;
@@ -675,6 +701,13 @@ export class ProfileComponent implements OnInit {
   lecturerInterestsText = '';
 
   ngOnInit(): void {
+    const notice = history.state?.['notice'];
+    if (typeof notice === 'string' && notice.trim()) {
+      this.setSuccess(notice.trim());
+      const currentState = { ...(history.state as Record<string, unknown>) };
+      delete currentState['notice'];
+      history.replaceState(currentState, document.title);
+    }
     this.loadSpecializations();
     this.reload();
   }
@@ -725,7 +758,46 @@ export class ProfileComponent implements OnInit {
     if (!value || !value.trim()) {
       return 'Chưa cập nhật';
     }
+    const normalized = value.trim().toUpperCase();
+    if (normalized === 'PENDING') {
+      return 'Chưa xác thực email';
+    }
+    if (normalized === 'APPROVED') {
+      return 'Đã xác thực email';
+    }
+    if (normalized === 'BLOCKED') {
+      return 'Đã bị khóa';
+    }
     return value;
+  }
+
+  needsEmailVerification(): boolean {
+    return (this.me?.accountStatus ?? '').toString().trim().toUpperCase() === 'PENDING';
+  }
+
+  canEditProfile(): boolean {
+    return (this.me?.accountStatus ?? '').toString().trim().toUpperCase() === 'APPROVED';
+  }
+
+  resendVerificationEmail(): void {
+    if (this.resendingVerification || !this.needsEmailVerification()) {
+      return;
+    }
+
+    this.resendingVerification = true;
+    this.authService.resendVerificationEmail().pipe(
+      finalize(() => {
+        this.resendingVerification = false;
+      })
+    ).subscribe({
+      next: () => {
+        this.verificationLinkRequested = true;
+        this.setSuccess('Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư của bạn.');
+      },
+      error: (error: { error?: { message?: string } }) => {
+        this.setError(error?.error?.message || 'Không thể gửi lại email xác thực.');
+      }
+    });
   }
 
   defaultCvFileName(): string {
@@ -818,6 +890,9 @@ export class ProfileComponent implements OnInit {
   }
 
   beginEditStudent(): void {
+    if (!this.guardProfileEditAccess()) {
+      return;
+    }
     this.editingStudent = true;
     this.feedbackMessage = '';
   }
@@ -831,6 +906,9 @@ export class ProfileComponent implements OnInit {
   }
 
   beginEditCompany(): void {
+    if (!this.guardProfileEditAccess()) {
+      return;
+    }
     this.editingCompany = true;
     this.feedbackMessage = '';
   }
@@ -844,6 +922,9 @@ export class ProfileComponent implements OnInit {
   }
 
   beginEditLecturer(): void {
+    if (!this.guardProfileEditAccess()) {
+      return;
+    }
     this.editingLecturer = true;
     this.feedbackMessage = '';
   }
@@ -857,6 +938,9 @@ export class ProfileComponent implements OnInit {
   }
 
   saveStudentProfile(): void {
+    if (!this.guardProfileEditAccess()) {
+      return;
+    }
     this.feedbackMessage = '';
     this.profileService.updateStudentProfile(this.buildStudentProfilePayload()).subscribe({
       next: () => {
@@ -869,6 +953,9 @@ export class ProfileComponent implements OnInit {
   }
 
   saveCompanyProfile(): void {
+    if (!this.guardProfileEditAccess()) {
+      return;
+    }
     this.feedbackMessage = '';
     this.profileService.updateCompanyProfile(this.companyForm).subscribe({
       next: () => {
@@ -881,6 +968,9 @@ export class ProfileComponent implements OnInit {
   }
 
   saveLecturerProfile(): void {
+    if (!this.guardProfileEditAccess()) {
+      return;
+    }
     const interests = this.lecturerInterestsText
       .split(',')
       .map((item) => item.trim())
@@ -900,7 +990,7 @@ export class ProfileComponent implements OnInit {
   }
 
   onStudentCvSelected(event: Event): void {
-    if (!this.editingStudent) {
+    if (!this.editingStudent || !this.guardProfileEditAccess()) {
       return;
     }
 
@@ -925,7 +1015,7 @@ export class ProfileComponent implements OnInit {
   }
 
   onAvatarSelected(event: Event): void {
-    if (!this.isEditingProfile()) {
+    if (!this.isEditingProfile() || !this.guardProfileEditAccess()) {
       return;
     }
 
@@ -1003,6 +1093,14 @@ export class ProfileComponent implements OnInit {
         });
       }
     });
+  }
+
+  private guardProfileEditAccess(): boolean {
+    if (this.canEditProfile()) {
+      return true;
+    }
+    this.setError('Tài khoản chưa xác thực email. Hồ sơ hiện chỉ ở chế độ xem.');
+    return false;
   }
 
   private loadSpecializations(): void {

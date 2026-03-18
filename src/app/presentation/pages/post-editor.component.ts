@@ -54,7 +54,7 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
 
               <div *ngIf="roleBlocked"
                    class="mt-8 border border-red-200 bg-red-50 text-red-600 px-4 py-3 text-xs font-bold uppercase tracking-widest">
-                Chỉ tài khoản sinh viên hoặc doanh nghiệp mới có thể thao tác bài đăng tuyển dụng.
+                {{ blockedMessage() }}
               </div>
 
               <div *ngIf="loading"
@@ -658,6 +658,12 @@ export class PostEditorComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!authSignal.canCreateContent()) {
+      this.roleBlocked = true;
+      this.errorMessage = 'Tài khoản chưa xác thực email. Bạn chỉ có thể xem nội dung cho tới khi hoàn tất xác thực.';
+      return;
+    }
+
     this.isCompanyRole = currentUser.role === 'COMPANY';
     this.form.contactEmail = currentUser.email;
 
@@ -888,6 +894,11 @@ export class PostEditorComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!authSignal.canCreateContent()) {
+      this.errorMessage = 'Tài khoản chưa xác thực email. Bạn chưa thể tạo hoặc cập nhật bài đăng.';
+      return;
+    }
+
     const trimmedTitle = this.form.title.trim();
     const trimmedDescription = this.form.description.trim();
 
@@ -977,6 +988,13 @@ export class PostEditorComponent implements OnInit, OnDestroy {
         this.loading = false;
       }
     });
+  }
+
+  blockedMessage(): string {
+    if (!authSignal.canCreateContent()) {
+      return 'Tài khoản chưa xác thực email. Bạn chưa thể tạo hoặc chỉnh sửa bài đăng.';
+    }
+    return 'Chỉ tài khoản sinh viên hoặc doanh nghiệp mới có thể thao tác bài đăng tuyển dụng.';
   }
 
   private loadStudentProfileAndPrefill(): void {

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from '../../core/guards/auth.guard';
+import { verifiedGuard } from '../../core/guards/verified.guard';
 
 export const recruitmentRoutes: Routes = [
     {
@@ -13,12 +14,12 @@ export const recruitmentRoutes: Routes = [
     },
     {
         path: 'editor',
-        canActivate: [authGuard],
+        canActivate: [authGuard, verifiedGuard],
         loadComponent: () => import('../../presentation/pages/post-editor.component').then(m => m.PostEditorComponent)
     },
     {
         path: 'editor/:id',
-        canActivate: [authGuard],
+        canActivate: [authGuard, verifiedGuard],
         loadComponent: () => import('../../presentation/pages/post-editor.component').then(m => m.PostEditorComponent)
     },
     {

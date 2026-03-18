@@ -6,6 +6,7 @@ export { authInterceptor } from './interceptors/auth.interceptor';
 export { errorInterceptor } from './interceptors/error.interceptor';
 export { authGuard } from './guards/auth.guard';
 export { adminGuard } from './guards/admin.guard';
+export { verifiedGuard } from './guards/verified.guard';
 export { API_CONFIG } from './config/api.config';
 export { API_ENDPOINTS } from './config/api-endpoints.config';
 export { ROUTES } from './constants/route.const';

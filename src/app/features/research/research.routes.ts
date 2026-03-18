@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from '../../core/guards/auth.guard';
+import { verifiedGuard } from '../../core/guards/verified.guard';
 
 export const researchRoutes: Routes = [
     {
@@ -22,12 +23,12 @@ export const researchRoutes: Routes = [
     },
     {
         path: 'editor',
-        canActivate: [authGuard],
+        canActivate: [authGuard, verifiedGuard],
         loadComponent: () => import('../../presentation/pages/research-editor.component').then(m => m.ResearchEditorComponent)
     },
     {
         path: 'editor/:id',
-        canActivate: [authGuard],
+        canActivate: [authGuard, verifiedGuard],
         loadComponent: () => import('../../presentation/pages/research-editor.component').then(m => m.ResearchEditorComponent)
     },
     {

@@ -136,7 +136,19 @@ export class LoginComponent implements AfterViewInit {
         this.authService.login({ identifier: this.identifier, password: this.password }).pipe(
             finalize(() => (this.isLoading = false))
         ).subscribe({
-            next: () => this.router.navigateByUrl(ROUTES.HOME),
+            next: (auth) => {
+                const normalizedStatus = (auth.user.status ?? '').toString().trim().toUpperCase();
+                if (normalizedStatus === 'APPROVED') {
+                    void this.router.navigateByUrl(ROUTES.HOME);
+                    return;
+                }
+
+                void this.router.navigateByUrl(ROUTES.PROFILE, {
+                    state: {
+                        notice: 'Tài khoản chưa xác thực email. Bạn vẫn có thể xem nội dung, nhưng chưa thể tạo hoặc đăng bài.'
+                    }
+                });
+            },
             error: (error: unknown) => this.errorMessage = this.extractError(error)
         });
     }

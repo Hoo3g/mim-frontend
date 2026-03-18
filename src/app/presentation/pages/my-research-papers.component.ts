@@ -24,15 +24,27 @@ import { authSignal } from '../../core/signals/auth.signal';
             <span class="w-1 h-4 bg-hus-blue"></span>
             Danh sách nghiên cứu đã tạo
           </h2>
-          <a [routerLink]="ROUTES.RESEARCH_EDITOR"
+          <a *ngIf="canCreateContent(); else verifyResearchCta"
+             [routerLink]="ROUTES.RESEARCH_EDITOR"
              class="inline-flex items-center justify-center px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors">
             Tạo bài viết
           </a>
+          <ng-template #verifyResearchCta>
+            <a [routerLink]="ROUTES.PROFILE"
+               class="inline-flex items-center justify-center px-5 py-2.5 border border-amber-300 text-[10px] font-black uppercase tracking-widest text-amber-800 hover:bg-amber-50 transition-colors">
+              Xác thực email để đăng bài
+            </a>
+          </ng-template>
         </div>
 
         <div *ngIf="noticeMessage"
              class="mb-6 border border-hus-blue/20 bg-blue-50/40 text-hus-blue text-[10px] font-bold uppercase tracking-widest px-4 py-3">
           {{ noticeMessage }}
+        </div>
+
+        <div *ngIf="!canCreateContent()"
+             class="mb-6 border border-amber-200 bg-amber-50 text-amber-800 px-4 py-3 text-[10px] font-bold uppercase tracking-widest">
+          Tài khoản chưa xác thực email. Bạn chỉ có thể xem danh sách bài viết.
         </div>
 
         <div *ngIf="isFallbackMode$ | async"
@@ -92,6 +104,7 @@ export class MyResearchPapersComponent implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly ROUTES = ROUTES;
+  protected readonly canCreateContent = authSignal.canCreateContent;
 
   displayedPapers$!: Observable<ResearchPaper[]>;
   isFallbackMode$!: Observable<boolean>;
@@ -122,6 +135,14 @@ export class MyResearchPapersComponent implements OnInit {
   }
 
   openEditor(id: string): void {
+    if (!this.canCreateContent()) {
+      this.router.navigateByUrl(ROUTES.PROFILE, {
+        state: {
+          notice: 'Tài khoản chưa xác thực email. Bạn chưa thể chỉnh sửa hoặc tạo bài viết.'
+        }
+      });
+      return;
+    }
     this.router.navigateByUrl(ROUTES.RESEARCH_EDITOR_EDIT(id));
   }
 

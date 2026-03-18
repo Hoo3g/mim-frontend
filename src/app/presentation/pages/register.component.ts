@@ -184,10 +184,10 @@ export class RegisterComponent {
             })
         ).subscribe({
             next: () => {
-                this.successMessage = 'Đăng ký thành công. Đang chuyển sang trang đăng nhập.';
+                this.successMessage = 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản trước khi đăng bài.';
                 setTimeout(() => {
                     void this.router.navigateByUrl(ROUTES.AUTH.LOGIN);
-                }, 700);
+                }, 1200);
             },
             error: (error: unknown) => {
                 this.errorMessage = this.resolveError(error);

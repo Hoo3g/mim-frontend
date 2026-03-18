@@ -1,5 +1,6 @@
 import { signal, computed } from '@angular/core';
 import { Role } from '../enums/role.enum';
+import type { AccountStatus } from '../../features/auth/models/auth.model';
 
 export interface AuthUser {
     id: string;
@@ -8,6 +9,7 @@ export interface AuthUser {
     role: Role;
     permissions: string[];
     avatarUrl?: string;
+    accountStatus: AccountStatus;
 }
 
 // ─── Auth Signal ────────────────────────────────────────────
@@ -29,6 +31,11 @@ export const authSignal = {
     token: _token.asReadonly(),
     isAuth: computed(() => _user() !== null),
     isAdmin: computed(() => _user()?.role === Role.ADMIN),
+    isVerified: computed(() => normalizeAccountStatus(_user()?.accountStatus) === 'APPROVED'),
+    canCreateContent: computed(() => {
+        const user = _user();
+        return !!user && normalizeAccountStatus(user.accountStatus) === 'APPROVED';
+    }),
     canAccessAdmin: computed(() => {
         const user = _user();
         if (!user) {
@@ -88,7 +95,12 @@ export const authSignal = {
         localStorage.setItem('user', JSON.stringify(updated));
     },
 
-    updateUserInfo(payload: { fullName?: string | null; avatarUrl?: string | null; role?: string | null }): void {
+    updateUserInfo(payload: {
+        fullName?: string | null;
+        avatarUrl?: string | null;
+        role?: string | null;
+        accountStatus?: string | null;
+    }): void {
         const current = _user();
         if (!current) {
             return;
@@ -99,7 +111,8 @@ export const authSignal = {
             ...current,
             fullName: payload.fullName?.trim() ? payload.fullName.trim() : current.fullName,
             avatarUrl: payload.avatarUrl || undefined,
-            role: normalizedRole ?? current.role
+            role: normalizedRole ?? current.role,
+            accountStatus: normalizeAccountStatus(payload.accountStatus) ?? current.accountStatus
         };
         _user.set(updated);
         localStorage.setItem('user', JSON.stringify(updated));
@@ -122,6 +135,7 @@ export const authSignal = {
                 fullName: parsed.fullName,
                 role: normalizeRole(parsed.role) ?? parsed.role,
                 avatarUrl: parsed.avatarUrl,
+                accountStatus: normalizeAccountStatus(parsed.accountStatus) ?? 'APPROVED',
                 permissions: Array.isArray(parsed.permissions)
                     ? parsed.permissions.map((item) => String(item).toUpperCase())
                     : []
@@ -141,4 +155,15 @@ function normalizeRole(role?: string | null): Role | null {
     if (normalized === Role.LECTURER) return Role.LECTURER;
     if (normalized === Role.ADMIN) return Role.ADMIN;
     return null;
+}
+
+function normalizeAccountStatus(status?: string | null): AccountStatus | null {
+    const value = (status ?? '').toString().trim().toUpperCase();
+    if (!value) {
+        return null;
+    }
+    if (value === 'PENDING') return 'PENDING';
+    if (value === 'APPROVED') return 'APPROVED';
+    if (value === 'BLOCKED') return 'BLOCKED';
+    return value;
 }

@@ -29,16 +29,28 @@ import { PostDetailComponent } from './post-detail.component';
           {{ noticeMessage }}
         </div>
 
+        <div *ngIf="!canCreateContent()"
+             class="mb-6 border border-amber-200 bg-amber-50 text-amber-800 px-4 py-3 text-[10px] font-bold uppercase tracking-widest">
+          Tài khoản chưa xác thực email. Bạn chỉ có thể xem bài đăng hiện có.
+        </div>
+
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
             <span class="w-1 h-4 bg-hus-blue"></span>
             Danh sách bài đăng của bạn
           </h2>
 
-          <a [routerLink]="ROUTES.RECRUITMENT_EDITOR"
+          <a *ngIf="canCreateContent(); else verifyRecruitmentCta"
+             [routerLink]="ROUTES.RECRUITMENT_EDITOR"
              class="inline-flex items-center justify-center px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors">
             Tạo bài đăng mới
           </a>
+          <ng-template #verifyRecruitmentCta>
+            <a [routerLink]="ROUTES.PROFILE"
+               class="inline-flex items-center justify-center px-5 py-2.5 border border-amber-300 text-[10px] font-black uppercase tracking-widest text-amber-800 hover:bg-amber-50 transition-colors">
+              Xác thực email để đăng bài
+            </a>
+          </ng-template>
         </div>
 
         <div *ngIf="loading"
@@ -88,11 +100,17 @@ import { PostDetailComponent } from './post-detail.component';
                         class="px-4 py-2 border border-gray-200 text-gray-600 text-[10px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-colors">
                   Xem preview
                 </button>
-                <button type="button"
+                <button *ngIf="canCreateContent()"
+                        type="button"
                         (click)="editPost(post, $event)"
                         class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
                   Chỉnh sửa
                 </button>
+                <a *ngIf="!canCreateContent()"
+                   [routerLink]="ROUTES.PROFILE"
+                   class="px-4 py-2 border border-amber-300 text-amber-800 text-[10px] font-black uppercase tracking-widest hover:bg-amber-50 transition-colors">
+                  Xác thực email để sửa
+                </a>
               </div>
             </div>
           </article>
@@ -111,6 +129,7 @@ export class MyRecruitmentPostsComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
 
   protected readonly ROUTES = ROUTES;
+  protected readonly canCreateContent = authSignal.canCreateContent;
 
   loading = true;
   posts: Post[] = [];
