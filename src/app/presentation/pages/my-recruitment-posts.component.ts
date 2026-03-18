@@ -18,7 +18,7 @@ import { PostDetailComponent } from './post-detail.component';
         
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-10">
         <div *ngIf="errorMessage"
              class="mb-6 border border-red-200 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-widest px-4 py-3">
           {{ errorMessage }}

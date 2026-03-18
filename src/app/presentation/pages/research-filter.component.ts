@@ -17,7 +17,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
   template: `
     <div class="bg-white min-h-screen">
       <div class="border-b border-gray-100 bg-blue-50/10 py-5 md:py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 class="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tighter mb-1 flex items-center gap-2">
@@ -32,7 +32,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 md:py-10">
         <div class="flex flex-col lg:flex-row gap-6 lg:gap-10">
           <aside class="lg:w-64 flex-shrink-0">
             <div class="space-y-3 md:space-y-4 lg:space-y-8 lg:sticky" [style.top]="'var(--app-nav-sidebar-offset, 124px)'">

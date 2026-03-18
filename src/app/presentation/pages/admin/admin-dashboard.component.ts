@@ -38,7 +38,7 @@ interface AdminTabConfig {
     template: `
     <div class="min-h-screen bg-gray-50/50">
       <div class="bg-gray-900 text-white py-7 md:py-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-5">
             <div>
               <h1 class="text-2xl sm:text-3xl font-black uppercase tracking-tighter mb-2">QUẢN TRỊ VIÊN</h1>
@@ -54,7 +54,7 @@ interface AdminTabConfig {
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8">
         <div class="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-6 items-start">
           <aside class="bg-white border border-gray-100 p-4 lg:sticky lg:overflow-y-auto"
                  [style.top]="'var(--app-nav-sidebar-offset, 124px)'"

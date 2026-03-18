@@ -12,7 +12,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
   imports: [CommonModule, RouterModule, LoadingSpinnerComponent],
   template: `
     <div class="bg-white min-h-screen">
-      <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-4 sm:px-6 lg:px-8">
+      <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-3 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
           <a routerLink="/" class="text-hus-blue hover:text-hus-dark transition">Cổng nghiên cứu</a>
           <span class="text-gray-300">/</span>
@@ -20,7 +20,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
         </div>
       </div>
 
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div class="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-8 md:py-12">
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
           <div>
             <h1 class="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-widest">Bảng tin khoa</h1>

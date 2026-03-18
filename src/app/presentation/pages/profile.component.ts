@@ -30,7 +30,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
   imports: [CommonModule, FormsModule, RouterModule, LoadingSpinnerComponent],
   template: `
     <div class="bg-gray-50 min-h-screen">
-      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+      <section class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 md:py-10">
         <div *ngIf="loading" class="text-center py-20 text-gray-400 text-xs uppercase tracking-widest">
           <app-loading-spinner
             [size]="52">
@@ -154,39 +154,51 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                   <textarea [(ngModel)]="studentForm.bio" rows="6" class="mt-1 w-full min-h-[10rem] border border-gray-200 px-3 py-2 text-sm text-gray-900"></textarea>
                 </label>
 
-                <div class="space-y-3">
-                  <div class="flex items-center justify-between gap-3">
-                    <p class="text-xs font-semibold text-gray-500">Thành tích</p>
-                    <button type="button"
-                            (click)="addStudentAchievement()"
-                            class="inline-flex items-center justify-center w-8 h-8 border border-hus-blue text-hus-blue hover:bg-hus-blue hover:text-white transition-colors"
-                            aria-label="Thêm thành tích">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                      </svg>
-                    </button>
-                  </div>
+	                <div class="space-y-3">
+	                  <div class="flex items-center justify-between gap-3">
+	                    <div>
+	                      <p class="text-xs font-semibold text-gray-500">Thành tích</p>
+	                      <p class="mt-1 text-[11px] font-semibold text-gray-400">Thêm từng thành tích nổi bật nếu có.</p>
+	                    </div>
+	                    <button type="button"
+	                            (click)="addStudentAchievement()"
+	                            class="inline-flex items-center gap-2 rounded-xl border border-hus-blue px-3 py-2 text-[10px] font-black uppercase tracking-widest text-hus-blue hover:bg-hus-blue hover:text-white transition-colors"
+	                            aria-label="Thêm thành tích">
+	                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+	                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+	                      </svg>
+	                      <span>Thêm</span>
+	                    </button>
+	                  </div>
+	
+	                  <div *ngIf="studentAchievements.length === 0"
+	                       class="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-4 text-xs font-semibold text-gray-400">
+	                    Chưa có thành tích nào.
+	                  </div>
 
-                  <div class="space-y-3">
-                    <div *ngFor="let achievement of studentAchievements; let i = index" class="flex items-start gap-3">
-                      <span class="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-hus-blue"></span>
-                      <textarea
-                        [(ngModel)]="studentAchievements[i]"
-                        rows="2"
-                        placeholder="Nhập một thành tích"
-                        class="flex-1 border border-gray-200 px-3 py-2 text-sm text-gray-900"></textarea>
-                      <button
-                        type="button"
-                        (click)="removeStudentAchievement(i)"
-                        class="inline-flex items-center justify-center w-8 h-8 mt-1 border border-gray-200 text-gray-400 hover:border-red-200 hover:text-red-500 transition-colors"
-                        [attr.aria-label]="'Xóa thành tích ' + (i + 1)">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+	                  <div class="space-y-3">
+	                    <div *ngFor="let achievement of studentAchievements; let i = index; trackBy: trackByAchievementIndex"
+	                         class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+	                      <div class="mb-3 flex items-center justify-between gap-3">
+	                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Mục {{ i + 1 }}</p>
+	                        <button
+	                          type="button"
+	                          (click)="removeStudentAchievement(i)"
+	                          class="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+	                          [attr.aria-label]="'Xóa thành tích ' + (i + 1)">
+	                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 0v12m4-12v12m4-12v12M5 7l1 13a1 1 0 001 1h10a1 1 0 001-1l1-13" />
+	                          </svg>
+	                        </button>
+	                      </div>
+	                      <textarea
+	                        [(ngModel)]="studentAchievements[i]"
+	                        rows="3"
+	                        placeholder="Nhập một thành tích"
+	                        class="w-full min-h-[6rem] border border-gray-200 px-3 py-2 text-sm text-gray-900"></textarea>
+	                    </div>
+	                  </div>
+	                </div>
 
                 <label class="block text-xs font-semibold text-gray-500">
                   Mong muốn nghề nghiệp
@@ -639,7 +651,7 @@ export class ProfileComponent implements OnInit {
     desiredPosition: ''
   };
   studentFullName = '';
-  studentAchievements: string[] = [''];
+  studentAchievements: string[] = [];
 
   companyForm: UpdateCompanyProfileRequest = {
     name: '',
@@ -1051,8 +1063,11 @@ export class ProfileComponent implements OnInit {
   }
 
   removeStudentAchievement(index: number): void {
-    const nextItems = this.studentAchievements.filter((_, itemIndex) => itemIndex !== index);
-    this.studentAchievements = nextItems.length > 0 ? nextItems : [''];
+    this.studentAchievements = this.studentAchievements.filter((_, itemIndex) => itemIndex !== index);
+  }
+
+  trackByAchievementIndex(index: number): number {
+    return index;
   }
 
   private setSuccess(message: string): void {
@@ -1144,7 +1159,7 @@ export class ProfileComponent implements OnInit {
     };
   }
 
-  private parseAchievementItems(value?: string | null, includePlaceholder: boolean = true): string[] {
+  private parseAchievementItems(value?: string | null, includePlaceholder: boolean = false): string[] {
     const normalized = (value ?? '').trim();
     if (!normalized) {
       return includePlaceholder ? [''] : [];

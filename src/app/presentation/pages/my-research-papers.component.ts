@@ -18,7 +18,7 @@ import { authSignal } from '../../core/signals/auth.signal';
         
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-10">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
             <span class="w-1 h-4 bg-hus-blue"></span>

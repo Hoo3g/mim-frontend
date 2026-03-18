@@ -19,7 +19,7 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
   imports: [CommonModule, FormsModule, RouterModule, QuillEditorComponent],
   template: `
     <div class="bg-white min-h-screen">
-      <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-4 sm:px-6 lg:px-8">
+      <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-3 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
           <a [routerLink]="ROUTES.RESEARCH_MY_PAPERS" class="text-hus-blue hover:text-hus-dark transition">
             Bài viết của tôi
@@ -29,7 +29,7 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-12">
         <div class="w-full border-2 border-hus-blue/10 bg-white p-6 md:p-8 lg:p-10">
           <h1 class="text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
             {{ isEditMode ? 'Chỉnh sửa bài viết nghiên cứu' : 'Soạn thảo bài viết nghiên cứu' }}

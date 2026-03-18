@@ -12,7 +12,7 @@ import { ProfileService } from '../../core/services/profile.service';
   imports: [CommonModule, RouterModule],
   template: `
     <section class="min-h-screen bg-gray-50 py-10">
-      <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-5xl px-3 sm:px-6 lg:px-8">
         <a
           routerLink="/research"
           class="inline-flex items-center text-[10px] font-black uppercase tracking-widest text-hus-blue transition-colors hover:text-hus-dark"

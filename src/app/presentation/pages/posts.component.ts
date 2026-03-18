@@ -22,7 +22,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
       
       <!-- Minimal Header - Brand Accented -->
       <div class="border-b border-gray-100 bg-blue-50/10 py-5 md:py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
               <h1 class="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tighter mb-1 flex items-center gap-2">
@@ -37,17 +37,22 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 md:py-10">
         <div class="flex flex-col lg:flex-row gap-6 lg:gap-10">
           
           <!-- LEFT: Sidebar (Filters & Search) -->
-          <div class="lg:w-64 flex-shrink-0">
-            <button type="button"
-                    (click)="showMobileFilters = !showMobileFilters"
-                    class="lg:hidden w-full inline-flex items-center justify-between border border-gray-200 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 mb-4">
-              Bộ lọc tuyển dụng
-              <span [class.rotate-180]="showMobileFilters" class="transition-transform">⌄</span>
-            </button>
+	          <div class="lg:w-64 flex-shrink-0">
+	            <button type="button"
+	                    (click)="showMobileFilters = !showMobileFilters"
+	                    class="lg:hidden w-full inline-flex items-center justify-between border border-gray-200 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 mb-4">
+	              <span class="inline-flex items-center gap-2">
+	                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+	                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18l-7 8v6l-4 2v-8L3 4z" />
+	                </svg>
+	                <span>Bộ lọc tuyển dụng</span>
+	              </span>
+	              <span [class.rotate-180]="showMobileFilters" class="transition-transform">⌄</span>
+	            </button>
 
             <div class="space-y-6 md:space-y-8 lg:sticky lg:block"
                  [ngClass]="showMobileFilters ? 'block' : 'hidden'"
@@ -111,19 +116,17 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                 </div>
               </section>
 
-              <!-- Quick Links -->
-              <section class="pt-8 border-t border-gray-100">
-                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Liên kết</h3>
-                <ul class="text-[10px] space-y-2 font-bold text-gray-400 uppercase tracking-tighter">
-                  <li><a href="#" class="hover:text-hus-blue transition underline underline-offset-2">Mẫu CV Sinh viên</a></li>
-                  <li><a href="#" class="hover:text-hus-blue transition underline underline-offset-2">Cẩm nang phỏng vấn</a></li>
-                </ul>
-              </section>
-            </div>
-          </div>
+	            </div>
+	          </div>
 
-          <!-- RIGHT: Main Content (Compact Cards) -->
-          <div class="flex-grow">
+	          <div class="lg:hidden mb-6">
+	            <div class="relative border-t border-gray-200">
+	              <span aria-hidden="true" class="absolute left-0 -top-px h-0.5 w-[72px] bg-hus-blue"></span>
+	            </div>
+	          </div>
+
+	          <!-- RIGHT: Main Content (Compact Cards) -->
+	          <div class="flex-grow">
             <div *ngIf="filteredPosts$ | async as posts; else loading">
               <div *ngIf="posts.length === 0" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
                 Không tìm thấy thông tin phù hợp.
@@ -240,16 +243,24 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                 </div>
               </div>
 
-              <div *ngIf="posts.length > visiblePostCount" class="pt-8 flex justify-center">
-                <button
-                  type="button"
+	              <div *ngIf="posts.length > visiblePostCount" class="pt-8 flex justify-center">
+	                <button
+	                  type="button"
                   (click)="loadMorePosts()"
                   class="inline-flex items-center justify-center gap-2 min-w-[110px] border border-gray-200 px-5 py-3 text-[10px] font-black uppercase tracking-widest text-hus-blue hover:border-hus-blue hover:bg-blue-50/40 transition-colors">
                   <span>Xem thêm</span>
-                  <span aria-hidden="true">+</span>
-                </button>
-              </div>
-            </div>
+	                  <span aria-hidden="true">+</span>
+	                </button>
+	              </div>
+
+	              <section class="mt-10 pt-6 border-t border-gray-100">
+	                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Liên kết</h3>
+	                <ul class="text-[10px] space-y-2 font-bold text-gray-400 uppercase tracking-tighter">
+	                  <li><a href="#" class="hover:text-hus-blue transition underline underline-offset-2">Mẫu CV Sinh viên</a></li>
+	                  <li><a href="#" class="hover:text-hus-blue transition underline underline-offset-2">Cẩm nang phỏng vấn</a></li>
+	                </ul>
+	              </section>
+	            </div>
 
             <ng-template #loading>
               <app-loading-spinner [size]="52"></app-loading-spinner>
@@ -323,13 +334,11 @@ export class PostsComponent implements OnInit {
     this.filterType = type;
     this.subFilter = null;
     this.syncFiltersToUrl();
-    this.collapseMobileFiltersIfNeeded();
   }
 
   setSubFilter(sub: string): void {
     this.subFilter = this.subFilter === sub ? null : sub;
     this.syncFiltersToUrl();
-    this.collapseMobileFiltersIfNeeded();
   }
 
   loadMorePosts(): void {
@@ -378,15 +387,6 @@ export class PostsComponent implements OnInit {
   private readDisplayInfo(post: Post, key: string): string {
     const value = post.displayInfo?.[key];
     return typeof value === 'string' ? value.trim() : '';
-  }
-
-  private collapseMobileFiltersIfNeeded(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    if (window.innerWidth < 1024) {
-      this.showMobileFilters = false;
-    }
   }
 
   private loadPosts(): void {

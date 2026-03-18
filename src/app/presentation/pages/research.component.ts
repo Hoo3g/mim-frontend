@@ -19,7 +19,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
       
       <!-- Hero Banner Section -->
       <div class="bg-gray-50 border-b border-gray-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-4">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 md:py-4">
           <div *ngIf="hero$ | async as hero" class="relative overflow-hidden border-2 border-hus-blue/10 bg-white">
             <div class="md:hidden relative h-[280px] sm:h-[320px] overflow-hidden">
               <img [src]="hero.imageUrl"
@@ -69,7 +69,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
         </div>
       </div>
       
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 md:py-10">
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 lg:gap-10">
 
           <!-- LEFT: Research Index -->

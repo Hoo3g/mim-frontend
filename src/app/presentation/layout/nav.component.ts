@@ -10,7 +10,9 @@ import { ROUTES } from '../../core/constants/route.const';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <header class="font-sans fixed inset-x-0 top-0 z-50 transition-shadow duration-300 shadow-sm">
+    <header class="font-sans fixed inset-x-0 top-0 z-50 transition-shadow duration-300"
+            [class.shadow-sm]="!showMobileMenu || isDesktopViewport"
+            [class.shadow-none]="showMobileMenu && !isDesktopViewport">
       <!-- Top Bar -->
       <div class="bg-hus-blue text-white text-[10px] uppercase tracking-widest py-1.5 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center justify-between gap-3 font-bold">
@@ -27,8 +29,8 @@ import { ROUTES } from '../../core/constants/route.const';
       </div>
 
       <!-- Main Navbar -->
-      <div class="bg-white border-b border-gray-200 transition-all duration-300"
-           [class.overflow-hidden]="!isMainNavInteractive()"
+	      <div class="bg-white transition-all duration-300 md:border-b md:border-gray-200"
+	           [class.overflow-hidden]="!isMainNavInteractive()"
            [style.maxHeight.px]="mainNavMaxHeight()"
            [style.opacity]="isMainNavInteractive() ? 1 : 0"
            [style.pointerEvents]="isMainNavInteractive() ? 'auto' : 'none'">
@@ -51,12 +53,12 @@ import { ROUTES } from '../../core/constants/route.const';
             <ng-container *ngIf="!isAuth()">
               <a
                 [routerLink]="ROUTES.AUTH.LOGIN"
-                class="inline-flex items-center justify-center px-2.5 py-2 text-[9px] font-black uppercase tracking-widest text-gray-600 border border-gray-200 hover:border-hus-blue hover:text-hus-blue transition-colors">
+                class="inline-flex items-center justify-center px-2.5 py-2 text-[8px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors">
                 Đăng nhập
               </a>
               <a
                 [routerLink]="ROUTES.AUTH.REGISTER"
-                class="inline-flex items-center justify-center px-2.5 py-2 text-[9px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors">
+                class="inline-flex items-center justify-center px-2.5 py-2 text-[8px] font-black uppercase tracking-widest text-gray-600 border border-gray-200 hover:border-hus-blue hover:text-hus-blue transition-colors">
                 Đăng ký
               </a>
             </ng-container>
@@ -91,10 +93,10 @@ import { ROUTES } from '../../core/constants/route.const';
             </a>
 
             <div *ngIf="!isAuth()" class="ml-4 pl-4 border-l border-gray-100 flex items-center gap-4 h-full">
-              <a [routerLink]="ROUTES.AUTH.LOGIN" class="text-gray-600 hover:text-hus-blue font-bold text-[11px] uppercase tracking-widest transition-colors">
+              <a [routerLink]="ROUTES.AUTH.LOGIN" class="text-white bg-hus-blue hover:bg-hus-dark px-3 py-2 font-black text-[9px] uppercase tracking-widest transition-colors">
                 Đăng nhập
               </a>
-              <a [routerLink]="ROUTES.AUTH.REGISTER" class="text-white bg-hus-blue hover:bg-hus-dark px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors">
+              <a [routerLink]="ROUTES.AUTH.REGISTER" class="text-gray-600 border border-gray-200 hover:border-hus-blue hover:text-hus-blue px-3 py-2 font-bold text-[9px] uppercase tracking-widest transition-colors">
                 Đăng ký
               </a>
             </div>
@@ -179,32 +181,33 @@ import { ROUTES } from '../../core/constants/route.const';
         </div>
 
           <!-- Mobile Menu -->
-          <div *ngIf="showMobileMenu" class="md:hidden border-t border-gray-100 py-3 space-y-1">
-            <div *ngIf="isAuth()" class="pb-3 mb-2 border-b border-gray-100">
-              <button type="button"
-                      (click)="toggleMobileProfileSection($event)"
-                      class="w-full flex items-center justify-between gap-3 px-3 py-2 border border-gray-100 bg-gray-50/70 hover:bg-gray-50 transition-colors">
-                <span class="flex items-center gap-3 min-w-0">
-                  <span class="w-8 h-8 rounded-full bg-hus-blue/5 p-0.5 border border-hus-blue/10 flex items-center justify-center overflow-hidden">
-                    <img *ngIf="currentUser()?.avatarUrl"
-                         [src]="currentUser()?.avatarUrl"
-                         alt="Avatar"
+	          <div *ngIf="showMobileMenu" class="md:hidden relative left-1/2 w-screen -translate-x-1/2 rounded-b-[30px] border-x-2 border-b-2 border-hus-blue/15 bg-gradient-to-b from-blue-50/30 to-white px-4 pt-3 pb-4 shadow-[0_24px_50px_-36px_rgba(24,93,169,0.45)] space-y-3">
+	            <div *ngIf="isAuth()" class="mb-1">
+	              <button type="button"
+	                      (click)="toggleMobileProfileSection($event)"
+	                      class="relative w-full flex items-center justify-between gap-3 rounded-2xl border border-hus-blue/15 bg-white px-3 py-2.5 hover:bg-gray-50 transition-colors shadow-sm">
+	                <span aria-hidden="true" class="absolute left-3 top-3 bottom-3 w-1 rounded-full bg-hus-blue"></span>
+	                <span class="flex items-center gap-3 min-w-0 pl-3">
+	                  <span class="w-8 h-8 rounded-full bg-white p-0.5 border border-hus-blue/10 flex items-center justify-center overflow-hidden shadow-sm">
+	                    <img *ngIf="currentUser()?.avatarUrl"
+	                         [src]="currentUser()?.avatarUrl"
+	                         alt="Avatar"
                          class="w-full h-full object-cover">
                     <span *ngIf="!currentUser()?.avatarUrl"
                           class="text-[10px] font-black text-hus-blue uppercase">
                       {{ mobileUserInitial() }}
                     </span>
                   </span>
-                  <span class="min-w-0 text-left">
-                    <span class="block text-[9px] font-black uppercase tracking-widest text-hus-blue">Tài khoản</span>
-                    <span class="block text-[11px] font-bold text-gray-700 truncate">{{ mobileUserName() }}</span>
-                  </span>
-                </span>
-                <svg xmlns="http://www.w3.org/2000/svg"
-                     class="h-4 w-4 text-gray-400 transition-transform"
-                     [class.rotate-180]="showMobileProfileSection"
-                     fill="none"
-                     viewBox="0 0 24 24"
+	                  <span class="min-w-0 text-left">
+	                    <span class="block text-[9px] font-black uppercase tracking-widest text-hus-blue">Tài khoản</span>
+	                    <span class="block text-[11px] font-bold text-gray-800 truncate">{{ mobileUserName() }}</span>
+	                  </span>
+	                </span>
+	                <svg xmlns="http://www.w3.org/2000/svg"
+	                     class="h-4 w-4 text-hus-blue/60 transition-transform"
+	                     [class.rotate-180]="showMobileProfileSection"
+	                     fill="none"
+	                     viewBox="0 0 24 24"
                      stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -222,84 +225,119 @@ import { ROUTES } from '../../core/constants/route.const';
                 <div class="space-y-1 pt-1">
                   <a *ngIf="canAccessAdmin()"
                      routerLink="/admin"
+                     routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                      (click)="closeMobileMenu()"
-                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-hus-blue bg-blue-50 hover:bg-blue-100 transition-colors">
-                    Hệ thống Quản trị
+                     class="flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                    <span>Hệ thống Quản trị</span>
                   </a>
                   <a [routerLink]="ROUTES.PROFILE"
+                     routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                      (click)="closeMobileMenu()"
-                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
-                    Thông tin cá nhân
+                     class="flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>Thông tin cá nhân</span>
                   </a>
                   <a [routerLink]="ROUTES.RESEARCH_MY_PAPERS"
+                     routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                      (click)="closeMobileMenu()"
-                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
-                    Bài viết của tôi
+                     class="flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span>Bài viết của tôi</span>
                   </a>
                   <a [routerLink]="ROUTES.RESEARCH_SAVED_PAPERS"
+                     routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                      (click)="closeMobileMenu()"
-                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
-                    Bài đã lưu
+                     class="flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    <span>Bài đã lưu</span>
                   </a>
                   <a *ngIf="canManageRecruitmentPosts()"
                      [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
+                     routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                      (click)="closeMobileMenu()"
-                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
-                    Bài tuyển dụng của tôi
+                     class="flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H5a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293H19a2 2 0 012 2v10a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Bài tuyển dụng của tôi</span>
                   </a>
                   <button type="button"
                           (click)="logout()"
-                          class="w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors">
-                    Đăng xuất
+                          class="w-full flex items-center gap-3 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Đăng xuất</span>
                   </button>
                 </div>
               </div>
 
-              <div
-                class="overflow-hidden transition-all duration-300 ease-out"
-                [style.maxHeight.px]="mobilePrimaryLinksMaxHeight()"
-                [style.opacity]="isMobileAccountMenuVisible() ? 0 : 1"
-                [style.transform]="isMobileAccountMenuVisible() ? 'translateY(-8px)' : 'translateY(0)'"
-                [style.pointerEvents]="isMobileAccountMenuVisible() ? 'none' : 'auto'">
+		              <div
+		                class="overflow-hidden transition-all duration-300 ease-out"
+		                [style.maxHeight.px]="mobilePrimaryLinksMaxHeight()"
+		                [style.opacity]="isMobileAccountMenuVisible() ? 0 : 1"
+		                [style.transform]="isMobileAccountMenuVisible() ? 'translateY(-8px)' : 'translateY(0)'"
+		                [style.pointerEvents]="isMobileAccountMenuVisible() ? 'none' : 'auto'">
                 <a routerLink="/"
                    [routerLinkActiveOptions]="{exact: true}"
-                   routerLinkActive="text-hus-blue bg-blue-50"
+                   routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                    (click)="closeMobileMenu()"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
-                  Nghiên cứu
+                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Nghiên cứu</span>
                 </a>
                 <a routerLink="/recruitment"
-                   routerLinkActive="text-hus-blue bg-blue-50"
+                   routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                    (click)="closeMobileMenu()"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
-                  Tuyển dụng
+                   class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2h-3V4a2 2 0 00-2-2h-2a2 2 0 00-2 2v1H6a2 2 0 00-2 2v6m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-4m-8 0H4m4 0v1a1 1 0 001 1h6a1 1 0 001-1v-1" />
+                  </svg>
+                  <span>Tuyển dụng</span>
                 </a>
                 <a href="#"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
-                  Đào tạo
+                   class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422A12.083 12.083 0 0118 14.576c0 2.69-2.686 4.924-6 4.924s-6-2.233-6-4.924c0-1.46.311-2.845.84-4.078L12 14z" />
+                  </svg>
+                  <span>Đào tạo</span>
                 </a>
                 <a routerLink="/news"
-                   routerLinkActive="text-hus-blue bg-blue-50"
+                   routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                    (click)="closeMobileMenu()"
-                   class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-hus-blue hover:bg-blue-50/50 transition-colors">
-                  Bảng tin khoa
+                   class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11a2 2 0 012 2v1m0 13a2 2 0 002-2V9a2 2 0 00-2-2m0 13a2 2 0 01-2-2V9a2 2 0 012-2m-8 3h4m-4 4h6m-6 4h6M7 10h.01M7 14h.01M7 18h.01" />
+                  </svg>
+                  <span>Bảng tin khoa</span>
                 </a>
               </div>
             </div>
 
-            <div *ngIf="!isAuth()" class="pt-3 mt-2 border-t border-gray-100 space-y-1">
-              <a [routerLink]="ROUTES.AUTH.LOGIN"
-                 (click)="closeMobileMenu()"
-                 class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
+	            <div *ngIf="!isAuth()" class="pt-3 mt-2 space-y-1">
+	              <a [routerLink]="ROUTES.AUTH.LOGIN"
+	                 (click)="closeMobileMenu()"
+	                 class="block px-3 py-2 text-[9px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors text-center">
                 Đăng nhập
               </a>
-              <a [routerLink]="ROUTES.AUTH.REGISTER"
-                 (click)="closeMobileMenu()"
-                 class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors text-center">
-                Đăng ký
-              </a>
-            </div>
-          </div>
+	              <a [routerLink]="ROUTES.AUTH.REGISTER"
+	                 (click)="closeMobileMenu()"
+	                 class="block px-3 py-2 text-[9px] font-bold uppercase tracking-widest text-gray-600 border border-gray-200 hover:text-hus-blue hover:border-hus-blue hover:bg-gray-50 transition-colors text-center">
+	                Đăng ký
+	              </a>
+	            </div>
+	          </div>
         </div>
       </div>
     </header>
@@ -445,7 +483,8 @@ export class NavComponent implements OnInit {
 
   mainNavMaxHeight(): number {
     if (this.showMobileMenu && !this.isDesktopViewport) {
-      return 640;
+      const viewportHeight = this.document.defaultView?.innerHeight ?? 800;
+      return Math.max(viewportHeight, 720);
     }
     return this.isCondensed ? 0 : 64;
   }

@@ -21,7 +21,7 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="bg-white min-h-screen">
-      <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-4 sm:px-6 lg:px-8">
+      <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-3 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
           <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS" class="text-hus-blue hover:text-hus-dark transition">
             Bài tuyển dụng của tôi
@@ -31,7 +31,7 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
         </div>
       </div>
 
-      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12">
+      <div class="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-10 md:py-12">
           <section class="min-w-0">
             <div class="bg-white border border-gray-100 p-6 md:p-8">
               <h1 class="text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">

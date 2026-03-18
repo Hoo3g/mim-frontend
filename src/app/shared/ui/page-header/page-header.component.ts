@@ -9,7 +9,7 @@ import { Component, input } from '@angular/core';
     standalone: true,
     template: `
     <div class="bg-gray-50 border-b border-gray-100">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 md:py-12">
         <div class="relative overflow-hidden border-2 border-hus-blue/10 bg-white">
           <div [class]="imageUrl() ? 'grid grid-cols-1 md:grid-cols-2 items-center' : ''">
             <div class="p-8 md:p-12">
