@@ -24,3 +24,12 @@ export interface ResearchPaper {
     createdAt: Date;
     updatedAt: Date;
 }
+
+export interface BookmarkedResearchPaper {
+    paperId: string;
+    title: string;
+    researchArea: string;
+    category: 'LECTURER' | 'STUDENT';
+    publicationYear?: number | null;
+    savedAt?: Date | null;
+}

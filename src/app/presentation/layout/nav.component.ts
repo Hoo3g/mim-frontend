@@ -77,16 +77,16 @@ import { ROUTES } from '../../core/constants/route.const';
 
           <!-- Nav Links Desktop -->
           <div class="hidden md:flex space-x-6 h-full items-center">
-            <a routerLink="/" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-500 hover:text-hus-blue font-bold text-[11px] uppercase tracking-widest h-full flex items-center border-b-[3px] border-transparent transition-all">
+            <a routerLink="/" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
               NGHIÊN CỨU
             </a>
-            <a routerLink="/recruitment" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-500 hover:text-hus-blue font-bold text-[11px] uppercase tracking-widest h-full flex items-center border-b-[3px] border-transparent transition-all">
+            <a routerLink="/recruitment" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
               TUYỂN DỤNG
             </a>
-            <a href="#" class="text-gray-500 hover:text-hus-blue font-bold text-[11px] uppercase tracking-widest h-full flex items-center border-b-[3px] border-transparent transition-all">
+            <a href="#" class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
               ĐÀO TẠO
             </a>
-            <a routerLink="/news" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-500 hover:text-hus-blue font-bold text-[11px] uppercase tracking-widest h-full flex items-center border-b-[3px] border-transparent transition-all">
+            <a routerLink="/news" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
               TIN TỨC
             </a>
 
@@ -149,16 +149,6 @@ import { ROUTES } from '../../core/constants/route.const';
                 </a>
 
                 <a *ngIf="canManageRecruitmentPosts()"
-                   [routerLink]="ROUTES.RECRUITMENT_EDITOR"
-                   (click)="showProfileMenu = false"
-                   class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Tạo bài tuyển dụng
-                </a>
-
-                <a *ngIf="canManageRecruitmentPosts()"
                    [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
                    (click)="showProfileMenu = false"
                    class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
@@ -167,7 +157,9 @@ import { ROUTES } from '../../core/constants/route.const';
                   </svg>
                   Bài tuyển dụng của tôi
                 </a>
-                <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
+                <a [routerLink]="ROUTES.RESEARCH_SAVED_PAPERS"
+                   (click)="showProfileMenu = false"
+                   class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                   </svg>
@@ -244,16 +236,10 @@ import { ROUTES } from '../../core/constants/route.const';
                      class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
                     Bài viết của tôi
                   </a>
-                  <a [routerLink]="ROUTES.PROFILE"
+                  <a [routerLink]="ROUTES.RESEARCH_SAVED_PAPERS"
                      (click)="closeMobileMenu()"
                      class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
                     Bài đã lưu
-                  </a>
-                  <a *ngIf="canManageRecruitmentPosts()"
-                     [routerLink]="ROUTES.RECRUITMENT_EDITOR"
-                     (click)="closeMobileMenu()"
-                     class="block px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-hus-blue hover:bg-gray-50 transition-colors">
-                    Tạo bài tuyển dụng
                   </a>
                   <a *ngIf="canManageRecruitmentPosts()"
                      [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"

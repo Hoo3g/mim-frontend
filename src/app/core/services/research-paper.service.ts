@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, forkJoin, map, Observable, of, shareReplay, tap } from 'rxjs';
-import { PaperAuthor, ResearchPaper } from '../models/research-paper.model';
+import { BookmarkedResearchPaper, PaperAuthor, ResearchPaper } from '../models/research-paper.model';
 import type { AuthUser } from '../signals/auth.signal';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
@@ -57,6 +57,11 @@ interface ResearchPaperApiModel {
 
 interface ResearchBookmarkApiModel {
     paperId?: string;
+    title?: string;
+    researchArea?: string;
+    category?: 'LECTURER' | 'STUDENT' | string;
+    publicationYear?: number | null;
+    savedAt?: string | Date | null;
 }
 
 @Injectable({
@@ -68,6 +73,7 @@ export class ResearchPaperService {
     private readonly paperDetailCache = new TimedObservableCache<ResearchPaper | undefined>(60_000);
     private readonly myPapersCache = new TimedObservableCache<ResearchPaper[]>(30_000);
     private readonly bookmarksCache = new TimedObservableCache<Set<string>>(30_000);
+    private readonly bookmarkedPapersCache = new TimedObservableCache<BookmarkedResearchPaper[]>(30_000);
 
     getPapers(query: ResearchPaperListQuery = {}): Observable<ResearchPaper[]> {
         const cacheKey = this.buildListCacheKey(query);
@@ -199,10 +205,34 @@ export class ResearchPaperService {
         return this.bookmarksCache.set(cacheKey, request$);
     }
 
+    getBookmarkedPapers(): Observable<BookmarkedResearchPaper[]> {
+        if (!authSignal.isAuth()) {
+            return of([]);
+        }
+
+        const cacheKey = authSignal.user()?.id ?? 'anonymous';
+        const cachedBookmarks$ = this.bookmarkedPapersCache.get(cacheKey);
+        if (cachedBookmarks$) {
+            return cachedBookmarks$;
+        }
+
+        const request$ = this.http.get<ApiResponse<ResearchBookmarkApiModel[]>>(API_ENDPOINTS.RESEARCH.BOOKMARKS_MY).pipe(
+            map((response) => this.unwrapList(response).map((item) => this.toBookmarkedPaperModel(item))),
+            catchError(() => {
+                this.bookmarkedPapersCache.delete(cacheKey);
+                return of([]);
+            }),
+            shareReplay({ bufferSize: 1, refCount: false })
+        );
+
+        return this.bookmarkedPapersCache.set(cacheKey, request$);
+    }
+
     bookmarkPaper(paperId: string): Observable<void> {
         return this.http.post<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.BOOKMARK(paperId), {}).pipe(
             tap(() => {
                 this.bookmarksCache.clear();
+                this.bookmarkedPapersCache.clear();
                 this.invalidatePublicPaperCaches(paperId);
             }),
             map(() => void 0)
@@ -213,6 +243,7 @@ export class ResearchPaperService {
         return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.BOOKMARK(paperId)).pipe(
             tap(() => {
                 this.bookmarksCache.clear();
+                this.bookmarkedPapersCache.clear();
                 this.invalidatePublicPaperCaches(paperId);
             }),
             map(() => void 0)
@@ -332,6 +363,17 @@ export class ResearchPaperService {
             authors: mappedAuthors,
             createdAt: this.toDate(apiPaper.createdAt),
             updatedAt: this.toDate(apiPaper.updatedAt)
+        };
+    }
+
+    private toBookmarkedPaperModel(item: ResearchBookmarkApiModel): BookmarkedResearchPaper {
+        return {
+            paperId: item.paperId ?? '',
+            title: item.title?.trim() || 'Untitled',
+            researchArea: item.researchArea?.trim() || 'Chưa phân loại',
+            category: item.category === 'LECTURER' ? 'LECTURER' : 'STUDENT',
+            publicationYear: item.publicationYear ?? null,
+            savedAt: item.savedAt ? this.toDate(item.savedAt) : null
         };
     }
 

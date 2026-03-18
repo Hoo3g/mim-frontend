@@ -16,6 +16,11 @@ export const researchRoutes: Routes = [
         loadComponent: () => import('../../presentation/pages/my-research-papers.component').then(m => m.MyResearchPapersComponent)
     },
     {
+        path: 'saved',
+        canActivate: [authGuard],
+        loadComponent: () => import('../../presentation/pages/saved-research-papers.component').then(m => m.SavedResearchPapersComponent)
+    },
+    {
         path: 'editor',
         canActivate: [authGuard],
         loadComponent: () => import('../../presentation/pages/research-editor.component').then(m => m.ResearchEditorComponent)

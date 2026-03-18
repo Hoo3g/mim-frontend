@@ -17,7 +17,6 @@ import {
   PendingApplicationItem,
   ProfileDashboardResponse,
   ProfileMeResponse,
-  SavedPaperItem,
   UpdateCompanyProfileRequest,
   UpdateLecturerProfileRequest,
   UpdateStudentProfileRequest
@@ -51,9 +50,9 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 
           <div *ngIf="isStudent()" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 space-y-5">
-              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <h3 class="text-lg font-black uppercase tracking-tight text-gray-900">Hồ sơ sinh viên</h3>
-                <div class="flex flex-wrap items-center gap-2">
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="min-w-0 text-lg font-black uppercase tracking-tight text-gray-900">Hồ sơ sinh viên</h3>
+                <div class="shrink-0 flex flex-wrap items-center gap-2">
                   <button *ngIf="!editingStudent"
                           (click)="beginEditStudent()"
                           class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
@@ -99,7 +98,15 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 
                 <div>
                   <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Thành tích</p>
-                  <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 whitespace-pre-line">{{ showValue(me.student?.achievements) }}</p>
+                  <div *ngIf="studentAchievementItems(me.student?.achievements).length > 0; else emptyStudentAchievements" class="space-y-2">
+                    <div *ngFor="let achievement of studentAchievementItems(me.student?.achievements)" class="flex items-start gap-2 text-sm text-gray-700">
+                      <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-hus-blue"></span>
+                      <span class="break-words">{{ achievement }}</span>
+                    </div>
+                  </div>
+                  <ng-template #emptyStudentAchievements>
+                    <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700">Chưa cập nhật</p>
+                  </ng-template>
                 </div>
 
                 <div>
@@ -110,13 +117,9 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 
               <div *ngIf="editingStudent" class="space-y-5">
                 <div class="grid sm:grid-cols-2 gap-4">
-                  <label class="text-xs font-semibold text-gray-500">
-                    Họ
-                    <input [(ngModel)]="studentForm.firstName" class="mt-1 w-full border border-gray-200 px-3 py-2 text-sm text-gray-900" />
-                  </label>
-                  <label class="text-xs font-semibold text-gray-500">
-                    Tên
-                    <input [(ngModel)]="studentForm.lastName" class="mt-1 w-full border border-gray-200 px-3 py-2 text-sm text-gray-900" />
+                  <label class="text-xs font-semibold text-gray-500 sm:col-span-2">
+                    Họ và tên
+                    <input [(ngModel)]="studentFullName" class="mt-1 w-full border border-gray-200 px-3 py-2 text-sm text-gray-900" />
                   </label>
                   <label class="text-xs font-semibold text-gray-500">
                     Trường
@@ -148,13 +151,42 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 
                 <label class="block text-xs font-semibold text-gray-500">
                   Giới thiệu
-                  <textarea [(ngModel)]="studentForm.bio" rows="3" class="mt-1 w-full border border-gray-200 px-3 py-2 text-sm text-gray-900"></textarea>
+                  <textarea [(ngModel)]="studentForm.bio" rows="6" class="mt-1 w-full min-h-[10rem] border border-gray-200 px-3 py-2 text-sm text-gray-900"></textarea>
                 </label>
 
-                <label class="block text-xs font-semibold text-gray-500">
-                  Thành tích
-                  <textarea [(ngModel)]="studentForm.achievements" rows="3" class="mt-1 w-full border border-gray-200 px-3 py-2 text-sm text-gray-900"></textarea>
-                </label>
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-semibold text-gray-500">Thành tích</p>
+                    <button type="button"
+                            (click)="addStudentAchievement()"
+                            class="inline-flex items-center justify-center w-8 h-8 border border-hus-blue text-hus-blue hover:bg-hus-blue hover:text-white transition-colors"
+                            aria-label="Thêm thành tích">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div class="space-y-3">
+                    <div *ngFor="let achievement of studentAchievements; let i = index" class="flex items-start gap-3">
+                      <span class="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-hus-blue"></span>
+                      <textarea
+                        [(ngModel)]="studentAchievements[i]"
+                        rows="2"
+                        placeholder="Nhập một thành tích"
+                        class="flex-1 border border-gray-200 px-3 py-2 text-sm text-gray-900"></textarea>
+                      <button
+                        type="button"
+                        (click)="removeStudentAchievement(i)"
+                        class="inline-flex items-center justify-center w-8 h-8 mt-1 border border-gray-200 text-gray-400 hover:border-red-200 hover:text-red-500 transition-colors"
+                        [attr.aria-label]="'Xóa thành tích ' + (i + 1)">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
                 <label class="block text-xs font-semibold text-gray-500">
                   Mong muốn nghề nghiệp
@@ -204,20 +236,6 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 
           <div *ngIf="isStudent()" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <article class="bg-white border border-gray-100 p-4 sm:p-6">
-              <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-4">Bài nghiên cứu đã đánh dấu</h3>
-              <div *ngIf="savedPapers().length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
-                Chưa có bài nghiên cứu đã lưu.
-              </div>
-              <div *ngFor="let paper of savedPapers()" class="border border-gray-100 bg-gray-50 px-4 py-3 mb-3">
-                <a [routerLink]="['/paper', paper.paperId]" class="text-sm font-bold text-gray-900 hover:text-hus-blue">{{ paper.title }}</a>
-                <p class="mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                  {{ paper.researchArea || 'Chưa phân loại' }}
-                  <span *ngIf="paper.publicationYear"> | {{ paper.publicationYear }}</span>
-                </p>
-              </div>
-            </article>
-
-            <article class="bg-white border border-gray-100 p-4 sm:p-6">
               <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-4">Đơn ứng tuyển đang chờ phản hồi</h3>
               <div *ngIf="pendingApplications().length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
                 Không có đơn pending.
@@ -232,18 +250,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
               </div>
             </article>
 
-            <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-1">Bài tuyển dụng của bạn</h3>
-                
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
-                   class="inline-flex items-center justify-center px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
-                  Mở quản lý bài đăng
-                </a>
-              </div>
-            </article>
+            
 
             <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6">
               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -276,10 +283,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                       <span *ngIf="post.updatedAt"> | cập nhật {{ post.updatedAt | date:'dd.MM.yyyy' }}</span>
                     </p>
                   </div>
-                  <a [routerLink]="ROUTES.RECRUITMENT_EDITOR_EDIT(post.id)"
-                     class="inline-flex items-center justify-center px-3 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
-                    Chỉnh sửa
-                  </a>
+                  
                 </div>
               </div>
             </article>
@@ -634,6 +638,8 @@ export class ProfileComponent implements OnInit {
     careerGoal: '',
     desiredPosition: ''
   };
+  studentFullName = '';
+  studentAchievements: string[] = [''];
 
   companyForm: UpdateCompanyProfileRequest = {
     name: '',
@@ -762,10 +768,6 @@ export class ProfileComponent implements OnInit {
       && role !== 'ADMIN';
   }
 
-  savedPapers(): SavedPaperItem[] {
-    return this.dashboard?.student?.savedPapers ?? [];
-  }
-
   pendingApplications(): PendingApplicationItem[] {
     if (this.isStudent()) {
       return this.pendingApplicationsFromPostApi;
@@ -844,7 +846,7 @@ export class ProfileComponent implements OnInit {
 
   saveStudentProfile(): void {
     this.feedbackMessage = '';
-    this.profileService.updateStudentProfile(this.studentForm).subscribe({
+    this.profileService.updateStudentProfile(this.buildStudentProfilePayload()).subscribe({
       next: () => {
         this.setSuccess('Đã lưu hồ sơ sinh viên');
         this.editingStudent = false;
@@ -900,10 +902,13 @@ export class ProfileComponent implements OnInit {
     this.profileService.uploadDefaultCv(file).subscribe({
       next: (uploaded) => {
         this.studentForm.cvUrl = uploaded.fileUrl;
-        this.setSuccess('Upload CV mặc định thành công');
-        this.reload();
+        input.value = '';
+        this.setSuccess('Đã tải CV lên. Hãy lưu hồ sơ sinh viên để áp dụng thay đổi.');
       },
-      error: (error) => this.setError(error?.error?.message || 'Upload CV thất bại')
+      error: (error) => {
+        input.value = '';
+        this.setError(error?.error?.message || 'Upload CV thất bại');
+      }
     });
   }
 
@@ -924,11 +929,15 @@ export class ProfileComponent implements OnInit {
         if (this.me) {
           this.me = { ...this.me, avatarUrl: uploaded.fileUrl };
         }
+        input.value = '';
         this.avatarLoadError = false;
         authSignal.updateAvatar(uploaded.fileUrl);
         this.setSuccess('Cập nhật avatar thành công');
       },
-      error: (error) => this.setError(error?.error?.message || 'Cập nhật avatar thất bại')
+      error: (error) => {
+        input.value = '';
+        this.setError(error?.error?.message || 'Cập nhật avatar thất bại');
+      }
     });
   }
 
@@ -1004,6 +1013,8 @@ export class ProfileComponent implements OnInit {
       careerGoal: me.student?.careerGoal ?? '',
       desiredPosition: me.student?.desiredPosition ?? ''
     };
+    this.studentFullName = this.composeStudentFullName(me.student?.firstName, me.student?.lastName);
+    this.studentAchievements = this.parseAchievementItems(me.student?.achievements);
 
     this.companyForm = {
       name: me.company?.name ?? '',
@@ -1029,6 +1040,19 @@ export class ProfileComponent implements OnInit {
 
   private emailName(email: string): string {
     return email.split('@')[0] || email;
+  }
+
+  studentAchievementItems(value?: string | null): string[] {
+    return this.parseAchievementItems(value, false);
+  }
+
+  addStudentAchievement(): void {
+    this.studentAchievements = [...this.studentAchievements, ''];
+  }
+
+  removeStudentAchievement(index: number): void {
+    const nextItems = this.studentAchievements.filter((_, itemIndex) => itemIndex !== index);
+    this.studentAchievements = nextItems.length > 0 ? nextItems : [''];
   }
 
   private setSuccess(message: string): void {
@@ -1080,6 +1104,65 @@ export class ProfileComponent implements OnInit {
   pendingCountForPost(postId: string): number | null {
     const match = this.dashboard?.company?.myPosts?.find((item) => item.postId === postId);
     return match?.pendingCount ?? null;
+  }
+
+  private buildStudentProfilePayload(): UpdateStudentProfileRequest {
+    const { firstName, lastName } = this.splitStudentFullName(this.studentFullName);
+    return {
+      ...this.studentForm,
+      firstName,
+      lastName,
+      achievements: this.studentAchievements
+        .map((item) => item.trim())
+        .filter((item) => !!item)
+        .join('\n')
+    };
+  }
+
+  private composeStudentFullName(firstName?: string | null, lastName?: string | null): string {
+    return [firstName, lastName]
+      .map((item) => (item ?? '').trim())
+      .filter((item) => !!item)
+      .join(' ');
+  }
+
+  private splitStudentFullName(fullName?: string | null): { firstName: string; lastName: string } {
+    const normalized = (fullName ?? '').trim().replace(/\s+/g, ' ');
+    if (!normalized) {
+      return { firstName: '', lastName: '' };
+    }
+
+    const parts = normalized.split(' ');
+    if (parts.length === 1) {
+      return { firstName: parts[0], lastName: '' };
+    }
+
+    const lastName = parts.pop() ?? '';
+    return {
+      firstName: parts.join(' '),
+      lastName
+    };
+  }
+
+  private parseAchievementItems(value?: string | null, includePlaceholder: boolean = true): string[] {
+    const normalized = (value ?? '').trim();
+    if (!normalized) {
+      return includePlaceholder ? [''] : [];
+    }
+
+    let items = normalized
+      .split(/\r?\n+/)
+      .map((item) => item.replace(/^[•\-–]\s*/, '').trim())
+      .filter((item) => !!item);
+
+    if (items.length <= 1 && normalized.includes(';')) {
+      items = normalized
+        .split(/\s*;\s*/)
+        .map((item) => item.replace(/^[•\-–]\s*/, '').trim())
+        .filter((item) => !!item);
+    }
+
+    return items.length > 0 ? items : (includePlaceholder ? [''] : []);
   }
 
   private normalizedRoleValue(): string {

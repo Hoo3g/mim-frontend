@@ -4,6 +4,7 @@ export const ROUTES = {
     RESEARCH_FILTER: '/research/filter',
     RESEARCH_DETAIL: (id: string) => `/paper/${id}`,
     RESEARCH_MY_PAPERS: '/paper/my-papers',
+    RESEARCH_SAVED_PAPERS: '/paper/saved',
     RESEARCH_EDITOR: '/paper/editor',
     RESEARCH_EDITOR_EDIT: (id: string) => `/paper/editor/${id}`,
     RECRUITMENT: '/recruitment',
