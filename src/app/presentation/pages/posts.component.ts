@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -54,70 +54,145 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 	              <span [class.rotate-180]="showMobileFilters" class="transition-transform">⌄</span>
 	            </button>
 
-            <div class="space-y-6 md:space-y-8 lg:sticky lg:block"
-                 [ngClass]="showMobileFilters ? 'block' : 'hidden'"
-                 [style.top]="'var(--app-nav-sidebar-offset, 124px)'">
-              
-              <!-- Search -->
-              <section>
-                <h3 class="text-[10px] font-bold text-gray-900 uppercase tracking-widest mb-4">Tìm kiếm</h3>
+		            <div class="space-y-6 md:space-y-8 lg:sticky lg:block"
+		                 [ngClass]="showMobileFilters ? 'block' : 'hidden'"
+		                 [style.top]="'var(--app-nav-sidebar-offset, 124px)'">
+		              
+		              <!-- Search -->
+		              <section>
+		                <h3 class="text-[10px] font-bold text-gray-900 uppercase tracking-widest mb-4">Tìm kiếm</h3>
                 <div class="relative">
                   <input type="text" 
                          [ngModel]="searchTerm"
                          (ngModelChange)="onSearchChange($event)"
                          placeholder="Tên công việc, vị trí..."
-                         class="w-full bg-gray-50 border border-gray-200 px-3 py-2 text-xs focus:ring-1 focus:ring-hus-blue focus:border-hus-blue outline-none transition-all font-medium">
-                </div>
-              </section>
+		                         class="w-full bg-gray-50 border border-gray-200 px-3 py-2 text-xs focus:ring-1 focus:ring-hus-blue focus:border-hus-blue outline-none transition-all font-medium">
+		                </div>
+		              </section>
 
-              <!-- Filter by Type -->
-              <section>
-                <h3 class="text-[10px] font-bold text-gray-900 uppercase tracking-widest mb-4">Phân loại</h3>
-                <div class="space-y-4">
-                  <!-- Main Category: COMPANY -->
-                  <div>
-                    <button (click)="setFilter('COMPANY')" 
-                            [class.text-hus-blue]="filterType === 'COMPANY'"
-                            [class.bg-blue-50]="filterType === 'COMPANY'"
-                            class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex justify-between items-center group">
-                      Doanh nghiệp
-                      <span *ngIf="filterType === 'COMPANY'" class="w-1 h-1 bg-hus-blue"></span>
-                    </button>
-                    <!-- Sub-filters for COMPANY -->
-                    <div *ngIf="filterType === 'COMPANY'" class="mt-2 ml-3 space-y-1 border-l border-gray-100 pl-3">
-                      <button *ngFor="let specialization of specializations"
-                              (click)="setSubFilter(specialization.name)" 
-                              [class.text-hus-blue]="subFilter === specialization.name"
-                              class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
-                        ▪ {{ specialization.name }}
-                      </button>
-                    </div>
-                  </div>
+		              <div class="overflow-hidden border border-gray-100 bg-white lg:overflow-visible lg:border-0 lg:bg-transparent lg:space-y-4">
+		                <section class="bg-white border-t border-gray-100 first:border-t-0 lg:border lg:border-gray-100">
+		                  <button
+		                    type="button"
+		                    (click)="toggleMobileSection('roles')"
+		                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue/10 border-b border-hus-blue/20">
+		                    <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">Bài đăng</h3>
+		                    <span *ngIf="isMobileViewport"
+		                          class="text-sm font-black text-hus-blue/70 leading-none min-w-[1rem] text-right">
+		                      {{ isMobileSectionOpen('roles') ? '-' : '+' }}
+		                    </span>
+		                  </button>
 
-                  <!-- Main Category: STUDENT -->
-                  <div>
-                    <button (click)="setFilter('STUDENT')" 
-                            [class.text-hus-blue]="filterType === 'STUDENT'"
-                            [class.bg-blue-50]="filterType === 'STUDENT'"
-                            class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex justify-between items-center group">
-                      Sinh viên
-                      <span *ngIf="filterType === 'STUDENT'" class="w-1 h-1 bg-hus-blue"></span>
-                    </button>
-                    <!-- Sub-filters for STUDENT -->
-                    <div *ngIf="filterType === 'STUDENT'" class="mt-2 ml-3 space-y-1 border-l border-gray-100 pl-3">
-                      <button *ngFor="let specialization of specializations"
-                              (click)="setSubFilter(specialization.name)" 
-                              [class.text-hus-blue]="subFilter === specialization.name"
-                              class="block w-full text-left py-1 text-[10px] font-bold uppercase tracking-wider hover:text-hus-blue transition-colors">
-                        ▪ {{ specialization.name }}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </section>
+		                  <div *ngIf="shouldShowSection('roles')" class="space-y-2 px-3 py-3 sm:px-4 sm:py-4">
+		                    <button
+		                      type="button"
+		                      (click)="setFilter('COMPANY')"
+		                      [class.text-hus-blue]="filterType === 'COMPANY'"
+		                      [class.bg-blue-50]="filterType === 'COMPANY'"
+		                      class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
+		                      <span
+		                        class="w-3.5 h-3.5 shrink-0 rounded-full border transition-colors flex items-center justify-center"
+		                        [ngClass]="filterType === 'COMPANY' ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+		                        <svg
+		                          *ngIf="filterType === 'COMPANY'"
+		                          viewBox="0 0 12 12"
+		                          class="w-2.5 h-2.5 text-white"
+		                          fill="none"
+		                          stroke="currentColor"
+		                          stroke-width="2"
+		                          aria-hidden="true">
+		                          <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
+		                        </svg>
+		                      </span>
+		                      <span>Doanh nghiệp</span>
+		                    </button>
+		                    <button
+		                      type="button"
+		                      (click)="setFilter('STUDENT')"
+		                      [class.text-hus-blue]="filterType === 'STUDENT'"
+		                      [class.bg-blue-50]="filterType === 'STUDENT'"
+		                      class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
+		                      <span
+		                        class="w-3.5 h-3.5 shrink-0 rounded-full border transition-colors flex items-center justify-center"
+		                        [ngClass]="filterType === 'STUDENT' ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+		                        <svg
+		                          *ngIf="filterType === 'STUDENT'"
+		                          viewBox="0 0 12 12"
+		                          class="w-2.5 h-2.5 text-white"
+		                          fill="none"
+		                          stroke="currentColor"
+		                          stroke-width="2"
+		                          aria-hidden="true">
+		                          <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
+		                        </svg>
+		                      </span>
+		                      <span>Sinh viên</span>
+		                    </button>
+		                  </div>
+		                </section>
 
-	            </div>
-	          </div>
+		                <section class="bg-white border-t border-gray-100 first:border-t-0 lg:border lg:border-gray-100">
+		                  <button
+		                    type="button"
+		                    (click)="toggleMobileSection('specializations')"
+		                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue/10 border-b border-hus-blue/20">
+		                    <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">Chuyên ngành</h3>
+		                    <span *ngIf="isMobileViewport"
+		                          class="text-sm font-black text-hus-blue/70 leading-none min-w-[1rem] text-right">
+		                      {{ isMobileSectionOpen('specializations') ? '-' : '+' }}
+		                    </span>
+		                  </button>
+
+		                  <div *ngIf="shouldShowSection('specializations') && isLoadingSpecializations" class="space-y-2 px-3 py-3 sm:px-4 sm:py-4">
+		                    <div *ngFor="let item of [1, 2, 3, 4]" class="h-9 border border-gray-100 bg-gray-50 animate-pulse"></div>
+		                  </div>
+
+		                  <div *ngIf="shouldShowSection('specializations') && !isLoadingSpecializations" class="space-y-2 px-3 py-3 sm:px-4 sm:py-4">
+		                    <button
+		                      type="button"
+		                      *ngFor="let specialization of specializations"
+		                      (click)="toggleSpecializationFilter(specialization.name)"
+		                      [class.text-hus-blue]="isSpecializationSelected(specialization.name)"
+		                      [class.bg-blue-50]="isSpecializationSelected(specialization.name)"
+		                      class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
+		                      <span
+		                        class="w-3.5 h-3.5 border transition-colors flex items-center justify-center"
+		                        [ngClass]="isSpecializationSelected(specialization.name) ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+		                        <svg
+		                          *ngIf="isSpecializationSelected(specialization.name)"
+		                          viewBox="0 0 12 12"
+		                          class="w-2.5 h-2.5 text-white"
+		                          fill="none"
+		                          stroke="currentColor"
+		                          stroke-width="2"
+		                          aria-hidden="true">
+		                          <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
+		                        </svg>
+		                      </span>
+		                      <span class="break-words">{{ specialization.name }}</span>
+		                    </button>
+		                    <div
+		                      *ngIf="specializations.length === 0"
+		                      class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-300 border border-dashed border-gray-100">
+		                      Chưa có chuyên ngành
+		                    </div>
+		                  </div>
+		                </section>
+		              </div>
+
+		              <section *ngIf="shouldShowFilterActions" class="pt-4 border-t border-gray-100">
+		                <div class="flex justify-center">
+		                  <button
+		                    type="button"
+		                    (click)="clearFilters()"
+		                    class="px-4 py-2 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors">
+		                    Xóa bộ lọc
+		                  </button>
+		                </div>
+		              </section>
+
+		            </div>
+		          </div>
 
 	          <div class="lg:hidden mb-6">
 	            <div class="relative border-t border-gray-200">
@@ -278,6 +353,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
   `
 })
 export class PostsComponent implements OnInit {
+  private static readonly SPECIALIZATION_STATE_KEY = 'recruitmentFilterSpecializations';
   private readonly postService = inject(PostService);
   private readonly specializationService = inject(SpecializationService);
   private readonly route = inject(ActivatedRoute);
@@ -290,16 +366,24 @@ export class PostsComponent implements OnInit {
   specializations: ResearchCategory[] = [];
 
   posts: Post[] = [];
+  isLoadingSpecializations = true;
   isLoadingPosts = false;
   hasMorePosts = false;
   filterType: 'COMPANY' | 'STUDENT' = 'COMPANY';
-  subFilter: string | null = null;
+  selectedSpecializations: string[] = [];
   selectedPost: Post | null = null;
   showMobileFilters = false;
+  isMobileViewport = false;
+  mobileSectionsOpen: Record<'roles' | 'specializations', boolean> = {
+    roles: false,
+    specializations: false
+  };
   private currentPage = 0;
   private readonly pageSize = 10;
+  private readonly mobileBreakpoint = 768;
 
   ngOnInit(): void {
+    this.updateViewportState();
     this.searchTermChanges
       .pipe(
         debounceTime(300),
@@ -320,10 +404,21 @@ export class PostsComponent implements OnInit {
       );
 
       this.filterType = type === 'STUDENT' ? 'STUDENT' : 'COMPANY';
-      this.subFilter = selectedSpecializations[0] ?? null;
+      this.selectedSpecializations = selectedSpecializations.length > 0
+        ? selectedSpecializations
+        : this.readSelectedSpecializationsFromHistoryState();
       this.searchTerm = keyword?.trim() ?? '';
       this.resetAndLoadPosts();
     });
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateViewportState();
+  }
+
+  get shouldShowFilterActions(): boolean {
+    return this.filterType !== 'COMPANY' || this.selectedSpecializations.length > 0 || !!this.searchTerm.trim();
   }
 
   onSearchChange(val: string): void {
@@ -333,12 +428,49 @@ export class PostsComponent implements OnInit {
 
   setFilter(type: 'COMPANY' | 'STUDENT'): void {
     this.filterType = type;
-    this.subFilter = null;
     this.syncFiltersToUrl();
   }
 
-  setSubFilter(sub: string): void {
-    this.subFilter = this.subFilter === sub ? null : sub;
+  toggleSpecializationFilter(value: string): void {
+    const normalizedValue = (value ?? '').trim();
+    if (!normalizedValue) {
+      return;
+    }
+
+    if (this.selectedSpecializations.includes(normalizedValue)) {
+      this.selectedSpecializations = this.selectedSpecializations.filter((item) => item !== normalizedValue);
+      this.syncFiltersToUrl();
+      return;
+    }
+
+    this.selectedSpecializations = [...this.selectedSpecializations, normalizedValue];
+    this.syncFiltersToUrl();
+  }
+
+  isSpecializationSelected(value: string): boolean {
+    return this.selectedSpecializations.includes((value ?? '').trim());
+  }
+
+  shouldShowSection(section: 'roles' | 'specializations'): boolean {
+    return !this.isMobileViewport || this.mobileSectionsOpen[section];
+  }
+
+  toggleMobileSection(section: 'roles' | 'specializations'): void {
+    if (!this.isMobileViewport) {
+      return;
+    }
+
+    this.mobileSectionsOpen[section] = !this.mobileSectionsOpen[section];
+  }
+
+  isMobileSectionOpen(section: 'roles' | 'specializations'): boolean {
+    return this.mobileSectionsOpen[section];
+  }
+
+  clearFilters(): void {
+    this.filterType = 'COMPANY';
+    this.selectedSpecializations = [];
+    this.searchTerm = '';
     this.syncFiltersToUrl();
   }
 
@@ -359,6 +491,7 @@ export class PostsComponent implements OnInit {
   private loadSpecializations(): void {
     this.specializationService.getActiveSpecializations().subscribe((items) => {
       this.specializations = items;
+      this.isLoadingSpecializations = false;
     });
   }
 
@@ -393,7 +526,7 @@ export class PostsComponent implements OnInit {
   private loadPostsPage(page: number): void {
     this.postService.getPostsPage({
       type: this.filterType,
-      specialization: this.subFilter ? [this.subFilter] : null,
+      specialization: this.selectedSpecializations,
       q: this.searchTerm
     }, page, this.pageSize).subscribe({
       next: (result) => {
@@ -421,7 +554,11 @@ export class PostsComponent implements OnInit {
       relativeTo: this.route,
       queryParams: this.buildPostQueryParams(),
       queryParamsHandling: '',
-      replaceUrl: true
+      replaceUrl: true,
+      state: {
+        ...(typeof history !== 'undefined' ? history.state as Record<string, unknown> : {}),
+        [PostsComponent.SPECIALIZATION_STATE_KEY]: [...this.selectedSpecializations]
+      }
     });
   }
 
@@ -446,9 +583,24 @@ export class PostsComponent implements OnInit {
   private buildPostQueryParams(): { type: 'COMPANY' | 'STUDENT'; specialization: string[] | null; q: string | null } {
     return {
       type: this.filterType,
-      specialization: this.subFilter ? [this.subFilter] : null,
+      specialization: this.selectedSpecializations.length > 0 ? this.selectedSpecializations : null,
       q: this.searchTerm.trim() || null
     };
+  }
+
+  private readSelectedSpecializationsFromHistoryState(): string[] {
+    if (typeof history === 'undefined') {
+      return [];
+    }
+
+    const rawValue = (history.state as Record<string, unknown> | null)?.[PostsComponent.SPECIALIZATION_STATE_KEY];
+    if (!Array.isArray(rawValue)) {
+      return [];
+    }
+
+    return rawValue
+      .map((item) => typeof item === 'string' ? item.trim() : '')
+      .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
   }
 
   private resetAndLoadPosts(): void {
@@ -473,5 +625,9 @@ export class PostsComponent implements OnInit {
   canManageRecruitmentPosts(): boolean {
     const role = authSignal.user()?.role;
     return role === 'STUDENT' || role === 'COMPANY';
+  }
+
+  private updateViewportState(): void {
+    this.isMobileViewport = typeof window !== 'undefined' && window.innerWidth < this.mobileBreakpoint;
   }
 }
