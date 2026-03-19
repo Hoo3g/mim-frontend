@@ -148,10 +148,10 @@ interface PaperDetailState {
                 <ng-template #missingInlinePdf>
                   <div class="w-full h-full flex flex-col items-center justify-center text-center px-6">
                     <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
-                      Chưa có PDF để hiển thị.
+                      Không có file PDF.
                     </p>
                     <p class="mt-2 text-xs text-gray-500 max-w-md">
-                      Bài nghiên cứu hiện chưa có file PDF công khai.
+                      Bài nghiên cứu này chưa được đính kèm file PDF.
                     </p>
                   </div>
                 </ng-template>
@@ -171,7 +171,7 @@ interface PaperDetailState {
               <button type="button"
                       disabled
                       class="inline-flex items-center justify-center bg-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 cursor-not-allowed">
-                Chưa có tệp PDF
+                Không có file PDF
               </button>
             </ng-template>
             <button class="border-2 border-hus-blue text-hus-blue text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-blue hover:text-white transition w-full sm:w-auto">

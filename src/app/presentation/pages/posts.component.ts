@@ -4,7 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PostService } from '../../core/services/post.service';
 import { Post } from '../../core/models/post.model';
-import { Observable, Subject, debounceTime, distinctUntilChanged, of } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { PostDetailComponent } from './post-detail.component';
 import { SpecializationService } from '../../core/services/specialization.service';
@@ -127,13 +127,13 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 
 	          <!-- RIGHT: Main Content (Compact Cards) -->
 	          <div class="flex-grow">
-            <div *ngIf="filteredPosts$ | async as posts; else loading">
+            <div *ngIf="!isLoadingPosts || posts.length > 0; else loading">
               <div *ngIf="posts.length === 0" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
                 Không tìm thấy thông tin phù hợp.
               </div>
               
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div *ngFor="let post of posts | slice:0:visiblePostCount" 
+                <div *ngFor="let post of posts" 
                      (click)="openDetail(post)"
                      class="bg-white border border-gray-100 p-6 hover:border-hus-blue hover:shadow-lg transition-all duration-300 group flex flex-col relative cursor-pointer self-start">
                   
@@ -243,13 +243,13 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                 </div>
               </div>
 
-	              <div *ngIf="posts.length > visiblePostCount" class="pt-8 flex justify-center">
+	              <div *ngIf="hasMorePosts" class="mt-4 border-t border-gray-200 pt-4 flex justify-center">
 	                <button
 	                  type="button"
                   (click)="loadMorePosts()"
-                  class="inline-flex items-center justify-center gap-2 min-w-[110px] border border-gray-200 px-5 py-3 text-[10px] font-black uppercase tracking-widest text-hus-blue hover:border-hus-blue hover:bg-blue-50/40 transition-colors">
+                  [disabled]="isLoadingPosts"
+                  class="inline-flex items-center justify-center border border-hus-blue px-3 py-1 text-[11px] font-black leading-none text-hus-blue transition-colors hover:bg-hus-blue hover:text-white">
                   <span>Xem thêm</span>
-	                  <span aria-hidden="true">+</span>
 	                </button>
 	              </div>
 
@@ -289,12 +289,14 @@ export class PostsComponent implements OnInit {
   searchTerm = '';
   specializations: ResearchCategory[] = [];
 
-  filteredPosts$: Observable<Post[]> = of([]);
+  posts: Post[] = [];
+  isLoadingPosts = false;
+  hasMorePosts = false;
   filterType: 'COMPANY' | 'STUDENT' = 'COMPANY';
   subFilter: string | null = null;
   selectedPost: Post | null = null;
   showMobileFilters = false;
-  visiblePostCount = 10;
+  private currentPage = 0;
   private readonly pageSize = 10;
 
   ngOnInit(): void {
@@ -320,8 +322,7 @@ export class PostsComponent implements OnInit {
       this.filterType = type === 'STUDENT' ? 'STUDENT' : 'COMPANY';
       this.subFilter = selectedSpecializations[0] ?? null;
       this.searchTerm = keyword?.trim() ?? '';
-      this.resetVisiblePosts();
-      this.loadPosts();
+      this.resetAndLoadPosts();
     });
   }
 
@@ -342,7 +343,7 @@ export class PostsComponent implements OnInit {
   }
 
   loadMorePosts(): void {
-    this.visiblePostCount += this.pageSize;
+    this.loadNextPage();
   }
 
   openDetail(post: Post): void {
@@ -389,11 +390,29 @@ export class PostsComponent implements OnInit {
     return typeof value === 'string' ? value.trim() : '';
   }
 
-  private loadPosts(): void {
-    this.filteredPosts$ = this.postService.getPosts({
+  private loadPostsPage(page: number): void {
+    this.postService.getPostsPage({
       type: this.filterType,
       specialization: this.subFilter ? [this.subFilter] : null,
       q: this.searchTerm
+    }, page, this.pageSize).subscribe({
+      next: (result) => {
+        const incoming = result.content ?? [];
+        this.posts = page === 0 ? incoming : [...this.posts, ...incoming];
+        const totalElements = result.pageInfo?.totalElements ?? this.posts.length;
+        this.hasMorePosts = this.posts.length < totalElements;
+        this.currentPage = page + 1;
+      },
+      error: () => {
+        if (page === 0) {
+          this.posts = [];
+        }
+        this.hasMorePosts = false;
+        this.isLoadingPosts = false;
+      },
+      complete: () => {
+        this.isLoadingPosts = false;
+      }
     });
   }
 
@@ -432,8 +451,23 @@ export class PostsComponent implements OnInit {
     };
   }
 
-  private resetVisiblePosts(): void {
-    this.visiblePostCount = this.pageSize;
+  private resetAndLoadPosts(): void {
+    this.currentPage = 0;
+    this.posts = [];
+    this.hasMorePosts = false;
+    this.loadNextPage(true);
+  }
+
+  private loadNextPage(reset = false): void {
+    if (this.isLoadingPosts) {
+      return;
+    }
+    if (!reset && !this.hasMorePosts) {
+      return;
+    }
+
+    this.isLoadingPosts = true;
+    this.loadPostsPage(this.currentPage);
   }
 
   canManageRecruitmentPosts(): boolean {

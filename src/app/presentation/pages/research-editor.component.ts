@@ -110,7 +110,7 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
 
             <div>
               <label for="pdfFile" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                Tệp PDF hiển thị
+                Tệp PDF hiển thị (không bắt buộc)
               </label>
               <input id="pdfFile"
                      type="file"
@@ -119,12 +119,12 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
                      class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue transition-colors file:mr-3 file:border-0 file:bg-hus-blue file:px-3 file:py-2 file:text-[10px] file:font-black file:text-white file:uppercase file:tracking-widest hover:file:bg-hus-dark">
 
               <div class="mt-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 space-y-2">
-                
-                <ng-template #currentPdfInfo>
-                  <p>
-                    {{ existingPdfUrl ? 'Tệp hiện tại: ' + existingPdfFileName : 'Chưa có PDF hiện tại' }}
-                  </p>
-                </ng-template>
+                <p>
+                  {{ selectedPdfName ? 'Tệp đã chọn: ' + selectedPdfName : (existingPdfUrl ? 'Tệp hiện tại: ' + existingPdfFileName : 'Chưa có file PDF') }}
+                </p>
+                <p class="text-gray-300">
+                  Bạn có thể lưu bài viết mà không cần tải tệp PDF.
+                </p>
       
                 <a *ngIf="effectivePdfUrl"
                    [href]="effectivePdfUrl"
@@ -288,11 +288,6 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
 
     if (!trimmedTitle || !trimmedResearchArea || !abstractPlainText) {
       this.errorMessage = 'Vui lòng nhập đầy đủ tên đề tài, lĩnh vực và tóm tắt.';
-      return;
-    }
-
-    if (!this.isEditMode && !this.selectedPdfFile && !this.existingPdfUrl) {
-      this.errorMessage = 'Vui lòng tải lên tệp PDF trước khi tạo bài viết.';
       return;
     }
 

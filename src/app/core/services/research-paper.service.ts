@@ -1,10 +1,10 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { catchError, forkJoin, map, Observable, of, shareReplay, tap } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, shareReplay, switchMap, tap } from 'rxjs';
 import { BookmarkedResearchPaper, PaperAuthor, ResearchPaper } from '../models/research-paper.model';
 import type { AuthUser } from '../signals/auth.signal';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
-import { ApiResponse } from '../models/api-response.model';
+import { ApiResponse, PagedResponse } from '../models/api-response.model';
 import { authSignal } from '../signals/auth.signal';
 import { normalizeRichTextHtml } from '../utils/rich-text.util';
 import { TimedObservableCache } from '../utils/timed-observable-cache.util';
@@ -21,6 +21,7 @@ export interface ResearchPaperListQuery {
     q?: string;
     type?: 'LECTURER' | 'STUDENT' | 'ALL' | null;
     specialization?: string[] | null;
+    metric?: 'views' | 'downloads' | 'bookmarks' | null;
 }
 
 interface ResearchPdfUploadResponse {
@@ -92,6 +93,34 @@ export class ResearchPaperService {
         );
 
         return this.attachBookmarkState(papers$);
+    }
+
+    getPapersPage(query: ResearchPaperListQuery = {}, page = 0, size = 10): Observable<PagedResponse<ResearchPaper>> {
+        const safePage = Math.max(page, 0);
+        const safeSize = Math.max(size, 1);
+        const params = this.buildListParams(query)
+            .set('page', String(safePage))
+            .set('size', String(safeSize));
+
+        return this.http.get<ApiResponse<PagedResponse<ResearchPaperApiModel> | ResearchPaperApiModel[]>>(
+            API_ENDPOINTS.RESEARCH.LIST_PAGED,
+            { params }
+        ).pipe(
+            map((response) => this.unwrapPaged(response, safePage, safeSize)),
+            map((paged) => ({
+                ...paged,
+                content: paged.content.map((paper) => this.toPaperModel(paper))
+            })),
+            catchError(() => of(this.emptyPagedResult<ResearchPaper>(safePage, safeSize))),
+            switchMap((paged) => forkJoin([of(paged), this.getBookmarkedPaperIds()])),
+            map(([paged, bookmarkedIds]) => ({
+                ...paged,
+                content: paged.content.map((paper) => ({
+                    ...paper,
+                    isBookmarked: bookmarkedIds.has(paper.id)
+                }))
+            }))
+        );
     }
 
     getPaperById(id: string): Observable<ResearchPaper | undefined> {
@@ -295,10 +324,46 @@ export class ResearchPaperService {
         return response.data;
     }
 
+    private unwrapPaged<T>(
+        response: ApiResponse<PagedResponse<T> | T[]>,
+        fallbackPage: number,
+        fallbackSize: number
+    ): PagedResponse<T> {
+        if (!response.success || response.data === null) {
+            return this.emptyPagedResult<T>(fallbackPage, fallbackSize);
+        }
+
+        if (Array.isArray(response.data)) {
+            const content = response.data;
+            return {
+                content,
+                pageInfo: {
+                    page: 0,
+                    size: content.length,
+                    totalElements: content.length,
+                    totalPages: content.length > 0 ? 1 : 0
+                }
+            };
+        }
+
+        const content = Array.isArray(response.data.content) ? response.data.content : [];
+        const rawPageInfo = response.data.pageInfo;
+        return {
+            content,
+            pageInfo: {
+                page: rawPageInfo?.page ?? fallbackPage,
+                size: rawPageInfo?.size ?? fallbackSize,
+                totalElements: rawPageInfo?.totalElements ?? content.length,
+                totalPages: rawPageInfo?.totalPages ?? (content.length > 0 ? 1 : 0)
+            }
+        };
+    }
+
     private buildListParams(query: ResearchPaperListQuery): HttpParams {
         let params = new HttpParams();
         const keyword = (query.q ?? '').trim();
         const type = query.type && query.type !== 'ALL' ? query.type : '';
+        const metric = (query.metric ?? '').trim();
         const specializations = (query.specialization ?? [])
             .map((item) => (item ?? '').trim())
             .filter((item) => !!item);
@@ -308,6 +373,9 @@ export class ResearchPaperService {
         }
         if (type) {
             params = params.set('type', type);
+        }
+        if (metric) {
+            params = params.set('metric', metric);
         }
         specializations.forEach((item) => {
             params = params.append('specialization', item);
@@ -319,12 +387,25 @@ export class ResearchPaperService {
     private buildListCacheKey(query: ResearchPaperListQuery): string {
         const keyword = (query.q ?? '').trim().toLowerCase();
         const type = query.type && query.type !== 'ALL' ? query.type : '';
+        const metric = (query.metric ?? '').trim().toLowerCase();
         const specializations = (query.specialization ?? [])
             .map((item) => (item ?? '').trim().toLowerCase())
             .filter((item) => !!item)
             .sort()
             .join('|');
-        return `q=${keyword};type=${type};specialization=${specializations}`;
+        return `q=${keyword};type=${type};metric=${metric};specialization=${specializations}`;
+    }
+
+    private emptyPagedResult<T>(page: number, size: number): PagedResponse<T> {
+        return {
+            content: [],
+            pageInfo: {
+                page,
+                size,
+                totalElements: 0,
+                totalPages: 0
+            }
+        };
     }
 
     private attachBookmarkState(papers$: Observable<ResearchPaper[]>): Observable<ResearchPaper[]> {

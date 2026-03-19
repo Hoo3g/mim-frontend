@@ -1,9 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
+import { ResearchListViewStateService } from '../../core/services/research-list-view-state.service';
 import { ResearchPaper } from '../../core/models/research-paper.model';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import { ContentService } from '../../core/services/content.service';
 import { ResearchHeroContent } from '../../core/models/content.model';
 import { NewsService } from '../../core/services/news.service';
@@ -91,13 +92,13 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
               </button>
             </div>
 
-            <div *ngIf="(filteredPapers$ | async) as papers; else loading">
+            <div *ngIf="!isLoadingPapers || papers.length > 0; else loading">
               <div *ngIf="papers.length === 0" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
                 Không tìm thấy dữ liệu.
               </div>
               
               <div class="divide-y divide-gray-100">
-                <div *ngFor="let paper of papers | slice:0:visiblePaperCount"
+                <div *ngFor="let paper of papers"
                      class="py-6 md:py-8 first:pt-4 group cursor-pointer"
                      (click)="navigateToDetail(paper.id)">
                    
@@ -149,12 +150,12 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                 </div>
               </div>
 
-              <div *ngIf="papers.length > visiblePaperCount" class="pt-8 flex justify-end">
+              <div *ngIf="hasMorePapers" class="mt-4 border-t border-gray-200 pt-4 flex justify-center">
                 <button type="button"
                         (click)="loadMorePapers()"
-                        class="inline-flex items-center justify-center gap-2 min-w-[86px] text-hus-blue text-base font-bold hover:text-hus-dark transition-colors">
-                  <span>Xem thêm bài</span>
-                  <span aria-hidden="true">›</span>
+                        [disabled]="isLoadingPapers"
+                        class="inline-flex items-center justify-center border border-hus-blue px-3 py-2 text-[11px] font-black leading-none text-hus-blue transition-colors hover:bg-hus-blue hover:text-white">
+                  <span>{{ isLoadingPapers ? 'Dang tai...' : 'Xem thêm' }}</span>
                 </button>
               </div>
             </div>
@@ -218,62 +219,56 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
     </div>
   `
 })
-export class ResearchComponent implements OnInit {
+export class ResearchComponent implements OnInit, OnDestroy {
   private paperService = inject(ResearchPaperService);
+  private researchListViewStateService = inject(ResearchListViewStateService);
+  private cdr = inject(ChangeDetectorRef);
   private contentService = inject(ContentService);
   private newsService = inject(NewsService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  allPapers$!: Observable<ResearchPaper[]>;
-  filteredPapers$!: Observable<ResearchPaper[]>;
+  papers: ResearchPaper[] = [];
   news$!: Observable<NewsItem[]>;
   hero$!: Observable<ResearchHeroContent>;
+  isLoadingPapers = false;
+  hasMorePapers = false;
   currentFilter: 'ALL' | 'LECTURER' | 'STUDENT' = 'ALL';
   selectedSpecializations: string[] = [];
   searchKeyword = '';
-  visiblePaperCount = 10;
+  private currentPage = 0;
   private readonly pageSize = 10;
+  private currentStateKey = '';
 
   ngOnInit(): void {
     this.hero$ = this.contentService.getResearchHeroContent();
-    this.reloadPapers();
     this.news$ = this.newsService.getPublicNews();
     this.route.queryParamMap.subscribe((params) => {
+      this.persistViewState();
       const type = params.get('type');
       const keyword = params.get('q');
       this.currentFilter = type === 'LECTURER' || type === 'STUDENT' ? type : 'ALL';
       this.selectedSpecializations = this.parseSpecializationsFromParams(params.getAll('specialization'), params.get('specialization'));
       this.searchKeyword = keyword?.trim() ?? '';
-      this.resetVisiblePapers();
-      this.updateFilter();
+      this.currentStateKey = this.buildStateKey();
+
+      const cachedState = this.researchListViewStateService.get(this.currentStateKey);
+      if (cachedState) {
+        this.papers = cachedState.papers;
+        this.currentPage = cachedState.currentPage;
+        this.hasMorePapers = cachedState.hasMorePapers;
+        this.isLoadingPapers = false;
+        this.cdr.detectChanges();
+        this.restoreScrollPosition(cachedState.scrollY);
+        return;
+      }
+
+      this.resetAndLoadPapers();
     });
   }
 
-  private updateFilter(): void {
-    this.filteredPapers$ = this.allPapers$.pipe(
-      map(papers => {
-        let filtered = papers;
-        if (this.currentFilter !== 'ALL') {
-          filtered = filtered.filter(p => p.category === this.currentFilter);
-        }
-        if (this.selectedSpecializations.length > 0) {
-          filtered = filtered.filter((p) => this.selectedSpecializations.includes(p.researchArea));
-        }
-        if (this.searchKeyword) {
-          const normalizedKeyword = this.normalize(this.searchKeyword);
-          filtered = filtered.filter((paper) => {
-            const searchable = this.normalize([
-              paper.title,
-              paper.researchArea,
-              this.getMainAuthor(paper)
-            ].join(' '));
-            return searchable.includes(normalizedKeyword);
-          });
-        }
-        return filtered;
-      })
-    );
+  ngOnDestroy(): void {
+    this.persistViewState();
   }
 
   navigateToDetail(id: string): void {
@@ -292,7 +287,7 @@ export class ResearchComponent implements OnInit {
   }
 
   loadMorePapers(): void {
-    this.visiblePaperCount += this.pageSize;
+    this.loadNextPage();
   }
 
   getMainAuthor(paper: ResearchPaper): string {
@@ -300,14 +295,12 @@ export class ResearchComponent implements OnInit {
     return main ? main.name : 'Unknown';
   }
 
-  private reloadPapers(): void {
-    this.resetVisiblePapers();
-    this.allPapers$ = this.paperService.getPapers();
-    this.updateFilter();
-  }
-
-  private resetVisiblePapers(): void {
-    this.visiblePaperCount = this.pageSize;
+  private resetAndLoadPapers(): void {
+    this.currentPage = 0;
+    this.papers = [];
+    this.hasMorePapers = false;
+    this.researchListViewStateService.clear(this.currentStateKey);
+    this.loadNextPage(true);
   }
 
   private parseSpecializationsFromParams(values: string[], fallback: string | null): string[] {
@@ -328,11 +321,77 @@ export class ResearchComponent implements OnInit {
       .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
   }
 
-  private normalize(value: string): string {
-    return value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
+  private loadNextPage(reset = false): void {
+    if (this.isLoadingPapers) {
+      return;
+    }
+    if (!reset && !this.hasMorePapers) {
+      return;
+    }
+
+    this.isLoadingPapers = true;
+    const pageToLoad = this.currentPage;
+    this.paperService.getPapersPage({
+      type: this.currentFilter === 'ALL' ? null : this.currentFilter,
+      specialization: this.selectedSpecializations,
+      q: this.searchKeyword
+    }, pageToLoad, this.pageSize).subscribe({
+      next: (result) => {
+        const incoming = result.content ?? [];
+        this.papers = reset ? incoming : [...this.papers, ...incoming];
+        const totalElements = result.pageInfo?.totalElements ?? this.papers.length;
+        this.hasMorePapers = this.papers.length < totalElements;
+        this.currentPage = pageToLoad + 1;
+        this.persistViewState();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        if (reset) {
+          this.papers = [];
+        }
+        this.hasMorePapers = false;
+        this.isLoadingPapers = false;
+        this.cdr.detectChanges();
+      },
+      complete: () => {
+        this.isLoadingPapers = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private buildStateKey(): string {
+    const filter = this.currentFilter.trim().toLowerCase();
+    const keyword = this.searchKeyword.trim().toLowerCase();
+    const specializations = [...this.selectedSpecializations]
+      .map((item) => item.trim().toLowerCase())
+      .filter((item, index, arr) => !!item && arr.indexOf(item) === index)
+      .sort()
+      .join('|');
+    return `filter=${filter};q=${keyword};specialization=${specializations}`;
+  }
+
+  private persistViewState(): void {
+    if (!this.currentStateKey) {
+      return;
+    }
+
+    this.researchListViewStateService.set(this.currentStateKey, {
+      papers: this.papers,
+      currentPage: this.currentPage,
+      hasMorePapers: this.hasMorePapers,
+      scrollY: typeof window !== 'undefined' ? window.scrollY : 0
+    });
+  }
+
+  private restoreScrollPosition(scrollY: number): void {
+    if (typeof window === 'undefined' || scrollY <= 0) {
+      return;
+    }
+
+    setTimeout(() => {
+      window.scrollTo({ top: scrollY, behavior: 'auto' });
+    }, 0);
   }
 
 }

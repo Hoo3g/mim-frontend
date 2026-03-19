@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { combineLatest, map, Observable, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 
 import { ResearchPaper } from '../../core/models/research-paper.model';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
@@ -45,11 +45,6 @@ import { authSignal } from '../../core/signals/auth.signal';
         <div *ngIf="!canCreateContent()"
              class="mb-6 border border-amber-200 bg-amber-50 text-amber-800 px-4 py-3 text-[10px] font-bold uppercase tracking-widest">
           Tài khoản chưa xác thực email. Bạn chỉ có thể xem danh sách bài viết.
-        </div>
-
-        <div *ngIf="isFallbackMode$ | async"
-             class="mb-6 border border-amber-200 bg-amber-50/50 text-amber-700 text-[10px] font-bold uppercase tracking-widest px-4 py-3">
-          Bạn chưa có bài viết cá nhân, đang hiển thị danh sách nghiên cứu mẫu.
         </div>
 
         <div *ngIf="displayedPapers$ | async as papers">
@@ -107,21 +102,11 @@ export class MyResearchPapersComponent implements OnInit {
   protected readonly canCreateContent = authSignal.canCreateContent;
 
   displayedPapers$!: Observable<ResearchPaper[]>;
-  isFallbackMode$!: Observable<boolean>;
   noticeMessage = '';
 
   ngOnInit(): void {
     const currentUser = authSignal.user();
-    const myPapers$ = currentUser ? this.paperService.getMyPapers(currentUser) : of([]);
-    const allPapers$ = this.paperService.getPapers();
-
-    this.displayedPapers$ = combineLatest([myPapers$, allPapers$]).pipe(
-      map(([myPapers, allPapers]) => (myPapers.length > 0 ? myPapers : allPapers))
-    );
-
-    this.isFallbackMode$ = myPapers$.pipe(
-      map((myPapers) => myPapers.length === 0)
-    );
+    this.displayedPapers$ = currentUser ? this.paperService.getMyPapers(currentUser) : of([]);
 
     const navigationNotice = this.router.getCurrentNavigation()?.extras.state?.['notice'];
     const historyNotice = history.state?.['notice'];

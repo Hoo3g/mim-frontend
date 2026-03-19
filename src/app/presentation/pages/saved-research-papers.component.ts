@@ -20,10 +20,7 @@ import { authSignal } from '../../core/signals/auth.signal';
             <span class="w-1 h-4 bg-hus-blue"></span>
             Danh sách nghiên cứu đã lưu
           </h2>
-          <a [routerLink]="ROUTES.RESEARCH"
-             class="inline-flex items-center justify-center px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-hus-blue border border-hus-blue hover:bg-hus-blue hover:text-white transition-colors">
-            Xem cổng nghiên cứu
-          </a>
+          
         </div>
 
         <div *ngIf="bookmarkedPapers$ | async as papers">

@@ -289,10 +289,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                     Chọn trực tiếp một bài để mở màn hình chỉnh sửa.
                   </p>
                 </div>
-                <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
-                   class="text-[10px] font-black uppercase tracking-widest text-hus-blue hover:underline">
-                  Xem tất cả
-                </a>
+                
               </div>
 
               <div *ngIf="myRecruitmentPosts.length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">

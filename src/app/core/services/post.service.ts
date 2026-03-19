@@ -4,7 +4,7 @@ import { catchError, map, Observable, of, shareReplay, tap, timeout } from 'rxjs
 
 import { Post, PostDisplayInfo } from '../models/post.model';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
-import { ApiResponse } from '../models/api-response.model';
+import { ApiResponse, PagedResponse } from '../models/api-response.model';
 import { PendingApplicantResponse, PendingApplicationResponse } from '../models/profile.model';
 import { AuthUser, authSignal } from '../signals/auth.signal';
 import { TimedObservableCache } from '../utils/timed-observable-cache.util';
@@ -136,6 +136,26 @@ export class PostService {
         );
 
         return this.postsCache.set(cacheKey, request$);
+    }
+
+    getPostsPage(query: PostListQuery = {}, page = 0, size = 10): Observable<PagedResponse<Post>> {
+        const safePage = Math.max(page, 0);
+        const safeSize = Math.max(size, 1);
+        const params = this.buildListParams(query)
+            .set('page', String(safePage))
+            .set('size', String(safeSize));
+
+        return this.http.get<ApiResponse<PagedResponse<ApiPostModel> | ApiPostModel[]>>(
+            API_ENDPOINTS.RECRUITMENT.LIST_PAGED,
+            { params }
+        ).pipe(
+            map((response) => this.unwrapPaged(response, safePage, safeSize)),
+            map((paged) => ({
+                ...paged,
+                content: paged.content.map((item) => this.toPostModel(item))
+            })),
+            catchError(() => of(this.emptyPagedResult<Post>(safePage, safeSize)))
+        );
     }
 
     getMyPosts(authorId: string): Observable<Post[]> {
@@ -282,6 +302,53 @@ export class PostService {
             .sort()
             .join('|');
         return `q=${keyword};type=${type};specialization=${specializations}`;
+    }
+
+    private unwrapPaged<T>(
+        response: ApiResponse<PagedResponse<T> | T[]>,
+        fallbackPage: number,
+        fallbackSize: number
+    ): PagedResponse<T> {
+        if (!response.success || response.data === null) {
+            return this.emptyPagedResult<T>(fallbackPage, fallbackSize);
+        }
+
+        if (Array.isArray(response.data)) {
+            const content = response.data;
+            return {
+                content,
+                pageInfo: {
+                    page: 0,
+                    size: content.length,
+                    totalElements: content.length,
+                    totalPages: content.length > 0 ? 1 : 0
+                }
+            };
+        }
+
+        const content = Array.isArray(response.data.content) ? response.data.content : [];
+        const rawPageInfo = response.data.pageInfo;
+        return {
+            content,
+            pageInfo: {
+                page: rawPageInfo?.page ?? fallbackPage,
+                size: rawPageInfo?.size ?? fallbackSize,
+                totalElements: rawPageInfo?.totalElements ?? content.length,
+                totalPages: rawPageInfo?.totalPages ?? (content.length > 0 ? 1 : 0)
+            }
+        };
+    }
+
+    private emptyPagedResult<T>(page: number, size: number): PagedResponse<T> {
+        return {
+            content: [],
+            pageInfo: {
+                page,
+                size,
+                totalElements: 0,
+                totalPages: 0
+            }
+        };
     }
 
     private toPostModel(item: ApiPostModel): Post {

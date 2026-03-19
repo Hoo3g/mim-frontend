@@ -263,21 +263,21 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
               <div>
                 <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Kết quả lọc</p>
                 <h2 class="text font-black text-gray-900 uppercase tracking-tight">
-                  {{ filteredPapers.length }} bài nghiên cứu phù hợp
+                  {{ totalPaperCount }} bài nghiên cứu phù hợp
                 </h2>
               </div>
             </div>
 
             <div
-              *ngIf="filteredPapers.length === 0"
+              *ngIf="allPapers.length === 0 && !isLoadingPapers"
               class="py-14 md:py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
               Không tìm thấy thông tin phù hợp.
             </div>
 
-            <div *ngIf="filteredPapers.length > 0" class="border border-gray-100 bg-white">
+            <div *ngIf="allPapers.length > 0" class="border border-gray-100 bg-white">
               <button
                 type="button"
-                *ngFor="let paper of filteredPapers | slice:0:visiblePaperCount"
+                *ngFor="let paper of allPapers"
                 (click)="openPaperDetail(paper.id)"
                 class="w-full px-5 py-5 sm:px-6 sm:py-6 border-b border-gray-100 last:border-b-0 text-left hover:bg-blue-50/40 transition-colors group">
                 <div class="flex items-start gap-4">
@@ -319,20 +319,18 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                     </div>
                   </div>
 
-                  <div class="hidden sm:block pt-1 text-[10px] font-black uppercase tracking-widest text-gray-300 group-hover:text-hus-blue transition-colors whitespace-nowrap">
-                    Chi tiết
-                  </div>
+                  
                 </div>
               </button>
             </div>
 
-            <div *ngIf="filteredPapers.length > visiblePaperCount" class="pt-8 flex justify-center">
+            <div *ngIf="hasMorePapers" class="mt-4 border-t border-gray-200 pt-4 flex justify-center">
               <button
                 type="button"
                 (click)="loadMorePapers()"
-                class="inline-flex items-center justify-center gap-2 min-w-[110px] border border-gray-200 px-5 py-3 text-[10px] font-black uppercase tracking-widest text-hus-blue hover:border-hus-blue hover:bg-blue-50/40 transition-colors">
+                [disabled]="isLoadingPapers"
+                class="inline-flex items-center justify-center border border-hus-blue px-3 py-2 text-[11px] font-black leading-none text-hus-blue transition-colors hover:bg-hus-blue hover:text-white">
                 <span>Xem thêm</span>
-                <span aria-hidden="true">+</span>
               </button>
             </div>
           </div>
@@ -356,15 +354,18 @@ export class ResearchFilterComponent implements OnInit {
   selectedSpecializations: string[] = [];
   searchKeyword = '';
   isLoadingSpecializations = true;
+  isLoadingPapers = false;
+  hasMorePapers = false;
+  totalPaperCount = 0;
   specializations: ResearchCategory[] = [];
   allPapers: ResearchPaper[] = [];
-  visiblePaperCount = 10;
   isMobileViewport = false;
   mobileSectionsOpen: Record<'specializations' | 'metrics' | 'roles', boolean> = {
     specializations: false,
     metrics: false,
     roles: false
   };
+  private currentPage = 0;
   private readonly pageSize = 10;
 
   ngOnInit(): void {
@@ -398,32 +399,13 @@ export class ResearchFilterComponent implements OnInit {
         params.get('specialization')
       );
       this.searchKeyword = keyword?.trim() ?? '';
-      this.resetVisiblePapers();
-      this.loadPapers();
+      this.resetAndLoadPapers();
     });
   }
 
   @HostListener('window:resize')
   onWindowResize(): void {
     this.updateViewportState();
-  }
-
-  get filteredPapers(): ResearchPaper[] {
-    const papers = [...this.allPapers];
-
-    switch (this.metricSort) {
-      case 'views':
-        return papers.sort((left, right) =>
-          right.viewCount - left.viewCount || right.createdAt.getTime() - left.createdAt.getTime());
-      case 'downloads':
-        return papers.sort((left, right) =>
-          right.downloadCount - left.downloadCount || right.createdAt.getTime() - left.createdAt.getTime());
-      case 'bookmarks':
-        return papers.sort((left, right) =>
-          right.bookmarkCount - left.bookmarkCount || right.createdAt.getTime() - left.createdAt.getTime());
-      default:
-        return papers;
-    }
   }
 
   get shouldShowFilterActions(): boolean {
@@ -493,7 +475,7 @@ export class ResearchFilterComponent implements OnInit {
   }
 
   loadMorePapers(): void {
-    this.visiblePaperCount += this.pageSize;
+    this.loadNextPage();
   }
 
   backToResearch(): void {
@@ -529,14 +511,32 @@ export class ResearchFilterComponent implements OnInit {
       .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
   }
 
-  private loadPapers(): void {
-    this.researchPaperService.getPapers({
+  private loadPapersPage(page: number): void {
+    this.researchPaperService.getPapersPage({
       type: this.roleFilter,
       specialization: this.selectedSpecializations,
-      q: this.searchKeyword
-    }).subscribe((papers) => {
-      this.allPapers = papers;
-      this.cdr.detectChanges();
+      q: this.searchKeyword,
+      metric: this.metricSort
+    }, page, this.pageSize).subscribe({
+      next: (result) => {
+        const incoming = result.content ?? [];
+        this.allPapers = page === 0 ? incoming : [...this.allPapers, ...incoming];
+        this.totalPaperCount = result.pageInfo?.totalElements ?? this.allPapers.length;
+        this.hasMorePapers = this.allPapers.length < this.totalPaperCount;
+        this.currentPage = page + 1;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        if (page === 0) {
+          this.allPapers = [];
+          this.totalPaperCount = 0;
+        }
+        this.hasMorePapers = false;
+        this.isLoadingPapers = false;
+      },
+      complete: () => {
+        this.isLoadingPapers = false;
+      }
     });
   }
 
@@ -563,8 +563,24 @@ export class ResearchFilterComponent implements OnInit {
     };
   }
 
-  private resetVisiblePapers(): void {
-    this.visiblePaperCount = this.pageSize;
+  private resetAndLoadPapers(): void {
+    this.currentPage = 0;
+    this.totalPaperCount = 0;
+    this.allPapers = [];
+    this.hasMorePapers = false;
+    this.loadNextPage(true);
+  }
+
+  private loadNextPage(reset = false): void {
+    if (this.isLoadingPapers) {
+      return;
+    }
+    if (!reset && !this.hasMorePapers) {
+      return;
+    }
+
+    this.isLoadingPapers = true;
+    this.loadPapersPage(this.currentPage);
   }
 
   private updateViewportState(): void {

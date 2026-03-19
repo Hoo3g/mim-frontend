@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
     },
     RESEARCH: {
         LIST: `${API_CONFIG.PREFIX}/research-papers`,
+        LIST_PAGED: `${API_CONFIG.PREFIX}/research-papers/paged`,
         MY_PAPERS: `${API_CONFIG.PREFIX}/research-papers/my`,
         DETAIL: (id: string) => `${API_CONFIG.PREFIX}/research-papers/${id}`,
         TRACK_VIEW: (id: string) => `${API_CONFIG.PREFIX}/research-papers/${id}/views`,
@@ -23,6 +24,7 @@ export const API_ENDPOINTS = {
     },
     RECRUITMENT: {
         LIST: `${API_CONFIG.PREFIX}/posts`,
+        LIST_PAGED: `${API_CONFIG.PREFIX}/posts/paged`,
         DETAIL: (id: string) => `${API_CONFIG.PREFIX}/posts/${id}`,
         CREATE: `${API_CONFIG.PREFIX}/posts`,
         UPDATE: (id: string) => `${API_CONFIG.PREFIX}/posts/${id}`,
