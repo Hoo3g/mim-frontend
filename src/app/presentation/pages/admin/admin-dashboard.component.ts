@@ -1,11 +1,13 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
 
 import { authSignal } from '../../../core/signals/auth.signal';
+import { adminNotificationSignal } from '../../../core/signals/admin-notification.signal';
 import { AdminModerationService } from '../../../core/services/admin-moderation.service';
+import { AdminNotificationService } from '../../../core/services/admin-notification.service';
 import { AdminContentService } from '../../../core/services/admin-content.service';
 import { ContentService } from '../../../core/services/content.service';
 import { AdminRbacService } from '../../../core/services/admin-rbac.service';
@@ -44,7 +46,57 @@ interface AdminTabConfig {
               <h1 class="text-2xl sm:text-3xl font-black uppercase tracking-tighter mb-2">QUẢN TRỊ VIÊN</h1>
               <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Hệ thống quản trị RBAC & nội dung MIM</p>
             </div>
-            <div class="flex gap-4 mb-1">
+            <div class="flex gap-4 mb-1 items-end">
+              <div class="relative" id="admin-notification-bell">
+                <button (click)="toggleNotificationPanel()"
+                        class="relative p-2 text-gray-400 hover:text-white transition-colors"
+                        title="Thông báo">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <span *ngIf="notificationUnreadCount() > 0"
+                        class="absolute -top-0.5 -right-0.5 min-w-5 h-5 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-black px-1 animate-pulse">
+                    {{ notificationUnreadCount() > 99 ? '99+' : notificationUnreadCount() }}
+                  </span>
+                </button>
+
+                <div *ngIf="isNotificationPanelOpen"
+                     class="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-white border border-gray-200 shadow-xl z-50">
+                  <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <p class="text-[10px] font-black text-gray-700 uppercase tracking-widest">Thông báo</p>
+                    <button *ngIf="notificationUnreadCount() > 0"
+                            (click)="markAllNotificationsRead()"
+                            class="text-[9px] font-bold text-hus-blue uppercase tracking-widest hover:underline">
+                      Đọc tất cả
+                    </button>
+                  </div>
+
+                  <div *ngIf="notifications().length === 0"
+                       class="px-4 py-8 text-center text-[11px] text-gray-400 uppercase tracking-widest">
+                    Chưa có thông báo mới.
+                  </div>
+
+                  <div *ngFor="let notif of notifications()"
+                       (click)="onNotificationClick(notif)"
+                       class="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-blue-50/50 transition-colors"
+                       [class.bg-blue-50/30]="!notif.read">
+                    <div class="flex items-start gap-2">
+                      <span class="mt-0.5 w-2 h-2 rounded-full flex-shrink-0"
+                            [class.bg-hus-blue]="!notif.read"
+                            [class.bg-transparent]="notif.read"></span>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-[10px] font-black text-gray-700 uppercase tracking-widest">
+                          {{ notif.contentType === 'POST' ? 'BÀI TUYỂN DỤNG MỚI' : notif.contentType === 'PAPER' ? 'BÀI NGHIÊN CỨU MỚI' : 'NỘI DUNG MỚI' }}
+                        </p>
+                        <p class="text-[11px] text-gray-800 font-medium mt-0.5 truncate">{{ notif.contentTitle }}</p>
+                        <p class="text-[9px] text-gray-400 mt-1 uppercase tracking-widest">
+                          {{ notif.authorEmail }} · {{ notif.timestamp | date:'HH:mm dd/MM' }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div class="sm:text-right">
                 <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Đang chờ duyệt</p>
                 <p class="text-2xl font-black text-hus-blue">{{ pendingPosts.length + pendingPapers.length }} Item</p>
@@ -708,8 +760,9 @@ interface AdminTabConfig {
   `,
     styles: []
 })
-export class AdminDashboardComponent implements OnInit {
+export class AdminDashboardComponent implements OnInit, OnDestroy {
     private readonly moderationService = inject(AdminModerationService);
+    private readonly notificationService = inject(AdminNotificationService);
     private readonly contentService = inject(ContentService);
     private readonly adminContentService = inject(AdminContentService);
     private readonly adminNewsService = inject(AdminNewsService);
@@ -829,6 +882,11 @@ export class AdminDashboardComponent implements OnInit {
     heroNotice = '';
     rbacNotice = '';
     errorMessage = '';
+    isNotificationPanelOpen = false;
+
+    // Notification signal bindings
+    readonly notifications = adminNotificationSignal.notifications;
+    readonly notificationUnreadCount = adminNotificationSignal.unreadCount;
 
     ngOnInit(): void {
         this.currentTab = this.resolveInitialTab();
@@ -838,6 +896,11 @@ export class AdminDashboardComponent implements OnInit {
         this.loadSpecializations();
         this.loadResearchCategories();
         this.loadRbacData();
+        this.notificationService.connect();
+    }
+
+    ngOnDestroy(): void {
+        this.notificationService.disconnect();
     }
 
     can(permission: string): boolean {
@@ -865,6 +928,29 @@ export class AdminDashboardComponent implements OnInit {
             return this.pendingPapers.length;
         }
         return null;
+    }
+
+    toggleNotificationPanel(): void {
+        this.isNotificationPanelOpen = !this.isNotificationPanelOpen;
+    }
+
+    markAllNotificationsRead(): void {
+        adminNotificationSignal.markAllAsRead();
+    }
+
+    onNotificationClick(notif: { id: string; contentType: string; read: boolean }): void {
+        if (!notif.read) {
+            adminNotificationSignal.markAsRead(notif.id);
+        }
+        this.isNotificationPanelOpen = false;
+        // Navigate to the correct moderation tab
+        if (notif.contentType === 'POST') {
+            this.selectTab('POSTS');
+        } else if (notif.contentType === 'PAPER') {
+            this.selectTab('PAPERS');
+        }
+        // Reload moderation data
+        this.loadPendingModeration();
     }
 
     approvePost(id: string): void {

@@ -70,5 +70,6 @@ export const API_ENDPOINTS = {
         SPECIALIZATION_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/specializations/${id}`,
         NEWS: `${API_CONFIG.PREFIX}/admin/news`,
         NEWS_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/news/${id}`,
+        NOTIFICATIONS_STREAM: `${API_CONFIG.PREFIX}/admin/notifications/stream`,
     },
 } as const;
