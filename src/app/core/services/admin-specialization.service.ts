@@ -5,6 +5,7 @@ import { catchError, map, Observable, of } from 'rxjs';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import { ResearchCategory, UpsertResearchCategoryRequest } from '../models/research-category.model';
+import { unwrapList, unwrapOr } from '../utils/api-response.util';
 
 @Injectable({ providedIn: 'root' })
 export class AdminSpecializationService {
@@ -12,12 +13,7 @@ export class AdminSpecializationService {
 
     getAll(): Observable<ResearchCategory[]> {
         return this.http.get<ApiResponse<ResearchCategory[]>>(API_ENDPOINTS.ADMIN.SPECIALIZATIONS).pipe(
-            map((response) => {
-                if (!response.success || !response.data) {
-                    return [];
-                }
-                return this.normalize(response.data);
-            }),
+            map((response) => this.normalize(unwrapList(response))),
             catchError(() => of([]))
         );
     }
@@ -25,10 +21,8 @@ export class AdminSpecializationService {
     create(payload: UpsertResearchCategoryRequest): Observable<ResearchCategory | null> {
         return this.http.post<ApiResponse<ResearchCategory>>(API_ENDPOINTS.ADMIN.SPECIALIZATIONS, payload).pipe(
             map((response) => {
-                if (!response.success || !response.data) {
-                    return null;
-                }
-                return this.toItem(response.data);
+                const data = unwrapOr(response, null);
+                return data ? this.toItem(data) : null;
             }),
             catchError(() => of(null))
         );
@@ -37,10 +31,8 @@ export class AdminSpecializationService {
     update(specializationId: string, payload: UpsertResearchCategoryRequest): Observable<ResearchCategory | null> {
         return this.http.put<ApiResponse<ResearchCategory>>(API_ENDPOINTS.ADMIN.SPECIALIZATION_DETAIL(specializationId), payload).pipe(
             map((response) => {
-                if (!response.success || !response.data) {
-                    return null;
-                }
-                return this.toItem(response.data);
+                const data = unwrapOr(response, null);
+                return data ? this.toItem(data) : null;
             }),
             catchError(() => of(null))
         );

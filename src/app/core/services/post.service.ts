@@ -8,6 +8,10 @@ import { ApiResponse, PagedResponse } from '../models/api-response.model';
 import { PendingApplicantResponse, PendingApplicationResponse } from '../models/profile.model';
 import { AuthUser, authSignal } from '../signals/auth.signal';
 import { TimedObservableCache } from '../utils/timed-observable-cache.util';
+import { emptyPagedResult, parseDate, unwrap, unwrapList, unwrapPaged } from '../utils/api-response.util';
+import { ApprovalStatus, PostStatus } from '../enums/post-status.enum';
+import { JobType, PostType } from '../enums/post-type.enum';
+import { UI_LABELS } from '../constants/ui-labels.const';
 
 interface ApiResearchPaperLink {
     id?: string;
@@ -35,8 +39,8 @@ interface ApiPostModel {
     displayInfo?: Record<string, unknown>;
     location?: string;
     salaryRange?: string;
-    status?: 'OPEN' | 'CLOSED' | 'DRAFT';
-    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    status?: PostStatus | string;
+    approvalStatus?: ApprovalStatus | string;
     moderationComment?: string;
     createdAt?: string | Date;
     updatedAt?: string | Date;
@@ -149,17 +153,22 @@ export class PostService {
             API_ENDPOINTS.RECRUITMENT.LIST_PAGED,
             { params }
         ).pipe(
-            map((response) => this.unwrapPaged(response, safePage, safeSize)),
+            map((response) => unwrapPaged(response, safePage, safeSize)),
             map((paged) => ({
                 ...paged,
                 content: paged.content.map((item) => this.toPostModel(item))
             })),
-            catchError(() => of(this.emptyPagedResult<Post>(safePage, safeSize)))
+            catchError(() => of(emptyPagedResult<Post>(safePage, safeSize)))
         );
     }
 
-    getMyPosts(authorId: string): Observable<Post[]> {
+    getMyPosts(authorId: string, bypassCache = false): Observable<Post[]> {
         const cacheKey = authorId.trim() || authSignal.user()?.id || 'anonymous';
+        
+        if (bypassCache) {
+            this.myPostsCache.delete(cacheKey);
+        }
+
         const cachedPosts$ = this.myPostsCache.get(cacheKey);
         if (cachedPosts$) {
             return cachedPosts$;
@@ -227,14 +236,14 @@ export class PostService {
             studentCvUrl: this.normalizeNullableText(payload.studentCvUrl),
             researchPaperLinks: this.normalizeResearchPaperLinks(payload.researchPaperLinks),
             displayInfo: this.normalizeDisplayInfo(payload.displayInfo),
-            status: payload.status ?? 'OPEN'
+            status: payload.status ?? PostStatus.OPEN
         };
         const apiPayload = this.toApiPayload(sanitizedPayload);
 
         if (postId) {
             return this.http.put<ApiResponse<ApiPostModel>>(API_ENDPOINTS.RECRUITMENT.UPDATE(postId), apiPayload).pipe(
                 timeout(20000),
-                map((response) => this.toPostModel(this.unwrap(response))),
+                map((response) => this.toPostModel(unwrap(response))),
                 tap(() => this.invalidatePostCaches()),
                 map((post) => this.hydrateSavedPost(post, sanitizedPayload, user, postId))
             );
@@ -242,32 +251,49 @@ export class PostService {
 
         return this.http.post<ApiResponse<ApiPostModel>>(API_ENDPOINTS.RECRUITMENT.CREATE, apiPayload).pipe(
             timeout(20000),
-            map((response) => this.toPostModel(this.unwrap(response))),
+            map((response) => this.toPostModel(unwrap(response))),
             tap(() => this.invalidatePostCaches()),
             map((post) => this.hydrateSavedPost(post, sanitizedPayload, user))
         );
     }
 
+    deleteMyPost(postId: string): Observable<boolean> {
+        return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.RECRUITMENT.DETAIL(postId)).pipe(
+            timeout(15000),
+            map((response) => Boolean(response.success)),
+            tap((success) => {
+                if (success) {
+                    this.invalidatePostCaches();
+                }
+            }),
+            catchError(() => of(false))
+        );
+    }
+
     applyToPost(postId: string, payload: ApplyPayload): Observable<ApiApplyResponse> {
         return this.http.post<ApiResponse<ApiApplyResponse>>(API_ENDPOINTS.RECRUITMENT.APPLY(postId), payload).pipe(
-            map((response) => this.unwrap(response))
+            map((response) => unwrap(response))
         );
     }
 
     getMyPendingApplications(): Observable<PendingApplicationResponse[]> {
+        const params = new HttpParams().set('status', ApprovalStatus.PENDING);
         return this.http.get<ApiResponse<ApiPendingApplication[]>>(
-            `${API_ENDPOINTS.RECRUITMENT.APPLICATIONS_MY}?status=PENDING`
+            API_ENDPOINTS.RECRUITMENT.APPLICATIONS_MY,
+            { params }
         ).pipe(
-            map((response) => this.unwrapList(response).map((item) => this.toPendingApplication(item))),
+            map((response) => unwrapList(response).map((item) => this.toPendingApplication(item))),
             catchError(() => of([]))
         );
     }
 
     getReceivedPendingApplications(): Observable<PendingApplicantResponse[]> {
+        const params = new HttpParams().set('status', ApprovalStatus.PENDING);
         return this.http.get<ApiResponse<ApiPendingApplicant[]>>(
-            `${API_ENDPOINTS.RECRUITMENT.APPLICATIONS_RECEIVED}?status=PENDING`
+            API_ENDPOINTS.RECRUITMENT.APPLICATIONS_RECEIVED,
+            { params }
         ).pipe(
-            map((response) => this.unwrapList(response).map((item) => this.toPendingApplicant(item))),
+            map((response) => unwrapList(response).map((item) => this.toPendingApplicant(item))),
             catchError(() => of([]))
         );
     }
@@ -356,15 +382,15 @@ export class PostService {
         return {
             id: item.id,
             authorId: item.authorId ?? '',
-            authorName: item.authorName ?? 'Unknown',
+            authorName: item.authorName ?? UI_LABELS.UNKNOWN_AUTHOR,
             authorAvatarUrl: item.authorAvatarUrl,
-            title: item.title ?? 'Untitled',
+            title: item.title ?? UI_LABELS.UNTITLED,
             description: item.description ?? '',
             requirements: item.requirements,
             achievements: item.achievements,
             benefits: item.benefits,
-            postType: (item.postType ?? 'COMPANY_RECRUITING_JOB') as Post['postType'],
-            jobType: (item.jobType ?? 'FULL_TIME') as Post['jobType'],
+            postType: (item.postType ?? PostType.COMPANY_RECRUITING_JOB) as Post['postType'],
+            jobType: (item.jobType ?? JobType.FULL_TIME) as Post['jobType'],
             tags: item.tags ?? [],
             studentCvUrl: item.studentCvUrl,
             contactEmail: item.contactEmail,
@@ -377,11 +403,11 @@ export class PostService {
             displayInfo: item.displayInfo,
             location: item.location,
             salaryRange: item.salaryRange,
-            status: item.status ?? 'OPEN',
-            approvalStatus: item.approvalStatus,
+            status: (item.status ?? PostStatus.OPEN) as PostStatus,
+            approvalStatus: item.approvalStatus as ApprovalStatus | undefined,
             moderationComment: item.moderationComment,
-            createdAt: this.toDate(item.createdAt, defaultCreatedAt),
-            updatedAt: this.toDate(item.updatedAt, defaultCreatedAt)
+            createdAt: parseDate(item.createdAt, defaultCreatedAt),
+            updatedAt: parseDate(item.updatedAt, defaultCreatedAt)
         };
     }
 
@@ -413,8 +439,8 @@ export class PostService {
             salaryRange: payload.salaryRange,
             contactEmail: payload.contactEmail ?? user.email,
             contactPhone: payload.contactPhone,
-            status: payload.status ?? post.status ?? 'OPEN',
-            approvalStatus: post.approvalStatus ?? 'PENDING',
+            status: payload.status ?? post.status ?? PostStatus.OPEN,
+            approvalStatus: post.approvalStatus ?? ApprovalStatus.PENDING,
             createdAt: post.createdAt ?? now,
             updatedAt: post.updatedAt ?? now
         };
@@ -453,7 +479,7 @@ export class PostService {
             const id = (item?.id ?? '').trim();
             const title = (item?.title ?? '').trim();
             const url = (item?.url ?? '').trim();
-            if (!id || !title || !url) {
+            if (!id) {
                 return;
             }
             dedup.set(id, { id, title, url });
@@ -550,7 +576,7 @@ export class PostService {
             companyName: item.companyName ?? '',
             postType: item.postType ?? '',
             location: item.location ?? '',
-            status: item.status ?? 'PENDING',
+            status: item.status ?? ApprovalStatus.PENDING,
             appliedAt: this.toIsoDate(item.appliedAt)
         };
     }

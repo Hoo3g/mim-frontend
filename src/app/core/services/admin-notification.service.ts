@@ -1,7 +1,10 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, NgZone, inject } from '@angular/core';
+import { Subscription, forkJoin, timer } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { adminNotificationSignal } from '../signals/admin-notification.signal';
 import { authSignal } from '../signals/auth.signal';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
+import { AdminModerationService } from './admin-moderation.service';
 
 /**
  * Manages SSE connection for real-time admin notifications.
@@ -9,11 +12,15 @@ import { API_ENDPOINTS } from '../config/api-endpoints.config';
  */
 @Injectable({ providedIn: 'root' })
 export class AdminNotificationService implements OnDestroy {
+    private readonly zone = inject(NgZone);
+    private readonly adminModerationService = inject(AdminModerationService);
     private eventSource: EventSource | null = null;
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    private syncSubscription?: Subscription;
     private reconnectDelayMs = 3000;
     private maxReconnectDelayMs = 30000;
     private isConnecting = false;
+    private static readonly SYNC_INTERVAL_MS = 30_000;
 
     /**
      * Start listening for SSE notifications.
@@ -21,6 +28,7 @@ export class AdminNotificationService implements OnDestroy {
      */
     connect(): void {
         if (this.eventSource || this.isConnecting) {
+            this.startPendingQueueSync();
             return;
         }
 
@@ -30,6 +38,7 @@ export class AdminNotificationService implements OnDestroy {
         }
 
         this.isConnecting = true;
+        this.startPendingQueueSync();
         const url = `${API_ENDPOINTS.ADMIN.NOTIFICATIONS_STREAM}?token=${encodeURIComponent(token)}`;
 
         try {
@@ -46,17 +55,20 @@ export class AdminNotificationService implements OnDestroy {
         });
 
         this.eventSource.addEventListener('pending-content', (event: MessageEvent) => {
-            try {
-                const data = JSON.parse(event.data);
-                adminNotificationSignal.addNotification({
-                    contentType: data.contentType || 'UNKNOWN',
-                    contentTitle: data.contentTitle || '',
-                    authorEmail: data.authorEmail || '',
-                    timestamp: data.timestamp || Date.now(),
-                });
-            } catch {
-                // Ignore malformed events
-            }
+            this.zone.run(() => {
+                try {
+                    const data = JSON.parse(event.data);
+                    adminNotificationSignal.upsertNotification({
+                        contentId: data.contentId || '',
+                        contentType: data.contentType || 'UNKNOWN',
+                        contentTitle: data.contentTitle || '',
+                        authorLabel: data.authorEmail || '',
+                        timestamp: data.timestamp || Date.now(),
+                    });
+                } catch {
+                    // Ignore malformed events
+                }
+            });
         });
 
         this.eventSource.onerror = () => {
@@ -76,6 +88,8 @@ export class AdminNotificationService implements OnDestroy {
         }
         this.isConnecting = false;
         this.cancelReconnect();
+        this.syncSubscription?.unsubscribe();
+        this.syncSubscription = undefined;
     }
 
     ngOnDestroy(): void {
@@ -103,5 +117,42 @@ export class AdminNotificationService implements OnDestroy {
             clearTimeout(this.reconnectTimer);
             this.reconnectTimer = null;
         }
+    }
+
+    private startPendingQueueSync(): void {
+        if (this.syncSubscription) {
+            return;
+        }
+
+        this.syncSubscription = timer(0, AdminNotificationService.SYNC_INTERVAL_MS)
+            .subscribe(() => this.syncPendingQueue());
+    }
+
+    private syncPendingQueue(): void {
+        if (!authSignal.isAuth() || !authSignal.canAccessAdmin()) {
+            return;
+        }
+
+        forkJoin({
+            posts: this.adminModerationService.getPosts().pipe(take(1)),
+            papers: this.adminModerationService.getPapers().pipe(take(1))
+        }).subscribe(({ posts, papers }) => {
+            adminNotificationSignal.syncPendingQueue([
+                ...posts.map((item) => ({
+                    contentId: item.id,
+                    contentType: 'POST',
+                    contentTitle: item.title || 'Bài tuyển dụng',
+                    authorLabel: item.authorName || 'Người dùng',
+                    timestamp: item.createdAt ? Date.parse(item.createdAt) || Date.now() : Date.now()
+                })),
+                ...papers.map((item) => ({
+                    contentId: item.id,
+                    contentType: 'PAPER',
+                    contentTitle: item.title || 'Bài nghiên cứu',
+                    authorLabel: item.authorName || 'Người dùng',
+                    timestamp: item.createdAt ? Date.parse(item.createdAt) || Date.now() : Date.now()
+                }))
+            ]);
+        });
     }
 }

@@ -5,33 +5,25 @@ import { catchError, map, Observable, of } from 'rxjs';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import { ModerationActionRequest, ModerationPaperItem, ModerationPostItem } from '../models/admin-moderation.model';
+import { unwrapList } from '../utils/api-response.util';
+import { ApprovalStatus } from '../enums/post-status.enum';
 
 @Injectable({ providedIn: 'root' })
 export class AdminModerationService {
     private readonly http = inject(HttpClient);
 
-    getPosts(status: 'PENDING' | 'APPROVED' | 'REJECTED' = 'PENDING'): Observable<ModerationPostItem[]> {
+    getPosts(status: ApprovalStatus = ApprovalStatus.PENDING): Observable<ModerationPostItem[]> {
         const params = new HttpParams().set('status', status);
         return this.http.get<ApiResponse<ModerationPostItem[]>>(API_ENDPOINTS.ADMIN.MODERATION_POSTS, { params }).pipe(
-            map((response) => {
-                if (!response.success || !response.data) {
-                    return [];
-                }
-                return response.data;
-            }),
+            map((response) => unwrapList(response)),
             catchError(() => of([]))
         );
     }
 
-    getPapers(status: 'PENDING' | 'APPROVED' | 'REJECTED' = 'PENDING'): Observable<ModerationPaperItem[]> {
+    getPapers(status: ApprovalStatus = ApprovalStatus.PENDING): Observable<ModerationPaperItem[]> {
         const params = new HttpParams().set('status', status);
         return this.http.get<ApiResponse<ModerationPaperItem[]>>(API_ENDPOINTS.ADMIN.MODERATION_PAPERS, { params }).pipe(
-            map((response) => {
-                if (!response.success || !response.data) {
-                    return [];
-                }
-                return response.data;
-            }),
+            map((response) => unwrapList(response)),
             catchError(() => of([]))
         );
     }
@@ -54,7 +46,7 @@ export class AdminModerationService {
 
     private moderatePost(id: string, payload: ModerationActionRequest): Observable<boolean> {
         return this.http
-            .patch<ApiResponse<null>>(API_ENDPOINTS.ADMIN.MODERATION_POSTS + `/${id}`, payload)
+            .patch<ApiResponse<null>>(API_ENDPOINTS.ADMIN.MODERATION_POST_DETAIL(id), payload)
             .pipe(
                 map((response) => response.success),
                 catchError(() => of(false))
@@ -63,7 +55,7 @@ export class AdminModerationService {
 
     private moderatePaper(id: string, payload: ModerationActionRequest): Observable<boolean> {
         return this.http
-            .patch<ApiResponse<null>>(API_ENDPOINTS.ADMIN.MODERATION_PAPERS + `/${id}`, payload)
+            .patch<ApiResponse<null>>(API_ENDPOINTS.ADMIN.MODERATION_PAPER_DETAIL(id), payload)
             .pipe(
                 map((response) => response.success),
                 catchError(() => of(false))

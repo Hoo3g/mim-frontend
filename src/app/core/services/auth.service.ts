@@ -17,6 +17,7 @@ import { authSignal } from '../signals/auth.signal';
 import { Role } from '../enums/role.enum';
 import { ROUTES } from '../constants/route.const';
 import { ProfileMeResponse } from '../models/profile.model';
+import { unwrap } from '../utils/api-response.util';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -25,14 +26,14 @@ export class AuthService {
 
     login(request: LoginRequest): Observable<AuthResponse> {
         return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.LOGIN, request, { withCredentials: true }).pipe(
-            map((response) => this.unwrap(response)),
+            map((response) => unwrap(response)),
             map((auth) => this.persistAuth(auth))
         );
     }
 
     register(request: RegisterRequest): Observable<AuthApiUser> {
         return this.http.post<ApiResponse<AuthApiUser>>(API_ENDPOINTS.AUTH.REGISTER, request, { withCredentials: true }).pipe(
-            map((response) => this.unwrap(response))
+            map((response) => unwrap(response))
         );
     }
 
@@ -40,14 +41,14 @@ export class AuthService {
         const payload: GoogleLoginRequest = { idToken, userType };
 
         return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, payload, { withCredentials: true }).pipe(
-            map((response) => this.unwrap(response)),
+            map((response) => unwrap(response)),
             map((auth) => this.persistAuth(auth))
         );
     }
 
     refreshToken(): Observable<AuthResponse> {
         return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.REFRESH, {}, { withCredentials: true }).pipe(
-            map((response) => this.unwrap(response)),
+            map((response) => unwrap(response)),
             map((auth) => this.persistAuth(auth))
         );
     }
@@ -67,20 +68,10 @@ export class AuthService {
         );
     }
 
-    private unwrap<T>(response: ApiResponse<T>): T {
-        if (!response.success || response.data === null) {
-            throw new Error(response.message || 'Request failed');
-        }
-        return response.data;
-    }
 
     private persistAuth(auth: AuthResponse): AuthResponse {
         const roles = Array.isArray(auth.user.roles) ? auth.user.roles : [];
-        const permissions = Array.isArray(auth.user.permissions)
-            ? [...new Set(auth.user.permissions
-                .map((permission) => (permission ?? '').toString().trim().toUpperCase())
-                .filter((permission) => !!permission))]
-            : [];
+        const permissions = this.normalizePermissions(auth.user.permissions);
         const primaryRole = this.pickRole(roles);
         const fullName = this.buildDisplayName(auth.user.email, auth.user.fullName ?? undefined);
 
@@ -97,7 +88,7 @@ export class AuthService {
             auth.accessToken
         );
 
-        this.syncProfileFromBackend();
+        this.syncProfileFromBackend().subscribe();
         return auth;
     }
 
@@ -120,26 +111,25 @@ export class AuthService {
         return Role.STUDENT;
     }
 
-    syncProfileFromBackend(): void {
+    syncProfileFromBackend(): Observable<ProfileMeResponse | null> {
         if (!authSignal.isAuth() || !authSignal.token()) {
-            return;
+            return of(null);
         }
 
-        this.http.get<ApiResponse<ProfileMeResponse>>(API_ENDPOINTS.PROFILE.ME).pipe(
-            map((response) => this.unwrap(response)),
+        return this.http.get<ApiResponse<ProfileMeResponse>>(API_ENDPOINTS.PROFILE.ME).pipe(
+            map((response) => unwrap(response)),
+            map((profile) => {
+                authSignal.updateUserInfo({
+                    fullName: this.buildDisplayNameFromProfile(profile),
+                    avatarUrl: profile.avatarUrl ?? undefined,
+                    role: profile.role ?? undefined,
+                    accountStatus: profile.accountStatus ?? undefined,
+                    permissions: this.normalizePermissions(profile.permissions)
+                });
+                return profile;
+            }),
             catchError(() => of(null))
-        ).subscribe((profile) => {
-            if (!profile) {
-                return;
-            }
-
-            authSignal.updateUserInfo({
-                fullName: this.buildDisplayNameFromProfile(profile),
-                avatarUrl: profile.avatarUrl ?? undefined,
-                role: profile.role ?? undefined,
-                accountStatus: profile.accountStatus ?? undefined
-            });
-        });
+        );
     }
 
     verifyEmail(token: string): Observable<AuthApiUser> {
@@ -148,7 +138,7 @@ export class AuthService {
             { token },
             { withCredentials: true }
         ).pipe(
-            map((response) => this.unwrap(response)),
+            map((response) => unwrap(response)),
             map((user) => {
                 if (authSignal.isAuth()) {
                     authSignal.updateUserInfo({ accountStatus: user.status });
@@ -179,17 +169,17 @@ export class AuthService {
     private buildDisplayNameFromProfile(profile: ProfileMeResponse): string {
         const emailFallback = profile.email?.split('@')[0] || profile.email || 'User';
 
-        if (profile.role === 'COMPANY') {
+        if (profile.role === Role.COMPANY) {
             const companyName = profile.company?.name?.trim();
             return companyName || emailFallback;
         }
 
-        if (profile.role === 'STUDENT') {
+        if (profile.role === Role.STUDENT) {
             const fullName = `${profile.student?.firstName || ''} ${profile.student?.lastName || ''}`.trim();
             return fullName || emailFallback;
         }
 
-        if (profile.role === 'LECTURER') {
+        if (profile.role === Role.LECTURER) {
             const fullName = `${profile.lecturer?.firstName || ''} ${profile.lecturer?.lastName || ''}`.trim();
             return fullName || emailFallback;
         }
@@ -202,5 +192,17 @@ export class AuthService {
         if (normalized === 'PENDING') return 'PENDING';
         if (normalized === 'BLOCKED') return 'BLOCKED';
         return 'APPROVED';
+    }
+
+    private normalizePermissions(permissions?: readonly unknown[] | null): string[] {
+        if (!Array.isArray(permissions)) {
+            return [];
+        }
+
+        return [...new Set(
+            permissions
+                .map((permission) => String(permission ?? '').trim().toUpperCase())
+                .filter((permission) => !!permission)
+        )].sort();
     }
 }

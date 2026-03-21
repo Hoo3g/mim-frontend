@@ -59,6 +59,8 @@ export const API_ENDPOINTS = {
         MODERATION: `${API_CONFIG.PREFIX}/admin/moderation`,
         MODERATION_POSTS: `${API_CONFIG.PREFIX}/admin/moderation/posts`,
         MODERATION_PAPERS: `${API_CONFIG.PREFIX}/admin/moderation/papers`,
+        MODERATION_POST_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/moderation/posts/${id}`,
+        MODERATION_PAPER_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/moderation/papers/${id}`,
         CONTENT_RESEARCH_HERO: `${API_CONFIG.PREFIX}/admin/content/research-hero`,
         RBAC_PERMISSIONS: `${API_CONFIG.PREFIX}/admin/rbac/permissions`,
         RBAC_ROLES: `${API_CONFIG.PREFIX}/admin/rbac/roles`,

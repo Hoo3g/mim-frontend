@@ -18,38 +18,44 @@ import { HttpErrorResponse } from '@angular/common/http';
       <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" (click)="handleClose()"></div>
 
       <!-- Modal Content -->
-      <div class="relative w-full max-w-4xl bg-white shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] sm:max-h-[90vh] animate-in fade-in zoom-in duration-300">
+      <div class="relative w-full max-w-[1180px] bg-white shadow-2xl overflow-y-auto md:overflow-hidden overscroll-contain flex flex-col md:flex-row max-h-[95vh] sm:max-h-[90vh] md:h-[90vh] animate-in fade-in zoom-in duration-300">
         
         <!-- Left: Visual/Identity (Mobile: Top) -->
-        <div class="w-full md:w-80 bg-gray-50 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-100 p-5 sm:p-8 flex flex-col items-center text-center">
-          <div class="relative mb-6">
-            <div class="w-24 h-24 sm:w-32 sm:h-32 bg-white border-4 border-white shadow-xl overflow-hidden">
+        <div class="hidden md:block w-full md:w-[280px] lg:w-[300px] bg-gray-50 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-100 p-4 sm:p-7">
+          <div class="flex items-start gap-4 md:flex-col md:items-center md:text-center">
+            <div class="relative flex-shrink-0">
+              <div class="w-20 h-20 sm:w-28 sm:h-28 bg-white border-4 border-white shadow-xl overflow-hidden">
               <img *ngIf="post.authorAvatarUrl" [src]="post.authorAvatarUrl" [alt]="post.authorName" class="w-full h-full object-cover">
               <div *ngIf="!post.authorAvatarUrl" class="w-full h-full flex items-center justify-center bg-gray-100 text-3xl font-black text-hus-blue/30 uppercase">
                 {{ post.authorName.charAt(0) }}
               </div>
+              </div>
+              <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-white shadow-lg flex items-center justify-center border border-gray-100">
+                <div class="w-4 h-4" [ngClass]="post.postType.includes('COMPANY') ? 'bg-hus-blue' : 'bg-green-500'"></div>
+              </div>
             </div>
-            <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-white shadow-lg flex items-center justify-center border border-gray-100">
-              <div class="w-4 h-4" [ngClass]="post.postType.includes('COMPANY') ? 'bg-hus-blue' : 'bg-green-500'"></div>
+
+            <div class="min-w-0 flex-1 pt-1 md:flex-none md:w-full md:pt-0">
+              <h2 class="text-lg sm:text-lg font-black text-gray-900 leading-tight break-words [overflow-wrap:anywhere] md:mt-0">
+                {{ post.authorName }}
+              </h2>
+              <span class="mt-3 inline-flex text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1"
+                    [ngClass]="post.postType.includes('COMPANY') ? 'bg-blue-50 text-hus-blue' : 'bg-green-50 text-green-600'">
+                {{ post.postType.includes('COMPANY') ? 'Đối tác doanh nghiệp' : 'Ứng viên tiềm năng' }}
+              </span>
             </div>
           </div>
 
-          <h2 class="text-lg sm:text-xl font-black text-gray-900 leading-tight mb-2">{{ post.authorName }}</h2>
-          <span class="text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 mb-6"
-                [ngClass]="post.postType.includes('COMPANY') ? 'bg-blue-50 text-hus-blue' : 'bg-green-50 text-green-600'">
-            {{ post.postType.includes('COMPANY') ? 'Đối tác doanh nghiệp' : 'Ứng viên tiềm năng' }}
-          </span>
-
-          <div class="w-full space-y-4 text-left pt-6 border-t border-gray-200">
+          <div class="w-full space-y-4 text-left pt-5 border-t border-gray-200">
             <div class="flex items-center gap-3 text-xs">
               <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-hus-blue flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
-              <div class="overflow-hidden">
+              <div class="overflow-hidden min-w-0">
                 <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Email</p>
-                <p class="font-bold text-gray-900 truncate">{{ post.contactEmail || 'N/A' }}</p>
+                <p class="font-bold text-gray-900 break-all">{{ post.contactEmail || 'N/A' }}</p>
               </div>
             </div>
 
@@ -74,18 +80,28 @@ import { HttpErrorResponse } from '@angular/common/http';
               </div>
               <div>
                 <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Địa điểm</p>
-                <p class="font-bold text-gray-900">{{ post.location }}</p>
+                <p class="font-bold text-gray-900">{{ post.location || 'N/A' }}</p>
               </div>
             </div>
+          </div>
+
+          <div *ngIf="showActions" class="hidden md:flex w-full mt-6 md:mt-auto pt-5 border-t border-gray-200 gap-3 justify-center">
+            <button (click)="handlePrimaryAction()"
+                    class="inline-flex items-center justify-center min-h-[38px] px-4 sm:px-5 bg-gray-900 text-white text-[8px] font-black uppercase tracking-[0.08em] leading-tight hover:bg-hus-blue transition-all duration-300 transform active:scale-95 shadow-md shadow-gray-900/10">
+              {{ post.postType.includes('COMPANY') ? (isAuth() ? 'Ứng tuyển ngay' : 'Đăng nhập để ứng tuyển') : 'Liên hệ' }}
+            </button>
+            <button class="inline-flex items-center justify-center min-h-[38px] px-4 sm:px-5 bg-white border border-gray-200 text-gray-500 text-[8px] font-black uppercase tracking-[0.08em] leading-tight hover:border-hus-blue hover:text-hus-blue transition-all duration-300">
+              Lưu tin
+            </button>
           </div>
         </div>
 
         <!-- Right: Details (Scrollable) -->
-        <div class="flex-grow flex flex-col min-w-0">
+        <div class="flex-grow flex flex-col min-w-0 md:min-h-0 md:h-full">
           <!-- Header -->
           <div class="p-5 sm:p-8 border-b border-gray-100 flex justify-between items-start gap-3">
             <div class="pr-0 sm:pr-8 min-w-0">
-              <div class="flex items-center gap-2 mb-2">
+              <div class="flex flex-wrap items-center gap-2 mb-2">
                 <span class="px-2 py-0.5 bg-gray-900 text-white text-[9px] font-black uppercase tracking-widest">
                   {{ post.jobType }}
                 </span>
@@ -93,22 +109,25 @@ import { HttpErrorResponse } from '@angular/common/http';
                   Đăng ngày {{ post.createdAt | date:'dd.MM.yyyy' }}
                 </span>
               </div>
-              <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight uppercase tracking-tighter">{{ post.title }}</h1>
+              <h1 class="text-lg sm:text-2xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
+                {{ post.title }}
+              </h1>
             </div>
-            <button (click)="handleClose()" class="p-2 hover:bg-gray-100 transition-colors flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l18 18" />
+            <button (click)="handleClose()"
+                    class="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center flex-shrink-0 text-gray-400 hover:text-gray-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
           <!-- Body -->
-          <div class="flex-grow overflow-y-auto p-5 sm:p-8 space-y-8 sm:space-y-10 custom-scrollbar">
+          <div class="flex-grow min-h-0 overflow-visible md:overflow-y-auto p-5 sm:p-8 space-y-8 sm:space-y-10 custom-scrollbar">
             <!-- Description -->
             <section>
-              <h3 class="text-[10px] font-black text-hus-blue uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <h3 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-4 flex items-center gap-2">
                 <span class="w-1.5 h-1.5 bg-hus-blue"></span>
-                Giới thiệu chi tiết
+                Giới thiệu
               </h3>
               <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-600 leading-relaxed whitespace-pre-line font-medium">
                 {{ post.description }}
@@ -116,7 +135,7 @@ import { HttpErrorResponse } from '@angular/common/http';
             </section>
 
             <section *ngIf="!post.postType.includes('COMPANY')" class="space-y-6">
-              <h3 class="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <h3 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
                 <span class="w-1.5 h-1.5 bg-gray-900"></span>
                 Thông tin hồ sơ sinh viên
               </h3>
@@ -140,30 +159,21 @@ import { HttpErrorResponse } from '@angular/common/http';
               </div>
 
               <div>
-                <h4 class="text-[10px] font-black text-gray-900 uppercase tracking-[0.18em] mb-3">Giới thiệu</h4>
-                <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
-                  {{ studentInfoValue('studentBio') }}
-                </p>
-              </div>
-
-              <div>
-                <h4 class="text-[10px] font-black text-hus-blue uppercase tracking-[0.18em] mb-3">Thành tích</h4>
+                <h4 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-3 flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-hus-blue"></span>
+                  Thành tích & Project
+                </h4>
                 <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
                   {{ studentInfoValue('studentAchievements') }}
                 </p>
               </div>
 
-              <div>
-                <h4 class="text-[10px] font-black text-gray-900 uppercase tracking-[0.18em] mb-3">Mong muốn nghề nghiệp</h4>
-                <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
-                  {{ studentInfoValue('studentCareerGoal') }}
-                </p>
-              </div>
+              
             </section>
 
             <!-- Requirements (Company) -->
             <section *ngIf="post.postType.includes('COMPANY') && post.requirements">
-              <h3 class="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <h3 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
                 <span class="w-1.5 h-1.5 bg-gray-900"></span>
                 Yêu cầu & Kỹ năng
               </h3>
@@ -176,7 +186,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 
             <!-- Student Documents & Research -->
             <section *ngIf="!post.postType.includes('COMPANY') && (post.studentCvUrl || (post.researchPaperLinks && post.researchPaperLinks.length > 0))">
-              <h3 class="text-[10px] font-black text-hus-blue uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <h3 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-4 flex items-center gap-2">
                 <span class="w-1.5 h-1.5 bg-hus-blue"></span>
                 Hồ sơ & Nghiên cứu
               </h3>
@@ -192,8 +202,8 @@ import { HttpErrorResponse } from '@angular/common/http';
                       </svg>
                     </div>
                     <div>
-                      <p class="text-[10px] font-black text-gray-900 uppercase tracking-tight">Curriculum Vitae</p>
-                      <p class="text-[9px] font-medium text-gray-500">Bản đầy đủ (PDF)</p>
+                      <p class="text-[10px] font-black text-gray-900 uppercase tracking-tight">CV cá nhân</p>
+                      <p class="text-[9px] font-medium text-gray-500">File (PDF)</p>
                     </div>
                   </div>
                   <div class="text-[9px] font-black text-hus-blue uppercase tracking-widest">Xem hồ sơ</div>
@@ -212,7 +222,7 @@ import { HttpErrorResponse } from '@angular/common/http';
                       </div>
                       <div class="min-w-0 pr-4">
                         <p class="text-[10px] font-black text-gray-900 uppercase tracking-tight truncate">{{ paper.title }}</p>
-                        <p class="text-[9px] font-medium text-gray-500 uppercase tracking-widest">Ấn phẩm khoa học</p>
+                        <p class="text-[9px] font-medium text-gray-500 uppercase tracking-widest">Bài viết khoa học</p>
                       </div>
                     </div>
                     <div class="text-[9px] font-black text-gray-900 uppercase tracking-widest">Xem bài báo</div>
@@ -223,7 +233,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 
             <!-- Tags -->
             <section *ngIf="post.tags && post.tags.length > 0">
-              <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Lĩnh vực & Kỹ năng</h3>
+              <h3 class="text-sm sm:text-base font-extrabold text-gray-500 tracking-tight mb-4">Lĩnh vực & Kỹ năng</h3>
               <div class="flex flex-wrap gap-2">
                 <span *ngFor="let tag of post.tags" class="px-3 py-1 bg-white border border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                   #{{ tag }}
@@ -233,7 +243,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 
             <!-- Benefits (If Company) -->
             <section *ngIf="post.benefits">
-              <h3 class="text-[10px] font-black text-hus-blue uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <h3 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-4 flex items-center gap-2">
                 <span class="w-1.5 h-1.5 bg-hus-blue"></span>
                 Quyền lợi hấp dẫn
               </h3>
@@ -243,7 +253,7 @@ import { HttpErrorResponse } from '@angular/common/http';
             </section>
           </div>
 
-          <div *ngIf="post.postType.includes('COMPANY') && isAuth()" class="px-5 sm:px-8 pt-5 sm:pt-6 bg-gray-50/50 border-t border-gray-100">
+          <div *ngIf="showActions && post.postType.includes('COMPANY') && isAuth()" class="px-5 sm:px-8 pt-5 sm:pt-6 bg-gray-50/50 border-t border-gray-100">
             <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
               Lời nhắn ứng tuyển (tuỳ chọn)
             </label>
@@ -264,16 +274,16 @@ import { HttpErrorResponse } from '@angular/common/http';
             </a>
           </div>
 
-          <!-- Footer Actions -->
-          <div class="p-5 sm:p-8 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div *ngIf="showActions" class="md:hidden p-4 border-t border-gray-100 bg-gray-50/70 flex flex-wrap justify-center gap-3">
             <button (click)="handlePrimaryAction()"
-                    class="flex-grow py-4 bg-gray-900 text-white text-[11px] font-black uppercase tracking-widest hover:bg-hus-blue transition-all duration-300 transform active:scale-95 shadow-lg shadow-gray-900/10">
-              {{ post.postType.includes('COMPANY') ? (isAuth() ? 'Ứng tuyển ngay' : 'Đăng nhập để ứng tuyển') : 'Liên hệ hợp tác' }}
+                    class="inline-flex items-center justify-center min-h-[38px] px-4 bg-gray-900 text-white text-[8px] font-black uppercase tracking-[0.08em] leading-tight hover:bg-hus-blue transition-all duration-300 transform active:scale-95 shadow-md shadow-gray-900/10">
+              {{ post.postType.includes('COMPANY') ? (isAuth() ? 'Ứng tuyển ngay' : 'Đăng nhập để ứng tuyển') : 'Liên hệ' }}
             </button>
-            <button class="px-6 py-4 bg-white border border-gray-200 text-gray-500 text-[11px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-all duration-300">
+            <button class="inline-flex items-center justify-center min-h-[38px] px-4 bg-white border border-gray-200 text-gray-500 text-[8px] font-black uppercase tracking-[0.08em] leading-tight hover:border-hus-blue hover:text-hus-blue transition-all duration-300">
               Lưu tin
             </button>
           </div>
+
         </div>
       </div>
 
@@ -333,6 +343,7 @@ export class PostDetailComponent {
     private postService = inject(PostService);
 
     @Input({ required: true }) post!: Post;
+    @Input() showActions = true;
     @Output() close = new EventEmitter<void>();
 
     isAuth = authSignal.isAuth;

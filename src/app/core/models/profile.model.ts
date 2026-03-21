@@ -39,6 +39,7 @@ export interface ProfileMeResponse {
     role: ProfileRole;
     accountStatus?: string | null;
     avatarUrl?: string | null;
+    permissions?: string[] | null;
     student?: StudentProfileData | null;
     company?: CompanyProfileData | null;
     lecturer?: LecturerProfileData | null;

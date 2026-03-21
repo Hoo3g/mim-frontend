@@ -7,4 +7,5 @@ export enum ApprovalStatus {
 export enum PostStatus {
     OPEN = 'OPEN',
     CLOSED = 'CLOSED',
+    DRAFT = 'DRAFT',
 }

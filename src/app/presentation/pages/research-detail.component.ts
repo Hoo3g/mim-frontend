@@ -26,7 +26,7 @@ interface PaperDetailState {
         <app-loading-spinner [size]="54"></app-loading-spinner>
       </div>
 
-      <div *ngIf="state.status === 'not-found'" class="min-h-screen bg-white flex items-center justify-center px-6">
+      <div *ngIf="state.status === 'not-found'" class="min-h-screen bg-white flex items-start justify-center px-6 pt-16 sm:pt-24">
         <div class="max-w-xl text-center space-y-5">
           <p class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-400">
             Không tải được bài nghiên cứu

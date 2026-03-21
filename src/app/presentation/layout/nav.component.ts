@@ -1,9 +1,26 @@
-import { Component, HostListener, ElementRef, OnInit, inject } from '@angular/core';
+import { Component, HostListener, ElementRef, OnDestroy, OnInit, effect, inject } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { authSignal } from '../../core/signals/auth.signal';
 import { AuthService } from '../../core/services/auth.service';
 import { ROUTES } from '../../core/constants/route.const';
+import { AdminNotificationService } from '../../core/services/admin-notification.service';
+import { adminNotificationSignal } from '../../core/signals/admin-notification.signal';
+import { userNotificationSignal } from '../../core/signals/user-notification.signal';
+import { UserModerationNotificationService } from '../../core/services/user-moderation-notification.service';
+
+interface HeaderNotificationItem {
+  id: string;
+  read: boolean;
+  title: string;
+  message: string;
+  timestamp: number;
+  accentLabel: string;
+  meta: string;
+  route: string;
+  adminTab?: 'POSTS' | 'PAPERS';
+  isAdminNotification: boolean;
+}
 
 @Component({
   selector: 'app-nav',
@@ -63,6 +80,61 @@ import { ROUTES } from '../../core/constants/route.const';
               </a>
             </ng-container>
 
+            <div *ngIf="isAuth()" class="relative">
+              <button type="button"
+                      (click)="toggleNotificationPanel($event)"
+                      class="relative inline-flex items-center justify-center p-1 text-gray-500 hover:text-hus-blue transition-colors"
+                      title="Thông báo">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span *ngIf="notificationUnreadCount() > 0"
+                      class="absolute -top-1.5 -right-1 min-w-4 h-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[8px] font-black px-1">
+                  {{ notificationUnreadCount() > 99 ? '99+' : notificationUnreadCount() }}
+                </span>
+              </button>
+
+              <div *ngIf="showNotificationPanel"
+                   class="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white border border-gray-200 shadow-2xl py-2 z-[70]">
+                <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                  <p class="text-[10px] font-black text-gray-700 uppercase tracking-widest">{{ notificationPanelTitle() }}</p>
+                  <button *ngIf="notificationUnreadCount() > 0"
+                          (click)="markAllNotificationsRead()"
+                          class="text-[9px] font-bold text-hus-blue uppercase tracking-widest hover:underline">
+                    Đọc tất cả
+                  </button>
+                </div>
+
+                <div class="max-h-[70vh] overflow-y-auto overscroll-contain">
+                  <div *ngIf="headerNotifications().length === 0"
+                       class="px-4 py-8 text-center text-[11px] text-gray-400 uppercase tracking-widest">
+                    Chưa có thông báo mới.
+                  </div>
+
+                  <div *ngFor="let notification of headerNotifications()"
+                       (click)="openNotification(notification)"
+                       class="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-blue-50/50 transition-colors"
+                       [class.bg-blue-50/30]="!notification.read">
+                    <div class="flex items-start gap-2">
+                      <span class="mt-0.5 w-2 h-2 rounded-full flex-shrink-0"
+                            [class.bg-hus-blue]="!notification.read"
+                            [class.bg-transparent]="notification.read"></span>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-[10px] font-black text-gray-700 uppercase tracking-widest">
+                          {{ notificationAccentLabel(notification) }}
+                        </p>
+                        <p class="text-[11px] text-gray-800 font-medium mt-0.5 truncate">{{ notification.title }}</p>
+                        <p class="text-[10px] text-gray-500 mt-1 leading-relaxed">{{ notification.message }}</p>
+                        <p class="text-[9px] text-gray-400 mt-1 uppercase tracking-widest">
+                          {{ notificationMeta(notification) }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <button type="button"
                     (click)="toggleMobileMenu($event)"
                     class="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 border border-gray-200 text-gray-500 hover:border-hus-blue hover:text-hus-blue transition-colors"
@@ -102,7 +174,62 @@ import { ROUTES } from '../../core/constants/route.const';
             </div>
             
             <!-- Profile -->
-            <div *ngIf="isAuth()" class="relative ml-4 pl-4 border-l border-gray-100 flex items-center h-full">
+            <div *ngIf="isAuth()" class="relative ml-4 pl-4 border-l border-gray-100 flex items-center gap-3 h-full">
+              <div class="relative">
+                <button type="button"
+                        (click)="toggleNotificationPanel($event)"
+                        class="relative inline-flex items-center justify-center p-1 text-gray-500 hover:text-hus-blue transition-colors"
+                        title="Thông báo">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <span *ngIf="notificationUnreadCount() > 0"
+                        class="absolute -top-1.5 -right-1 min-w-5 h-5 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-black px-1">
+                    {{ notificationUnreadCount() > 99 ? '99+' : notificationUnreadCount() }}
+                  </span>
+                </button>
+
+                <div *ngIf="showNotificationPanel"
+                     class="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white border border-gray-200 shadow-2xl py-2 z-[70]">
+                  <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                    <p class="text-[10px] font-black text-gray-700 uppercase tracking-widest">{{ notificationPanelTitle() }}</p>
+                    <button *ngIf="notificationUnreadCount() > 0"
+                            (click)="markAllNotificationsRead()"
+                            class="text-[9px] font-bold text-hus-blue uppercase tracking-widest hover:underline">
+                      Đọc tất cả
+                    </button>
+                  </div>
+
+                  <div class="max-h-[70vh] overflow-y-auto overscroll-contain">
+                    <div *ngIf="headerNotifications().length === 0"
+                         class="px-4 py-8 text-center text-[11px] text-gray-400 uppercase tracking-widest">
+                      Chưa có thông báo mới.
+                    </div>
+
+                    <div *ngFor="let notification of headerNotifications()"
+                         (click)="openNotification(notification)"
+                         class="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-blue-50/50 transition-colors"
+                         [class.bg-blue-50/30]="!notification.read">
+                      <div class="flex items-start gap-2">
+                        <span class="mt-0.5 w-2 h-2 rounded-full flex-shrink-0"
+                              [class.bg-hus-blue]="!notification.read"
+                              [class.bg-transparent]="notification.read"></span>
+                        <div class="min-w-0 flex-1">
+                          <p class="text-[10px] font-black text-gray-700 uppercase tracking-widest">
+                            {{ notificationAccentLabel(notification) }}
+                          </p>
+                          <p class="text-[11px] text-gray-800 font-medium mt-0.5 truncate">{{ notification.title }}</p>
+                          <p class="text-[10px] text-gray-500 mt-1 leading-relaxed">{{ notification.message }}</p>
+                          <p class="text-[9px] text-gray-400 mt-1 uppercase tracking-widest">
+                            {{ notificationMeta(notification) }}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div (click)="toggleProfileMenu($event)" class="flex items-center gap-2 group cursor-pointer">
                 <div class="w-8 h-8 rounded-full bg-hus-blue/5 p-0.5 border border-hus-blue/10 group-hover:border-hus-blue/30 transition-all duration-300 relative">
                   <div class="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
@@ -343,19 +470,27 @@ import { ROUTES } from '../../core/constants/route.const';
     </header>
   `
 })
-export class NavComponent implements OnInit {
+export class NavComponent implements OnInit, OnDestroy {
   private el = inject(ElementRef);
   private readonly document = inject(DOCUMENT);
+  private readonly router = inject(Router);
   private authService = inject(AuthService);
+  private readonly adminNotificationService = inject(AdminNotificationService);
+  private readonly userModerationNotificationService = inject(UserModerationNotificationService);
 
   // Use signals for better reactivity
   isAuth = authSignal.isAuth;
   isAdmin = authSignal.isAdmin;
   canAccessAdmin = authSignal.canAccessAdmin;
   currentUser = authSignal.user;
+  readonly adminNotifications = adminNotificationSignal.notifications;
+  readonly adminNotificationUnreadCount = adminNotificationSignal.unreadCount;
+  readonly userNotifications = userNotificationSignal.notifications;
+  readonly userNotificationUnreadCount = userNotificationSignal.unreadCount;
   protected readonly ROUTES = ROUTES;
 
   showProfileMenu = false;
+  showNotificationPanel = false;
   showMobileMenu = false;
   showMobileProfileSection = false;
   isCondensed = false;
@@ -375,6 +510,31 @@ export class NavComponent implements OnInit {
   private readonly showNavTravelThreshold = 36;
   private readonly minMeaningfulScrollDelta = 2;
 
+  constructor() {
+    effect(() => {
+      const isAuthenticated = this.isAuth();
+      const canUseAdminNotifications = this.canAccessAdmin();
+
+      if (!isAuthenticated) {
+        this.showNotificationPanel = false;
+        this.adminNotificationService.disconnect();
+        this.userModerationNotificationService.stop();
+        adminNotificationSignal.clearAll();
+        return;
+      }
+
+      if (canUseAdminNotifications) {
+        this.userModerationNotificationService.stop();
+        this.adminNotificationService.connect();
+        return;
+      }
+
+      this.adminNotificationService.disconnect();
+      adminNotificationSignal.clearAll();
+      this.userModerationNotificationService.start();
+    });
+  }
+
   ngOnInit(): void {
     this.resetScrollTracking(this.document.defaultView?.scrollY ?? 0);
     this.syncViewportMode();
@@ -382,15 +542,30 @@ export class NavComponent implements OnInit {
     this.applyStickyOffsets();
   }
 
+  ngOnDestroy(): void {
+    this.adminNotificationService.disconnect();
+    this.userModerationNotificationService.stop();
+  }
+
   toggleProfileMenu(event: Event): void {
     event.stopPropagation();
     this.showMobileMenu = false;
+    this.showNotificationPanel = false;
     this.showProfileMenu = !this.showProfileMenu;
+  }
+
+  toggleNotificationPanel(event: Event): void {
+    event.stopPropagation();
+    this.showProfileMenu = false;
+    this.showMobileMenu = false;
+    this.showMobileProfileSection = false;
+    this.showNotificationPanel = !this.showNotificationPanel;
   }
 
   toggleMobileMenu(event: Event): void {
     event.stopPropagation();
     this.showProfileMenu = false;
+    this.showNotificationPanel = false;
     this.showMobileMenu = !this.showMobileMenu;
     if (!this.showMobileMenu) {
       this.showMobileProfileSection = false;
@@ -424,6 +599,7 @@ export class NavComponent implements OnInit {
   closeMenu(event: Event): void {
     if (!this.el.nativeElement.contains(event.target)) {
       this.showProfileMenu = false;
+      this.showNotificationPanel = false;
       this.showMobileMenu = false;
       this.showMobileProfileSection = false;
     }
@@ -431,14 +607,87 @@ export class NavComponent implements OnInit {
 
   logout(): void {
     this.showProfileMenu = false;
+    this.showNotificationPanel = false;
     this.showMobileMenu = false;
     this.showMobileProfileSection = false;
+    adminNotificationSignal.clearAll();
+    this.userModerationNotificationService.stop();
     this.authService.logout().subscribe();
   }
 
   canManageRecruitmentPosts(): boolean {
     const role = this.currentUser()?.role;
     return role === 'STUDENT' || role === 'COMPANY';
+  }
+
+  notificationUnreadCount(): number {
+    return this.canAccessAdmin()
+      ? this.adminNotificationUnreadCount()
+      : this.userNotificationUnreadCount();
+  }
+
+  notificationPanelTitle(): string {
+    return this.canAccessAdmin() ? 'Thông báo kiểm duyệt' : 'Thông báo của bạn';
+  }
+
+  headerNotifications(): HeaderNotificationItem[] {
+    if (this.canAccessAdmin()) {
+      return this.adminNotifications().map((notification) => ({
+        id: notification.id,
+        read: notification.read,
+        title: notification.contentTitle,
+        message: `Nội dung mới từ ${notification.authorLabel}.`,
+        timestamp: notification.timestamp,
+        accentLabel: notification.contentType === 'PAPER' ? 'Bài nghiên cứu chờ duyệt' : 'Tin tuyển dụng chờ duyệt',
+        meta: `${notification.authorLabel} · ${this.formatNotificationTime(notification.timestamp)}`,
+        route: ROUTES.ADMIN,
+        adminTab: notification.contentType === 'PAPER' ? 'PAPERS' : 'POSTS',
+        isAdminNotification: true
+      }));
+    }
+
+    return this.userNotifications().map((notification) => ({
+      id: notification.id,
+      read: notification.read,
+      title: notification.title,
+      message: notification.message,
+      timestamp: notification.timestamp,
+      accentLabel: notification.status === 'APPROVED' ? 'Đã được duyệt' : 'Cần xem lại',
+      meta: `${notification.contentType === 'PAPER' ? 'Bài nghiên cứu' : 'Tin tuyển dụng'} · ${this.formatNotificationTime(notification.timestamp)}`,
+      route: notification.contentType === 'PAPER' ? ROUTES.RESEARCH_MY_PAPERS : ROUTES.RECRUITMENT_MY_POSTS,
+      isAdminNotification: false
+    }));
+  }
+
+  notificationAccentLabel(notification: HeaderNotificationItem): string {
+    return notification.accentLabel;
+  }
+
+  notificationMeta(notification: HeaderNotificationItem): string {
+    return notification.meta;
+  }
+
+  markAllNotificationsRead(): void {
+    if (this.canAccessAdmin()) {
+      adminNotificationSignal.dismissAll();
+      return;
+    }
+    this.userModerationNotificationService.clearAll();
+  }
+
+  openNotification(notification: HeaderNotificationItem): void {
+    this.showNotificationPanel = false;
+
+    if (notification.isAdminNotification) {
+      adminNotificationSignal.markAsRead(notification.id);
+      this.router.navigate([notification.route], {
+        queryParams: notification.adminTab ? { tab: notification.adminTab } : undefined
+      });
+      return;
+    }
+
+    this.userModerationNotificationService.removeNotification(notification.id);
+    this.router.navigateByUrl(notification.route);
   }
 
   private setCondensed(value: boolean): void {
@@ -535,5 +784,18 @@ export class NavComponent implements OnInit {
 
   mobileAccountLinksMaxHeight(): number {
     return this.isMobileAccountMenuVisible() ? 420 : 0;
+  }
+
+  private formatNotificationTime(timestamp: number): string {
+    const date = new Date(timestamp);
+    const timeText = date.toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const dateText = date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit'
+    });
+    return `${timeText} ${dateText}`;
   }
 }

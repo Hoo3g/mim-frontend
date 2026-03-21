@@ -48,10 +48,15 @@ export const authSignal = {
     }),
 
     setAuth(user: AuthUser, token: string): void {
-        _user.set(user);
+        const normalizedUser = {
+            ...user,
+            permissions: normalizePermissions(user.permissions),
+            accountStatus: normalizeAccountStatus(user.accountStatus) ?? 'APPROVED'
+        };
+        _user.set(normalizedUser);
         _token.set(token);
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('user', JSON.stringify(normalizedUser));
     },
 
     hasPermission(permission: string): boolean {
@@ -100,6 +105,7 @@ export const authSignal = {
         avatarUrl?: string | null;
         role?: string | null;
         accountStatus?: string | null;
+        permissions?: string[] | null;
     }): void {
         const current = _user();
         if (!current) {
@@ -112,7 +118,8 @@ export const authSignal = {
             fullName: payload.fullName?.trim() ? payload.fullName.trim() : current.fullName,
             avatarUrl: payload.avatarUrl || undefined,
             role: normalizedRole ?? current.role,
-            accountStatus: normalizeAccountStatus(payload.accountStatus) ?? current.accountStatus
+            accountStatus: normalizeAccountStatus(payload.accountStatus) ?? current.accountStatus,
+            permissions: payload.permissions == null ? current.permissions : normalizePermissions(payload.permissions)
         };
         _user.set(updated);
         localStorage.setItem('user', JSON.stringify(updated));
@@ -136,9 +143,7 @@ export const authSignal = {
                 role: normalizeRole(parsed.role) ?? parsed.role,
                 avatarUrl: parsed.avatarUrl,
                 accountStatus: normalizeAccountStatus(parsed.accountStatus) ?? 'APPROVED',
-                permissions: Array.isArray(parsed.permissions)
-                    ? parsed.permissions.map((item) => String(item).toUpperCase())
-                    : []
+                permissions: normalizePermissions(parsed.permissions)
             });
         }
     }
@@ -166,4 +171,16 @@ function normalizeAccountStatus(status?: string | null): AccountStatus | null {
     if (value === 'APPROVED') return 'APPROVED';
     if (value === 'BLOCKED') return 'BLOCKED';
     return value;
+}
+
+function normalizePermissions(permissions?: readonly unknown[] | null): string[] {
+    if (!Array.isArray(permissions)) {
+        return [];
+    }
+
+    return [...new Set(
+        permissions
+            .map((permission) => String(permission ?? '').trim().toUpperCase())
+            .filter((permission) => !!permission)
+    )].sort();
 }

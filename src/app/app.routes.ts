@@ -21,6 +21,7 @@ export const routes: Routes = [
             { path: 'posts', loadChildren: () => import('./features/recruitment/recruitment.routes').then(m => m.recruitmentRoutes) },
             { path: 'recruitment', loadChildren: () => import('./features/recruitment/recruitment.routes').then(m => m.recruitmentRoutes) },
             { path: 'auth', loadChildren: () => import('./features/auth/auth.routes').then(m => m.authRoutes) },
+            { path: 'admin', loadChildren: () => import('./features/admin/admin.routes').then(m => m.adminRoutes) },
             {
                 path: 'profile/:id',
                 component: PublicProfileComponent
@@ -31,11 +32,6 @@ export const routes: Routes = [
                 component: ProfileComponent
             },
         ]
-    },
-    // ─── Admin layout (không có Nav bar public) ─────────────
-    {
-        path: 'admin',
-        loadChildren: () => import('./features/admin/admin.routes').then(m => m.adminRoutes)
     },
     // ─── Fallback ────────────────────────────────────────────
     { path: '**', redirectTo: '' }

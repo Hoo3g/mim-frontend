@@ -16,6 +16,8 @@ import {
   LecturerPaperItem,
   PendingApplicantItem,
   PendingApplicationItem,
+  ProfileAvatarUploadResponse,
+  ProfileCvUploadResponse,
   ProfileDashboardResponse,
   ProfileMeResponse,
   UpdateCompanyProfileRequest,
@@ -999,12 +1001,12 @@ export class ProfileComponent implements OnInit {
 
     this.feedbackMessage = '';
     this.profileService.uploadDefaultCv(file).subscribe({
-      next: (uploaded) => {
+      next: (uploaded: ProfileCvUploadResponse) => {
         this.studentForm.cvUrl = uploaded.fileUrl;
         input.value = '';
         this.setSuccess('Đã tải CV lên. Hãy lưu hồ sơ sinh viên để áp dụng thay đổi.');
       },
-      error: (error) => {
+      error: (error: { error?: { message?: string } }) => {
         input.value = '';
         this.setError(error?.error?.message || 'Upload CV thất bại');
       }
@@ -1024,7 +1026,7 @@ export class ProfileComponent implements OnInit {
 
     this.feedbackMessage = '';
     this.profileService.uploadAvatar(file).subscribe({
-      next: (uploaded) => {
+      next: (uploaded: ProfileAvatarUploadResponse) => {
         if (this.me) {
           this.me = { ...this.me, avatarUrl: uploaded.fileUrl };
         }

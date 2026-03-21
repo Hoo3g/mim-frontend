@@ -6,6 +6,8 @@ import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import { NewsItem } from '../models/news.model';
 import { TimedObservableCache } from '../utils/timed-observable-cache.util';
+import { parseDate, unwrap, unwrapList } from '../utils/api-response.util';
+import { UI_LABELS } from '../constants/ui-labels.const';
 
 interface NewsApiModel {
     id?: string;
@@ -34,7 +36,7 @@ export class NewsService {
         }
 
         const request$ = this.http.get<ApiResponse<NewsApiModel[]>>(API_ENDPOINTS.NEWS.LIST).pipe(
-            map((response) => this.unwrapList(response).map((item) => this.toNewsItem(item))),
+            map((response) => unwrapList(response).map((item) => this.toNewsItem(item))),
             catchError(() => {
                 this.newsListCache.delete(cacheKey);
                 return of([]);
@@ -53,7 +55,7 @@ export class NewsService {
         }
 
         const request$ = this.http.get<ApiResponse<NewsApiModel>>(API_ENDPOINTS.NEWS.DETAIL(newsId)).pipe(
-            map((response) => this.toNewsItem(this.unwrap(response))),
+            map((response) => this.toNewsItem(unwrap(response))),
             catchError(() => {
                 this.newsDetailCache.delete(cacheKey);
                 return of(null);
@@ -64,47 +66,22 @@ export class NewsService {
         return this.newsDetailCache.set(cacheKey, request$);
     }
 
-    private unwrap<T>(response: ApiResponse<T>): T {
-        if (!response.success || response.data === null) {
-            throw new Error(response.message || 'Request failed');
-        }
-        return response.data;
-    }
-
-    private unwrapList<T>(response: ApiResponse<T[]>): T[] {
-        if (!response.success || response.data === null) {
-            return [];
-        }
-        return response.data;
-    }
 
     private toNewsItem(item: NewsApiModel): NewsItem {
         return {
             id: item.id ?? this.generateFallbackId(),
-            title: item.title?.trim() || 'Không có tiêu đề',
+            title: item.title?.trim() || UI_LABELS.UNTITLED_VN,
             content: item.content?.trim() || item.summary?.trim() || '',
             summary: item.summary?.trim() || '',
             imageUrl: item.imageUrl?.trim() || '',
             status: item.status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
             pinned: !!item.pinned,
             authorId: item.authorId,
-            createdAt: this.toDate(item.createdAt),
-            updatedAt: this.toDate(item.updatedAt)
+            createdAt: parseDate(item.createdAt),
+            updatedAt: parseDate(item.updatedAt)
         };
     }
 
-    private toDate(value?: string | Date): Date {
-        if (value instanceof Date) {
-            return value;
-        }
-        if (typeof value === 'string') {
-            const parsed = new Date(value);
-            if (!Number.isNaN(parsed.getTime())) {
-                return parsed;
-            }
-        }
-        return new Date();
-    }
 
     private generateFallbackId(): string {
         return `news-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;

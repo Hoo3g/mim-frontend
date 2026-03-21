@@ -5,6 +5,8 @@ import { map, Observable } from 'rxjs';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import { NewsItem, UpsertNewsRequest } from '../models/news.model';
+import { parseDate, unwrap, unwrapList } from '../utils/api-response.util';
+import { UI_LABELS } from '../constants/ui-labels.const';
 
 interface NewsApiModel {
     id?: string;
@@ -25,20 +27,20 @@ export class AdminNewsService {
 
     getAll(): Observable<NewsItem[]> {
         return this.http.get<ApiResponse<NewsApiModel[]>>(API_ENDPOINTS.ADMIN.NEWS).pipe(
-            map((response) => this.unwrapList(response).map((item) => this.toNewsItem(item))),
+            map((response) => unwrapList(response).map((item) => this.toNewsItem(item))),
             map((items) => this.sortNews(items))
         );
     }
 
     create(payload: UpsertNewsRequest): Observable<NewsItem | null> {
         return this.http.post<ApiResponse<NewsApiModel>>(API_ENDPOINTS.ADMIN.NEWS, payload).pipe(
-            map((response) => this.toNewsItem(this.unwrap(response)))
+            map((response) => this.toNewsItem(unwrap(response)))
         );
     }
 
     update(newsId: string, payload: UpsertNewsRequest): Observable<NewsItem | null> {
         return this.http.put<ApiResponse<NewsApiModel>>(API_ENDPOINTS.ADMIN.NEWS_DETAIL(newsId), payload).pipe(
-            map((response) => this.toNewsItem(this.unwrap(response)))
+            map((response) => this.toNewsItem(unwrap(response)))
         );
     }
 
@@ -48,47 +50,22 @@ export class AdminNewsService {
         );
     }
 
-    private unwrap<T>(response: ApiResponse<T>): T {
-        if (!response.success || response.data === null) {
-            throw new Error(response.message || 'Request failed');
-        }
-        return response.data;
-    }
-
-    private unwrapList<T>(response: ApiResponse<T[]>): T[] {
-        if (!response.success || response.data === null) {
-            return [];
-        }
-        return response.data;
-    }
 
     private toNewsItem(item: NewsApiModel): NewsItem {
         return {
             id: item.id ?? this.generateId(),
-            title: item.title?.trim() || 'Không có tiêu đề',
+            title: item.title?.trim() || UI_LABELS.UNTITLED_VN,
             content: item.content?.trim() || '',
             summary: item.summary?.trim() || '',
             imageUrl: item.imageUrl?.trim() || '',
             status: item.status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
             pinned: !!item.pinned,
             authorId: item.authorId,
-            createdAt: this.toDate(item.createdAt),
-            updatedAt: this.toDate(item.updatedAt)
+            createdAt: parseDate(item.createdAt),
+            updatedAt: parseDate(item.updatedAt)
         };
     }
 
-    private toDate(value?: string | Date): Date {
-        if (value instanceof Date) {
-            return value;
-        }
-        if (typeof value === 'string') {
-            const parsed = new Date(value);
-            if (!Number.isNaN(parsed.getTime())) {
-                return parsed;
-            }
-        }
-        return new Date();
-    }
 
     private sortNews(items: NewsItem[]): NewsItem[] {
         return [...items].sort((a, b) => {

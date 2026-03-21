@@ -6,6 +6,7 @@ import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import { ResearchCategory } from '../models/research-category.model';
 import { TimedObservableCache } from '../utils/timed-observable-cache.util';
+import { unwrapList } from '../utils/api-response.util';
 
 @Injectable({ providedIn: 'root' })
 export class SpecializationService {
@@ -20,12 +21,7 @@ export class SpecializationService {
         }
 
         const request$ = this.http.get<ApiResponse<ResearchCategory[]>>(API_ENDPOINTS.RESEARCH.SPECIALIZATIONS).pipe(
-            map((response) => {
-                if (!response.success || !response.data) {
-                    return [];
-                }
-                return this.normalize(response.data);
-            }),
+            map((response) => this.normalize(unwrapList(response))),
             catchError(() => {
                 this.specializationsCache.delete(cacheKey);
                 return of([]);

@@ -1,3 +1,6 @@
+import { ApprovalStatus } from '../enums/post-status.enum';
+import { Role } from '../enums/role.enum';
+
 export interface PaperAuthor {
     studentId: string;
     name: string;
@@ -13,11 +16,11 @@ export interface ResearchPaper {
     publicationYear: number;
     journalConference?: string;
     researchArea: string;
-    category: 'LECTURER' | 'STUDENT';
+    category: Role.LECTURER | Role.STUDENT;
     viewCount: number;
     downloadCount: number;
     bookmarkCount: number;
-    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus?: ApprovalStatus;
     moderationComment?: string;
     isBookmarked?: boolean;
     authors: PaperAuthor[];
@@ -29,7 +32,7 @@ export interface BookmarkedResearchPaper {
     paperId: string;
     title: string;
     researchArea: string;
-    category: 'LECTURER' | 'STUDENT';
+    category: Role.LECTURER | Role.STUDENT;
     publicationYear?: number | null;
     savedAt?: Date | null;
 }

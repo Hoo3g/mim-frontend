@@ -10,6 +10,7 @@ import {
     RbacUserAssignment,
     UpdateUserPermissionOverridesRequest
 } from '../models/rbac.model';
+import { unwrapList, unwrapOr } from '../utils/api-response.util';
 
 @Injectable({ providedIn: 'root' })
 export class AdminRbacService {
@@ -17,36 +18,21 @@ export class AdminRbacService {
 
     getDelegablePermissions(): Observable<RbacPermissionDefinition[]> {
         return this.http.get<ApiResponse<RbacPermissionDefinition[]>>(API_ENDPOINTS.ADMIN.RBAC_PERMISSIONS).pipe(
-            map((response) => {
-                if (!response.success || !response.data) {
-                    return [];
-                }
-                return response.data;
-            }),
+            map((response) => unwrapList(response)),
             catchError(() => of([]))
         );
     }
 
     getRolePermissionMatrix(): Observable<RbacRolePermission[]> {
         return this.http.get<ApiResponse<RbacRolePermission[]>>(API_ENDPOINTS.ADMIN.RBAC_ROLES).pipe(
-            map((response) => {
-                if (!response.success || !response.data) {
-                    return [];
-                }
-                return response.data;
-            }),
+            map((response) => unwrapList(response)),
             catchError(() => of([]))
         );
     }
 
     getUsers(): Observable<RbacUserAssignment[]> {
         return this.http.get<ApiResponse<RbacUserAssignment[]>>(API_ENDPOINTS.ADMIN.RBAC_USERS).pipe(
-            map((response) => {
-                if (!response.success || !response.data) {
-                    return [];
-                }
-                return response.data;
-            }),
+            map((response) => unwrapList(response)),
             catchError(() => of([]))
         );
     }
@@ -59,12 +45,7 @@ export class AdminRbacService {
             .put<ApiResponse<RbacUserAssignment>>(API_ENDPOINTS.ADMIN.RBAC_USER_OVERRIDES(userId), payload)
             .pipe(
                 timeout(8000),
-                map((response) => {
-                    if (!response.success || !response.data) {
-                        return null;
-                    }
-                    return response.data;
-                }),
+                map((response) => unwrapOr(response, null)),
                 catchError(() => of(null))
             );
     }

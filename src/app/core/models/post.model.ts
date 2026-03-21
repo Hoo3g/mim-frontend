@@ -1,17 +1,6 @@
-export enum PostType {
-    STUDENT_SEEKING_JOB = 'STUDENT_SEEKING_JOB',
-    COMPANY_RECRUITING_JOB = 'COMPANY_RECRUITING_JOB',
-    STUDENT_SEEKING_INTERNSHIP = 'STUDENT_SEEKING_INTERNSHIP',
-    COMPANY_RECRUITING_INTERNSHIP = 'COMPANY_RECRUITING_INTERNSHIP'
-}
-
-export enum JobType {
-    FULL_TIME = 'FULL_TIME',
-    PART_TIME = 'PART_TIME',
-    CONTRACT = 'CONTRACT',
-    INTERNSHIP = 'INTERNSHIP'
-}
-
+import { ApprovalStatus, PostStatus } from '../enums/post-status.enum';
+import { JobType, PostType } from '../enums/post-type.enum';
+export { ApprovalStatus, PostStatus, PostType, JobType };
 export interface StudentPostDisplayInfo {
     studentUniversity?: string;
     studentMajor?: string;
@@ -46,8 +35,8 @@ export interface Post {
     displayInfo?: PostDisplayInfo;
     location?: string;
     salaryRange?: string;
-    status: 'OPEN' | 'CLOSED' | 'DRAFT';
-    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    status: PostStatus;
+    approvalStatus?: ApprovalStatus;
     moderationComment?: string;
     createdAt: Date;
     updatedAt: Date;

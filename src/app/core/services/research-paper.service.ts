@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { catchError, forkJoin, map, Observable, of, shareReplay, switchMap, tap } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, shareReplay, switchMap, tap, timeout } from 'rxjs';
 import { BookmarkedResearchPaper, PaperAuthor, ResearchPaper } from '../models/research-paper.model';
 import type { AuthUser } from '../signals/auth.signal';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
@@ -8,6 +8,10 @@ import { ApiResponse, PagedResponse } from '../models/api-response.model';
 import { authSignal } from '../signals/auth.signal';
 import { normalizeRichTextHtml } from '../utils/rich-text.util';
 import { TimedObservableCache } from '../utils/timed-observable-cache.util';
+import { emptyPagedResult, parseDate, unwrap, unwrapList, unwrapPaged } from '../utils/api-response.util';
+import { ApprovalStatus } from '../enums/post-status.enum';
+import { Role } from '../enums/role.enum';
+import { UI_LABELS } from '../constants/ui-labels.const';
 
 export interface ResearchEditorPayload {
     id?: string;
@@ -45,11 +49,11 @@ interface ResearchPaperApiModel {
     publicationYear?: number;
     journalConference?: string;
     researchArea?: string;
-    category?: 'LECTURER' | 'STUDENT';
+    category?: Role.LECTURER | Role.STUDENT;
     viewCount?: number;
     downloadCount?: number;
     bookmarkCount?: number;
-    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus?: ApprovalStatus | string;
     moderationComment?: string;
     authors?: ResearchPaperApiAuthor[];
     createdAt?: string | Date;
@@ -60,7 +64,7 @@ interface ResearchBookmarkApiModel {
     paperId?: string;
     title?: string;
     researchArea?: string;
-    category?: 'LECTURER' | 'STUDENT' | string;
+    category?: Role.LECTURER | Role.STUDENT | string;
     publicationYear?: number | null;
     savedAt?: string | Date | null;
 }
@@ -83,7 +87,7 @@ export class ResearchPaperService {
             this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.LIST, {
                 params: this.buildListParams(query)
             }).pipe(
-                map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
+                map((response) => unwrapList(response).map((paper) => this.toPaperModel(paper))),
                 catchError(() => {
                     this.papersCache.delete(cacheKey);
                     return of([]);
@@ -106,12 +110,12 @@ export class ResearchPaperService {
             API_ENDPOINTS.RESEARCH.LIST_PAGED,
             { params }
         ).pipe(
-            map((response) => this.unwrapPaged(response, safePage, safeSize)),
+            map((response) => unwrapPaged(response, safePage, safeSize)),
             map((paged) => ({
                 ...paged,
                 content: paged.content.map((paper) => this.toPaperModel(paper))
             })),
-            catchError(() => of(this.emptyPagedResult<ResearchPaper>(safePage, safeSize))),
+            catchError(() => of(emptyPagedResult<ResearchPaper>(safePage, safeSize))),
             switchMap((paged) => forkJoin([of(paged), this.getBookmarkedPaperIds()])),
             map(([paged, bookmarkedIds]) => ({
                 ...paged,
@@ -132,7 +136,7 @@ export class ResearchPaperService {
         const cachedPaper$ = this.paperDetailCache.get(cacheKey);
         const paper$ = cachedPaper$ ?? this.paperDetailCache.set(cacheKey,
             this.http.get<ApiResponse<ResearchPaperApiModel>>(API_ENDPOINTS.RESEARCH.DETAIL(id)).pipe(
-                map((response) => this.toPaperModel(this.unwrap(response))),
+                map((response) => this.toPaperModel(unwrap(response))),
                 catchError(() => {
                     this.paperDetailCache.delete(cacheKey);
                     return this.getPapers().pipe(
@@ -157,15 +161,20 @@ export class ResearchPaperService {
         );
     }
 
-    getMyPapers(_currentUser: AuthUser): Observable<ResearchPaper[]> {
+    getMyPapers(_currentUser: AuthUser, bypassCache = false): Observable<ResearchPaper[]> {
         const cacheKey = authSignal.user()?.id ?? 'anonymous';
+
+        if (bypassCache) {
+            this.myPapersCache.delete(cacheKey);
+        }
+
         const cachedPapers$ = this.myPapersCache.get(cacheKey);
         if (cachedPapers$) {
             return cachedPapers$;
         }
 
         const request$ = this.http.get<ApiResponse<ResearchPaperApiModel[]>>(API_ENDPOINTS.RESEARCH.MY_PAPERS).pipe(
-            map((response) => this.unwrapList(response).map((paper) => this.toPaperModel(paper))),
+            map((response) => unwrapList(response).map((paper) => this.toPaperModel(paper))),
             catchError(() => {
                 this.myPapersCache.delete(cacheKey);
                 return of([]);
@@ -196,8 +205,21 @@ export class ResearchPaperService {
             : this.http.post<ApiResponse<ResearchPaperApiModel>>(API_ENDPOINTS.RESEARCH.LIST, requestBody);
 
         return request$.pipe(
-            map((response) => this.toPaperModel(this.unwrap(response))),
+            map((response) => this.toPaperModel(unwrap(response))),
             tap(() => this.invalidatePaperCaches())
+        );
+    }
+
+    deleteMyPaper(paperId: string): Observable<boolean> {
+        return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.DETAIL(paperId)).pipe(
+            timeout(15000),
+            map((response) => Boolean(response.success)),
+            tap((success) => {
+                if (success) {
+                    this.invalidatePaperCaches();
+                }
+            }),
+            catchError(() => of(false))
         );
     }
 
@@ -213,7 +235,7 @@ export class ResearchPaperService {
         }
 
         const request$ = this.http.get<ApiResponse<ResearchBookmarkApiModel[]>>(API_ENDPOINTS.RESEARCH.BOOKMARKS_MY).pipe(
-            map((response) => this.unwrapList(response)),
+            map((response) => unwrapList(response)),
             map((items) => {
                 const ids = new Set<string>();
                 items.forEach((item) => {
@@ -245,7 +267,7 @@ export class ResearchPaperService {
         }
 
         const request$ = this.http.get<ApiResponse<ResearchBookmarkApiModel[]>>(API_ENDPOINTS.RESEARCH.BOOKMARKS_MY).pipe(
-            map((response) => this.unwrapList(response).map((item) => this.toBookmarkedPaperModel(item))),
+            map((response) => unwrapList(response).map((item) => this.toBookmarkedPaperModel(item))),
             catchError(() => {
                 this.bookmarkedPapersCache.delete(cacheKey);
                 return of([]);
@@ -310,54 +332,6 @@ export class ResearchPaperService {
             );
     }
 
-    private unwrap<T>(response: ApiResponse<T>): T {
-        if (!response.success || response.data === null) {
-            throw new Error(response.message || 'Request failed');
-        }
-        return response.data;
-    }
-
-    private unwrapList<T>(response: ApiResponse<T[]>): T[] {
-        if (!response.success || response.data === null) {
-            return [];
-        }
-        return response.data;
-    }
-
-    private unwrapPaged<T>(
-        response: ApiResponse<PagedResponse<T> | T[]>,
-        fallbackPage: number,
-        fallbackSize: number
-    ): PagedResponse<T> {
-        if (!response.success || response.data === null) {
-            return this.emptyPagedResult<T>(fallbackPage, fallbackSize);
-        }
-
-        if (Array.isArray(response.data)) {
-            const content = response.data;
-            return {
-                content,
-                pageInfo: {
-                    page: 0,
-                    size: content.length,
-                    totalElements: content.length,
-                    totalPages: content.length > 0 ? 1 : 0
-                }
-            };
-        }
-
-        const content = Array.isArray(response.data.content) ? response.data.content : [];
-        const rawPageInfo = response.data.pageInfo;
-        return {
-            content,
-            pageInfo: {
-                page: rawPageInfo?.page ?? fallbackPage,
-                size: rawPageInfo?.size ?? fallbackSize,
-                totalElements: rawPageInfo?.totalElements ?? content.length,
-                totalPages: rawPageInfo?.totalPages ?? (content.length > 0 ? 1 : 0)
-            }
-        };
-    }
 
     private buildListParams(query: ResearchPaperListQuery): HttpParams {
         let params = new HttpParams();
@@ -396,17 +370,6 @@ export class ResearchPaperService {
         return `q=${keyword};type=${type};metric=${metric};specialization=${specializations}`;
     }
 
-    private emptyPagedResult<T>(page: number, size: number): PagedResponse<T> {
-        return {
-            content: [],
-            pageInfo: {
-                page,
-                size,
-                totalElements: 0,
-                totalPages: 0
-            }
-        };
-    }
 
     private attachBookmarkState(papers$: Observable<ResearchPaper[]>): Observable<ResearchPaper[]> {
         return forkJoin([papers$, this.getBookmarkedPaperIds()]).pipe(
@@ -421,54 +384,42 @@ export class ResearchPaperService {
         const authors = Array.isArray(apiPaper.authors) ? apiPaper.authors : [];
         const mappedAuthors: PaperAuthor[] = authors.map((author, index) => ({
             studentId: author.studentId ?? '',
-            name: (author.name?.trim() || 'Unknown'),
+            name: (author.name?.trim() || UI_LABELS.UNKNOWN_AUTHOR),
             isMainAuthor: author.isMainAuthor ?? author.mainAuthor ?? index === 0,
             authorOrder: author.authorOrder ?? (index + 1)
         }));
 
         return {
             id: apiPaper.id,
-            title: apiPaper.title ?? 'Untitled',
+            title: apiPaper.title ?? UI_LABELS.UNTITLED,
             abstract: normalizeRichTextHtml(apiPaper.abstract ?? ''),
             pdfUrl: apiPaper.pdfUrl ?? '',
             publicationYear: apiPaper.publicationYear ?? new Date().getFullYear(),
-            journalConference: apiPaper.journalConference ?? 'MIM Draft',
-            researchArea: apiPaper.researchArea ?? 'Chưa phân loại',
-            category: apiPaper.category === 'LECTURER' ? 'LECTURER' : 'STUDENT',
+            journalConference: apiPaper.journalConference ?? UI_LABELS.DEFAULT_JOURNAL,
+            researchArea: apiPaper.researchArea ?? UI_LABELS.UNCLASSIFIED,
+            category: apiPaper.category === Role.LECTURER ? Role.LECTURER : Role.STUDENT,
             viewCount: apiPaper.viewCount ?? 0,
             downloadCount: apiPaper.downloadCount ?? 0,
             bookmarkCount: apiPaper.bookmarkCount ?? 0,
-            approvalStatus: apiPaper.approvalStatus,
+            approvalStatus: apiPaper.approvalStatus as ApprovalStatus | undefined,
             moderationComment: apiPaper.moderationComment,
             authors: mappedAuthors,
-            createdAt: this.toDate(apiPaper.createdAt),
-            updatedAt: this.toDate(apiPaper.updatedAt)
+            createdAt: parseDate(apiPaper.createdAt),
+            updatedAt: parseDate(apiPaper.updatedAt)
         };
     }
 
     private toBookmarkedPaperModel(item: ResearchBookmarkApiModel): BookmarkedResearchPaper {
         return {
             paperId: item.paperId ?? '',
-            title: item.title?.trim() || 'Untitled',
-            researchArea: item.researchArea?.trim() || 'Chưa phân loại',
-            category: item.category === 'LECTURER' ? 'LECTURER' : 'STUDENT',
+            title: item.title?.trim() || UI_LABELS.UNTITLED,
+            researchArea: item.researchArea?.trim() || UI_LABELS.UNCLASSIFIED,
+            category: item.category === Role.LECTURER ? Role.LECTURER : Role.STUDENT,
             publicationYear: item.publicationYear ?? null,
-            savedAt: item.savedAt ? this.toDate(item.savedAt) : null
+            savedAt: item.savedAt ? parseDate(item.savedAt) : null
         };
     }
 
-    private toDate(value?: string | Date): Date {
-        if (value instanceof Date) {
-            return value;
-        }
-        if (typeof value === 'string') {
-            const parsed = new Date(value);
-            if (!Number.isNaN(parsed.getTime())) {
-                return parsed;
-            }
-        }
-        return new Date();
-    }
 
     private invalidatePaperCaches(): void {
         this.papersCache.clear();

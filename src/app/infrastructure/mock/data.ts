@@ -1,5 +1,7 @@
 import { Post, PostType, JobType } from '../../core/models/post.model';
 import { ResearchPaper } from '../../core/models/research-paper.model';
+import { Role } from '../../core/enums/role.enum';
+import { PostStatus } from '../../core/enums/post-status.enum';
 
 export const MOCK_POSTS: Post[] = [
     {
@@ -21,7 +23,7 @@ export const MOCK_POSTS: Post[] = [
         researchPaperLinks: [
             { id: 'p1', title: 'Một số cải tiến cho mô hình Transformer trong dịch máy đa ngữ', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }
         ],
-        status: 'OPEN',
+        status: PostStatus.OPEN,
         createdAt: new Date('2024-01-20'),
         updatedAt: new Date('2024-01-20')
     },
@@ -41,7 +43,7 @@ export const MOCK_POSTS: Post[] = [
         salaryRange: '15M - 30M',
         contactEmail: 'hr@fpt.com.vn',
         contactPhone: '1900 6600',
-        status: 'OPEN',
+        status: PostStatus.OPEN,
         createdAt: new Date('2024-01-25'),
         updatedAt: new Date('2024-01-25')
     },
@@ -60,7 +62,7 @@ export const MOCK_POSTS: Post[] = [
         location: 'Hồ Chí Minh',
         contactEmail: 'tu.tv@gmail.com',
         contactPhone: '0912.345.678',
-        status: 'OPEN',
+        status: PostStatus.OPEN,
         createdAt: new Date('2024-01-26'),
         updatedAt: new Date('2024-01-26')
     },
@@ -80,7 +82,7 @@ export const MOCK_POSTS: Post[] = [
         salaryRange: '8M - 12M',
         contactEmail: 'recruitment.srv@samsung.com',
         contactPhone: '024 3765 4321',
-        status: 'OPEN',
+        status: PostStatus.OPEN,
         createdAt: new Date('2024-01-28'),
         updatedAt: new Date('2024-01-28')
     }
@@ -95,7 +97,7 @@ export const MOCK_PAPERS: ResearchPaper[] = [
         publicationYear: 2023,
         journalConference: 'Hội nghị Quốc tế về Xử lý Ngôn ngữ Tự nhiên (NLP 2023)',
         researchArea: 'Trí tuệ nhân tạo',
-        category: 'LECTURER',
+        category: Role.LECTURER,
         viewCount: 128,
         downloadCount: 24,
         bookmarkCount: 9,
@@ -114,7 +116,7 @@ export const MOCK_PAPERS: ResearchPaper[] = [
         publicationYear: 2024,
         journalConference: 'Tạp chí Khoa học & Công nghệ VNU',
         researchArea: 'Cơ học',
-        category: 'STUDENT',
+        category: Role.STUDENT,
         viewCount: 76,
         downloadCount: 18,
         bookmarkCount: 5,
@@ -133,7 +135,7 @@ export const MOCK_PAPERS: ResearchPaper[] = [
         publicationYear: 2023,
         journalConference: 'Journal of Mathematical Analysis and Applications',
         researchArea: 'Toán ứng dụng',
-        category: 'LECTURER',
+        category: Role.LECTURER,
         viewCount: 94,
         downloadCount: 31,
         bookmarkCount: 7,
@@ -151,7 +153,7 @@ export const MOCK_PAPERS: ResearchPaper[] = [
         publicationYear: 2024,
         journalConference: 'Kỷ yếu Hội thảo Sinh viên Nghiên cứu Khoa học',
         researchArea: 'An ninh mạng',
-        category: 'STUDENT',
+        category: Role.STUDENT,
         viewCount: 61,
         downloadCount: 12,
         bookmarkCount: 4,

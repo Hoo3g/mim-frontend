@@ -5,6 +5,7 @@ import { catchError, map, Observable, of } from 'rxjs';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
 import { HeroImageUploadResponse, ResearchHeroContent, UpdateResearchHeroContentRequest } from '../models/content.model';
+import { unwrap, unwrapOr } from '../utils/api-response.util';
 
 @Injectable({ providedIn: 'root' })
 export class AdminContentService {
@@ -12,12 +13,7 @@ export class AdminContentService {
 
     updateResearchHeroContent(payload: UpdateResearchHeroContentRequest): Observable<ResearchHeroContent | null> {
         return this.http.put<ApiResponse<ResearchHeroContent>>(API_ENDPOINTS.ADMIN.CONTENT_RESEARCH_HERO, payload).pipe(
-            map((response) => {
-                if (!response.success || !response.data) {
-                    throw new Error(response.message || 'Failed to update research hero content');
-                }
-                return response.data;
-            }),
+            map((response) => unwrap(response)),
             catchError(() => of(null))
         );
     }
@@ -32,10 +28,11 @@ export class AdminContentService {
             })
             .pipe(
                 map((response) => {
-                    if (!response.success || !response.data?.fileUrl) {
-                        throw new Error(response.message || 'Failed to upload research hero image');
+                    const data = unwrap(response);
+                    if (!data.fileUrl) {
+                        throw new Error('Upload response missing file URL');
                     }
-                    return response.data.fileUrl;
+                    return data.fileUrl;
                 })
             );
     }

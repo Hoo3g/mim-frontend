@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { of, Subscription, timer } from 'rxjs';
+import { finalize, switchMap, take, tap } from 'rxjs/operators';
 
 import { ResearchPaper } from '../../core/models/research-paper.model';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
@@ -19,6 +20,11 @@ import { authSignal } from '../../core/signals/auth.signal';
       </div>
 
       <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-10">
+        <div *ngIf="errorMessage"
+             class="mb-6 border border-red-200 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-widest px-4 py-3">
+          {{ errorMessage }}
+        </div>
+
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
             <span class="w-1 h-4 bg-hus-blue"></span>
@@ -47,16 +53,15 @@ import { authSignal } from '../../core/signals/auth.signal';
           Tài khoản chưa xác thực email. Bạn chỉ có thể xem danh sách bài viết.
         </div>
 
-        <div *ngIf="displayedPapers$ | async as papers">
-          <div *ngIf="papers.length === 0"
+        <div *ngIf="displayedPapers">
+          <div *ngIf="displayedPapers.length === 0"
                class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
             Bạn chưa có bài viết nghiên cứu nào.
           </div>
 
-          <div *ngIf="papers.length > 0" class="divide-y divide-gray-100 border border-gray-100">
-            <article *ngFor="let paper of papers"
-                     (click)="openEditor(paper.id)"
-                     class="p-6 md:p-8 cursor-pointer group hover:bg-gray-50 transition-colors">
+          <div *ngIf="displayedPapers.length > 0" class="divide-y divide-gray-100 border border-gray-100">
+            <article *ngFor="let paper of displayedPapers"
+                     class="p-6 md:p-8 group hover:bg-gray-50 transition-colors">
               <div class="flex flex-wrap items-center gap-3 mb-3 text-[10px] font-bold uppercase tracking-widest">
                 <span class="text-hus-blue">{{ paper.researchArea }}</span>
                 <span class="text-gray-300">|</span>
@@ -84,8 +89,24 @@ import { authSignal } from '../../core/signals/auth.signal';
 
               <div class="mt-4 flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
                 <span class="text-gray-400">Tác giả chính: {{ paper.authors[0]?.name || 'N/A' }}</span>
-                
-                
+                <button *ngIf="canCreateContent()"
+                        type="button"
+                        (click)="editPaper(paper.id, $event)"
+                        class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
+                  Chỉnh sửa
+                </button>
+                <a *ngIf="!canCreateContent()"
+                   [routerLink]="ROUTES.PROFILE"
+                   (click)="$event.stopPropagation()"
+                   class="px-4 py-2 border border-amber-300 text-amber-800 text-[10px] font-black uppercase tracking-widest hover:bg-amber-50 transition-colors">
+                  Xác thực email để sửa
+                </a>
+                <button type="button"
+                        (click)="deletePaper(paper, $event)"
+                        [disabled]="deletingPaperIds.has(paper.id)"
+                        class="px-4 py-2 border border-red-200 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  {{ deletingPaperIds.has(paper.id) ? 'Đang xóa...' : 'Xóa' }}
+                </button>
               </div>
             </article>
           </div>
@@ -94,19 +115,22 @@ import { authSignal } from '../../core/signals/auth.signal';
     </div>
   `
 })
-export class MyResearchPapersComponent implements OnInit {
+export class MyResearchPapersComponent implements OnInit, OnDestroy {
   private readonly paperService = inject(ResearchPaperService);
   private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected readonly ROUTES = ROUTES;
   protected readonly canCreateContent = authSignal.canCreateContent;
 
-  displayedPapers$!: Observable<ResearchPaper[]>;
+  displayedPapers: ResearchPaper[] = [];
   noticeMessage = '';
+  errorMessage = '';
+  deletingPaperIds = new Set<string>();
+  private pollSubscription?: Subscription;
 
   ngOnInit(): void {
-    const currentUser = authSignal.user();
-    this.displayedPapers$ = currentUser ? this.paperService.getMyPapers(currentUser) : of([]);
+    this.startPolling();
 
     const navigationNotice = this.router.getCurrentNavigation()?.extras.state?.['notice'];
     const historyNotice = history.state?.['notice'];
@@ -117,6 +141,83 @@ export class MyResearchPapersComponent implements OnInit {
       delete currentState['notice'];
       history.replaceState(currentState, document.title);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
+  }
+
+  private startPolling(): void {
+    this.stopPolling();
+
+    // Poll every 10s if we have PENDING papers to show updates
+    this.pollSubscription = timer(0, 10_000).pipe(
+      switchMap(() => {
+        const currentUser = authSignal.user();
+        if (!currentUser) return of([]);
+        return this.paperService.getMyPapers(currentUser, true).pipe(take(1));
+      }),
+      tap(papers => {
+        this.displayedPapers = papers;
+        // If no papers are PENDING, we could potentially slow down polling or stop it,
+        // but for research papers (which are fewer), 10s is fine while the page is open.
+      })
+    ).subscribe();
+  }
+
+  private stopPolling(): void {
+    if (this.pollSubscription) {
+      this.pollSubscription.unsubscribe();
+      this.pollSubscription = undefined;
+    }
+  }
+
+  editPaper(id: string, event: Event): void {
+    event.stopPropagation();
+    this.openEditor(id);
+  }
+
+  deletePaper(paper: ResearchPaper, event: Event): void {
+    event.stopPropagation();
+
+    if (this.deletingPaperIds.has(paper.id)) {
+      return;
+    }
+
+    if (!confirm(`Bạn có chắc muốn xóa bài nghiên cứu "${paper.title}"?`)) {
+      return;
+    }
+
+    this.errorMessage = '';
+    this.noticeMessage = '';
+    this.stopPolling();
+    this.deletingPaperIds.add(paper.id);
+
+    this.paperService.deleteMyPaper(paper.id).pipe(
+      finalize(() => {
+        this.deletingPaperIds.delete(paper.id);
+        if (this.deletingPaperIds.size === 0) {
+          this.startPolling();
+        }
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: (deleted) => {
+        if (!deleted) {
+          this.errorMessage = 'Không thể xóa bài nghiên cứu đã chọn.';
+          this.cdr.detectChanges();
+          return;
+        }
+
+        this.displayedPapers = this.displayedPapers.filter((item) => item.id !== paper.id);
+        this.noticeMessage = 'Đã xóa bài nghiên cứu.';
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.errorMessage = 'Không thể xóa bài nghiên cứu đã chọn.';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   openEditor(id: string): void {

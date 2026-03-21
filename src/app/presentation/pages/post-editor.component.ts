@@ -5,7 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { ROUTES } from '../../core/constants/route.const';
 import { authSignal } from '../../core/signals/auth.signal';
-import { JobType, Post, PostType } from '../../core/models/post.model';
+import { JobType, Post, PostStatus, PostType } from '../../core/models/post.model';
 import { PostEditorPayload, PostService } from '../../core/services/post.service';
 import { ProfileMeResponse } from '../../core/models/profile.model';
 import { ProfileService } from '../../core/services/profile.service';
@@ -627,7 +627,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
       contactEmail: '',
       contactPhone: '',
       jobType: JobType.FULL_TIME,
-      status: 'OPEN'
+      status: PostStatus.OPEN
     };
 
   studentCardForm: {

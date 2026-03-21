@@ -1,13 +1,12 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, effect, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
-import { finalize, forkJoin } from 'rxjs';
+import { ActivatedRoute, RouterModule } from '@angular/router';
+import { finalize, forkJoin, Subscription, timer } from 'rxjs';
+import { take } from 'rxjs/operators';
 
-import { authSignal } from '../../../core/signals/auth.signal';
 import { adminNotificationSignal } from '../../../core/signals/admin-notification.signal';
 import { AdminModerationService } from '../../../core/services/admin-moderation.service';
-import { AdminNotificationService } from '../../../core/services/admin-notification.service';
 import { AdminContentService } from '../../../core/services/admin-content.service';
 import { ContentService } from '../../../core/services/content.service';
 import { AdminRbacService } from '../../../core/services/admin-rbac.service';
@@ -15,6 +14,7 @@ import { AdminResearchCategoryService } from '../../../core/services/admin-resea
 import { AdminSpecializationService } from '../../../core/services/admin-specialization.service';
 import { AdminNewsService } from '../../../core/services/admin-news.service';
 import { ModerationPaperItem, ModerationPostItem } from '../../../core/models/admin-moderation.model';
+import { API_CONFIG } from '../../../core/config/api.config';
 import {
     PermissionOverrideDraftEffect,
     RbacPermissionDefinition,
@@ -23,6 +23,11 @@ import {
 } from '../../../core/models/rbac.model';
 import { ResearchCategory } from '../../../core/models/research-category.model';
 import { NewsItem, NewsStatus } from '../../../core/models/news.model';
+import { ApprovalStatus } from '../../../core/enums/post-status.enum';
+import { authSignal } from '../../../core/signals/auth.signal';
+import { Post } from '../../../core/models/post.model';
+import { PdfCanvasViewerComponent } from '../../../shared/ui/pdf-canvas-viewer/pdf-canvas-viewer.component';
+import { PostDetailComponent } from '../post-detail.component';
 
 type AdminTabKey = 'POSTS' | 'PAPERS' | 'HERO' | 'NEWS' | 'RBAC' | 'SPECIALIZATIONS' | 'PAPER_CATEGORIES';
 
@@ -33,86 +38,94 @@ interface AdminTabConfig {
     permission: string;
 }
 
+interface ModerationDisplayInfoEntry {
+    label: string;
+    value: string;
+    wide?: boolean;
+}
+
+const MODERATION_POST_TYPE_LABELS: Record<string, string> = {
+    COMPANY_RECRUITING_JOB: 'Doanh nghiệp tuyển nhân sự',
+    COMPANY_RECRUITING_INTERNSHIP: 'Doanh nghiệp tuyển thực tập',
+    COMPANY_SEEKING_THESIS_PARTNER: 'Doanh nghiệp tìm đối tác luận văn',
+    STUDENT_SEEKING_THESIS: 'Sinh viên tìm hướng luận văn',
+    STUDENT_SEEKING_JOB: 'Sinh viên tìm việc làm',
+    STUDENT_SEEKING_INTERNSHIP: 'Sinh viên tìm thực tập',
+    LECTURER_SEEKING_THESIS_STUDENT: 'Giảng viên tìm sinh viên luận văn'
+};
+
+const MODERATION_JOB_TYPE_LABELS: Record<string, string> = {
+    FULL_TIME: 'Toàn thời gian',
+    PART_TIME: 'Bán thời gian',
+    CONTRACT: 'Hợp đồng',
+    INTERNSHIP: 'Thực tập',
+    REMOTE: 'Từ xa',
+    HYBRID: 'Kết hợp'
+};
+
+const MODERATION_POST_STATUS_LABELS: Record<string, string> = {
+    OPEN: 'Đang mở',
+    CLOSED: 'Đã đóng',
+    DRAFT: 'Bản nháp'
+};
+
+const MODERATION_RESEARCH_CATEGORY_LABELS: Record<string, string> = {
+    STUDENT: 'Sinh viên',
+    LECTURER: 'Giảng viên'
+};
+
+const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
+    studentUniversity: 'Trường',
+    studentMajor: 'Chuyên ngành',
+    studentType: 'Loại sinh viên',
+    studentDesiredPosition: 'Vị trí mong muốn',
+    studentBio: 'Giới thiệu ngắn',
+    studentCareerGoal: 'Mong muốn nghề nghiệp',
+    studentAchievements: 'Thành tích & project'
+};
+
 @Component({
     selector: 'app-admin-dashboard',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule],
+    imports: [CommonModule, FormsModule, RouterModule, PdfCanvasViewerComponent, PostDetailComponent],
     template: `
     <div class="min-h-screen bg-gray-50/50">
-      <div class="bg-gray-900 text-white py-7 md:py-10">
-        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-5">
-            <div>
-              <h1 class="text-2xl sm:text-3xl font-black uppercase tracking-tighter mb-2">QUẢN TRỊ VIÊN</h1>
-              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Hệ thống quản trị RBAC & nội dung MIM</p>
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8">
+        <div class="mb-6 border border-gray-100 bg-white p-4 sm:p-5">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div class="min-w-0">
+              <p class="text-[10px] font-black uppercase tracking-[0.32em] text-hus-blue">Khu vực điều phối quản trị</p>
+              <h1 class="mt-2 text-2xl sm:text-3xl font-black uppercase tracking-tight text-gray-900">Quản trị viên</h1>
+              
             </div>
-            <div class="flex gap-4 mb-1 items-end">
-              <div class="relative" id="admin-notification-bell">
-                <button (click)="toggleNotificationPanel()"
-                        class="relative p-2 text-gray-400 hover:text-white transition-colors"
-                        title="Thông báo">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  <span *ngIf="notificationUnreadCount() > 0"
-                        class="absolute -top-0.5 -right-0.5 min-w-5 h-5 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-black px-1 animate-pulse">
-                    {{ notificationUnreadCount() > 99 ? '99+' : notificationUnreadCount() }}
-                  </span>
-                </button>
 
-                <div *ngIf="isNotificationPanelOpen"
-                     class="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-white border border-gray-200 shadow-xl z-50">
-                  <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
-                    <p class="text-[10px] font-black text-gray-700 uppercase tracking-widest">Thông báo</p>
-                    <button *ngIf="notificationUnreadCount() > 0"
-                            (click)="markAllNotificationsRead()"
-                            class="text-[9px] font-bold text-hus-blue uppercase tracking-widest hover:underline">
-                      Đọc tất cả
-                    </button>
-                  </div>
-
-                  <div *ngIf="notifications().length === 0"
-                       class="px-4 py-8 text-center text-[11px] text-gray-400 uppercase tracking-widest">
-                    Chưa có thông báo mới.
-                  </div>
-
-                  <div *ngFor="let notif of notifications()"
-                       (click)="onNotificationClick(notif)"
-                       class="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-blue-50/50 transition-colors"
-                       [class.bg-blue-50/30]="!notif.read">
-                    <div class="flex items-start gap-2">
-                      <span class="mt-0.5 w-2 h-2 rounded-full flex-shrink-0"
-                            [class.bg-hus-blue]="!notif.read"
-                            [class.bg-transparent]="notif.read"></span>
-                      <div class="min-w-0 flex-1">
-                        <p class="text-[10px] font-black text-gray-700 uppercase tracking-widest">
-                          {{ notif.contentType === 'POST' ? 'BÀI TUYỂN DỤNG MỚI' : notif.contentType === 'PAPER' ? 'BÀI NGHIÊN CỨU MỚI' : 'NỘI DUNG MỚI' }}
-                        </p>
-                        <p class="text-[11px] text-gray-800 font-medium mt-0.5 truncate">{{ notif.contentTitle }}</p>
-                        <p class="text-[9px] text-gray-400 mt-1 uppercase tracking-widest">
-                          {{ notif.authorEmail }} · {{ notif.timestamp | date:'HH:mm dd/MM' }}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[420px]">
+              <div class="border border-gray-100 bg-gray-50 px-4 py-3">
+                <p class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Chờ duyệt</p>
+                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ totalPendingCount }}</p>
               </div>
-              <div class="sm:text-right">
-                <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Đang chờ duyệt</p>
-                <p class="text-2xl font-black text-hus-blue">{{ pendingPosts.length + pendingPapers.length }} Item</p>
+              <div class="border border-gray-100 bg-gray-50 px-4 py-3">
+                <p class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Tuyển dụng</p>
+                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ pendingPosts().length }}</p>
+              </div>
+              <div class="border border-gray-100 bg-gray-50 px-4 py-3">
+                <p class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Nghiên cứu</p>
+                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ pendingPapers().length }}</p>
+              </div>
+              <div class="border border-gray-100 bg-gray-50 px-4 py-3">
+                <p class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Module mở</p>
+                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ visibleTabs.length }}</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8">
         <div class="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-6 items-start">
           <aside class="bg-white border border-gray-100 p-4 lg:sticky lg:overflow-y-auto"
                  [style.top]="'var(--app-nav-sidebar-offset, 124px)'"
                  [style.maxHeight]="'calc(100vh - var(--app-nav-sidebar-offset, 124px) - 1rem)'">
             <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Danh mục quản trị</p>
-
+ 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
               <button *ngFor="let tab of visibleTabs"
                       type="button"
@@ -138,74 +151,147 @@ interface AdminTabConfig {
               </button>
             </div>
           </aside>
-
+ 
           <div class="min-w-0">
             <div *ngIf="errorMessage" class="mb-6 border border-red-200 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-widest px-4 py-3">
               {{ errorMessage }}
             </div>
 
+            <div *ngIf="moderationNotice" class="mb-6 border border-hus-blue/20 bg-blue-50 text-hus-blue text-[10px] font-bold uppercase tracking-widest px-4 py-3">
+              {{ moderationNotice }}
+            </div>
+ 
             <div *ngIf="!hasAnyTabAccess()" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-200">
               Tài khoản này chưa được cấp quyền thao tác trong trang quản trị.
             </div>
-
+ 
             <div *ngIf="currentTab === 'POSTS' && can('MODERATION_POSTS_VIEW')" class="space-y-4">
-          <div *ngFor="let post of pendingPosts" class="bg-white border border-gray-100 p-6 space-y-4 group hover:border-hus-blue transition-all">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div class="flex-grow">
-                <div class="flex items-center gap-2 mb-2">
-                  <span class="text-[9px] font-black bg-gray-100 px-2 py-0.5 uppercase tracking-widest">{{ post.authorName }}</span>
-                  <span class="text-[9px] text-gray-400 uppercase tabular-nums">{{ post.createdAt | date:'dd.MM.yyyy' }}</span>
-                </div>
-                <h3 class="text-lg font-bold text-gray-900 group-hover:text-hus-blue transition-colors">{{ post.title }}</h3>
-                <p class="text-[11px] text-gray-500 line-clamp-2 mt-1">{{ post.summary }}</p>
+              <div *ngIf="pendingPosts().length > 0 && can('MODERATION_POSTS_ACTION')"
+                   class="bg-white border border-gray-100 px-4 py-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <label class="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-600">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 border-gray-300 text-hus-blue focus:ring-hus-blue"
+                    [checked]="allPostsSelected"
+                    [indeterminate]="somePostsSelected"
+                    (change)="toggleAllPosts($any($event.target).checked)">
+                  Chọn tất cả ({{ selectedPostCount }}/{{ pendingPosts().length }})
+                </label>
+                <button
+                  type="button"
+                  (click)="approveSelectedPosts()"
+                  [disabled]="selectedPostCount === 0 || isApprovingSelectedPosts"
+                  class="px-5 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  {{ isApprovingSelectedPosts ? 'Đang duyệt...' : 'Duyệt đã chọn (' + selectedPostCount + ')' }}
+                </button>
               </div>
-              <div class="flex gap-3 flex-shrink-0" *ngIf="can('MODERATION_POSTS_ACTION')">
-                <button (click)="approvePost(post.id)" class="px-6 py-2 bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest hover:bg-hus-dark transition-all">Duyệt</button>
-                <button (click)="rejectPost(post.id)" class="px-6 py-2 bg-white border border-red-200 text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-50 transition-all">Từ chối</button>
-              </div>
-            </div>
-            <textarea
-              *ngIf="can('MODERATION_POSTS_ACTION')"
-              [(ngModel)]="postRejectComments[post.id]"
-              [ngModelOptions]="{ standalone: true }"
-              rows="2"
-              class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue"
-              placeholder="Lý do từ chối (tùy chọn)">
-            </textarea>
-          </div>
-          <div *ngIf="pendingPosts.length === 0" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-200">
-            Không có bài đăng nào đang chờ duyệt.
-          </div>
-        </div>
 
-        <div *ngIf="currentTab === 'PAPERS' && can('MODERATION_PAPERS_VIEW')" class="space-y-4">
-          <div *ngFor="let paper of pendingPapers" class="bg-white border border-gray-100 p-6 space-y-4 group hover:border-hus-blue transition-all">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div class="flex-grow">
-                <div class="flex items-center gap-2 mb-2">
-                  <span class="text-[9px] font-black bg-blue-50 text-hus-blue px-2 py-0.5 uppercase tracking-widest">{{ paper.authorName }}</span>
-                  <span class="text-[9px] text-gray-400 uppercase tabular-nums">{{ paper.category }}</span>
+              <div *ngFor="let post of pendingPosts()" class="bg-white border border-gray-100 p-6 space-y-4 group hover:border-hus-blue transition-all">
+                <div class="flex flex-col md:flex-row justify-between items-start gap-6">
+                  <div class="flex items-start gap-4 flex-grow min-w-0">
+                    <label *ngIf="can('MODERATION_POSTS_ACTION')" class="pt-1 flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 border-gray-300 text-hus-blue focus:ring-hus-blue"
+                        [checked]="isPostSelected(post.id)"
+                        (click)="$event.stopPropagation()"
+                        (change)="togglePostSelection(post.id, $any($event.target).checked)">
+                    </label>
+                    <div class="min-w-0 flex-grow cursor-pointer" (click)="openPostPreview(post)">
+                      <div class="flex flex-wrap items-center gap-2 mb-2">
+                        <span class="text-[9px] font-black bg-gray-100 px-2 py-0.5 uppercase tracking-widest">{{ post.authorName }}</span>
+                        <span *ngIf="post.jobType" class="text-[9px] font-black bg-blue-50 text-hus-blue px-2 py-0.5 uppercase tracking-widest">{{ post.jobType }}</span>
+                        <span class="text-[9px] text-gray-400 uppercase tabular-nums">{{ post.createdAt | date:'dd.MM.yyyy' }}</span>
+                      </div>
+                      <h3 class="text-lg font-bold text-gray-900 group-hover:text-hus-blue transition-colors">{{ post.title }}</h3>
+                      <p class="text-[11px] text-gray-500 line-clamp-2 mt-1">{{ post.summary }}</p>
+                      <div class="mt-3 flex flex-wrap gap-2">
+                        <span *ngIf="post.location" class="text-[9px] font-bold uppercase tracking-widest text-gray-400">{{ post.location }}</span>
+                        <span *ngIf="post.salaryRange" class="text-[9px] font-bold uppercase tracking-widest text-gray-400">{{ post.salaryRange }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-3 flex-shrink-0" *ngIf="can('MODERATION_POSTS_ACTION')">
+                    <button type="button" (click)="openPostPreview(post)" class="px-6 py-2 border border-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-all">Xem</button>
+                    <button type="button" (click)="approvePost(post.id)" class="px-6 py-2 bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest hover:bg-hus-dark transition-all">Duyệt</button>
+                    <button type="button" (click)="rejectPost(post.id)" class="px-6 py-2 bg-white border border-red-200 text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-50 transition-all">Từ chối</button>
+                  </div>
                 </div>
-                <h3 class="text-lg font-bold text-gray-900 group-hover:text-hus-blue transition-colors">{{ paper.title }}</h3>
+                <textarea
+                  *ngIf="can('MODERATION_POSTS_ACTION')"
+                  [(ngModel)]="postRejectComments[post.id]"
+                  [ngModelOptions]="{ standalone: true }"
+                  rows="2"
+                  class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue"
+                  placeholder="Lý do từ chối (tùy chọn)">
+                </textarea>
               </div>
-              <div class="flex gap-3 flex-shrink-0" *ngIf="can('MODERATION_PAPERS_ACTION')">
-                <button (click)="approvePaper(paper.id)" class="px-6 py-2 bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest hover:bg-hus-dark transition-all">Duyệt</button>
-                <button (click)="rejectPaper(paper.id)" class="px-6 py-2 bg-white border border-red-200 text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-50 transition-all">Từ chối</button>
+              <div *ngIf="pendingPosts().length === 0" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-200">
+                Không có bài đăng nào đang chờ duyệt.
               </div>
             </div>
-            <textarea
-              *ngIf="can('MODERATION_PAPERS_ACTION')"
-              [(ngModel)]="paperRejectComments[paper.id]"
-              [ngModelOptions]="{ standalone: true }"
-              rows="2"
-              class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue"
-              placeholder="Lý do từ chối (tùy chọn)">
-            </textarea>
-          </div>
-          <div *ngIf="pendingPapers.length === 0" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-200">
-            Không có bài nghiên cứu nào đang chờ duyệt.
-          </div>
-        </div>
+ 
+            <div *ngIf="currentTab === 'PAPERS' && can('MODERATION_PAPERS_VIEW')" class="space-y-4">
+              <div *ngIf="pendingPapers().length > 0 && can('MODERATION_PAPERS_ACTION')"
+                   class="bg-white border border-gray-100 px-4 py-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <label class="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-600">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 border-gray-300 text-hus-blue focus:ring-hus-blue"
+                    [checked]="allPapersSelected"
+                    [indeterminate]="somePapersSelected"
+                    (change)="toggleAllPapers($any($event.target).checked)">
+                  Chọn tất cả ({{ selectedPaperCount }}/{{ pendingPapers().length }})
+                </label>
+                <button
+                  type="button"
+                  (click)="approveSelectedPapers()"
+                  [disabled]="selectedPaperCount === 0 || isApprovingSelectedPapers"
+                  class="px-5 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  {{ isApprovingSelectedPapers ? 'Đang duyệt...' : 'Duyệt đã chọn (' + selectedPaperCount + ')' }}
+                </button>
+              </div>
+
+              <div *ngFor="let paper of pendingPapers()" class="bg-white border border-gray-100 p-6 space-y-4 group hover:border-hus-blue transition-all">
+                <div class="flex flex-col md:flex-row justify-between items-start gap-6">
+                  <div class="flex items-start gap-4 flex-grow min-w-0">
+                    <label *ngIf="can('MODERATION_PAPERS_ACTION')" class="pt-1 flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 border-gray-300 text-hus-blue focus:ring-hus-blue"
+                        [checked]="isPaperSelected(paper.id)"
+                        (click)="$event.stopPropagation()"
+                        (change)="togglePaperSelection(paper.id, $any($event.target).checked)">
+                    </label>
+                    <div class="min-w-0 flex-grow cursor-pointer" (click)="openPaperPreview(paper)">
+                      <div class="flex flex-wrap items-center gap-2 mb-2">
+                        <span class="text-[9px] font-black bg-blue-50 text-hus-blue px-2 py-0.5 uppercase tracking-widest">{{ paper.authorName }}</span>
+                        <span class="text-[9px] text-gray-400 uppercase tabular-nums">{{ paper.category }}</span>
+                        <span *ngIf="paper.publicationYear" class="text-[9px] text-gray-400 uppercase tabular-nums">{{ paper.publicationYear }}</span>
+                      </div>
+                      <h3 class="text-lg font-bold text-gray-900 group-hover:text-hus-blue transition-colors">{{ paper.title }}</h3>
+                      <p *ngIf="paper.paperAbstract" class="text-[11px] text-gray-500 line-clamp-2 mt-1" [innerHTML]="paper.paperAbstract"></p>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-3 flex-shrink-0" *ngIf="can('MODERATION_PAPERS_ACTION')">
+                    <button type="button" (click)="openPaperPreview(paper)" class="px-6 py-2 border border-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-all">Xem</button>
+                    <button type="button" (click)="approvePaper(paper.id)" class="px-6 py-2 bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest hover:bg-hus-dark transition-all">Duyệt</button>
+                    <button type="button" (click)="rejectPaper(paper.id)" class="px-6 py-2 bg-white border border-red-200 text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-50 transition-all">Từ chối</button>
+                  </div>
+                </div>
+                <textarea
+                  *ngIf="can('MODERATION_PAPERS_ACTION')"
+                  [(ngModel)]="paperRejectComments[paper.id]"
+                  [ngModelOptions]="{ standalone: true }"
+                  rows="2"
+                  class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue"
+                  placeholder="Lý do từ chối (tùy chọn)">
+                </textarea>
+              </div>
+              <div *ngIf="pendingPapers().length === 0" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-200">
+                Không có bài nghiên cứu nào đang chờ duyệt.
+              </div>
+            </div>
 
         <div *ngIf="currentTab === 'HERO' && can('RESEARCH_HERO_EDIT')" class="bg-white border border-gray-100 p-6 md:p-8 space-y-6">
           <div>
@@ -753,6 +839,124 @@ interface AdminTabConfig {
             </ng-template>
           </div>
         </div>
+
+        <app-post-detail *ngIf="previewPost() as post"
+                         [post]="toModerationPreviewPost(post)"
+                         [showActions]="false"
+                         (close)="closeModerationPreview()">
+        </app-post-detail>
+
+        <div *ngIf="previewPaper()" class="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6">
+          <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" (click)="closeModerationPreview()"></div>
+
+          <div class="relative w-full max-w-6xl max-h-[92vh] overflow-y-auto bg-white shadow-2xl border border-gray-100">
+            <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-gray-100 bg-white px-5 py-4 sm:px-6">
+              <div class="min-w-0">
+                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-hus-blue">
+                  {{ previewPost() ? 'Xem trước tin tuyển dụng chờ duyệt' : 'Xem trước bài nghiên cứu chờ duyệt' }}
+                </p>
+                <h3 class="mt-2 text-lg sm:text-xl font-black text-gray-900 tracking-tight">Chế độ xem bài nghiên cứu chi tiết</h3>
+              </div>
+              <button type="button"
+                      (click)="closeModerationPreview()"
+                      class="w-10 h-10 inline-flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600 transition-colors flex-shrink-0">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <div *ngIf="previewPaper() as paper" class="bg-white">
+              <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-5 sm:px-6 lg:px-8">
+                <div class="max-w-4xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  <span class="text-hus-blue">Bài nghiên cứu chờ duyệt</span>
+                  <span class="text-gray-300">/</span>
+                  <span class="text-hus-blue opacity-70">{{ formatModerationValue(paper.researchArea) }}</span>
+                </div>
+              </div>
+
+              <div class="px-5 py-8 sm:px-6 lg:px-8 lg:py-10">
+                <div class="max-w-4xl mx-auto">
+                  <header class="mb-8 sm:mb-12 border-b-2 border-hus-blue pb-8 sm:pb-10">
+                    <div class="flex items-center gap-3 mb-6 text-[11px] font-bold uppercase tracking-tighter">
+                      <span class="bg-hus-blue text-white px-3 py-1">{{ moderationResearchCategoryLabel(paper.category) }}</span>
+                      <span class="text-gray-300">|</span>
+                      <span class="text-hus-blue">{{ paper.publicationYear || 'N/A' }}</span>
+                      <a *ngIf="hasModerationPaperPdf(paper.pdfUrl)"
+                         [href]="moderationPaperPdfUrl(paper.pdfUrl)"
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         class="ml-auto inline-flex items-center justify-center border border-gray-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:border-hus-blue hover:text-hus-blue transition-colors">
+                        Mở PDF
+                      </a>
+                    </div>
+
+                    <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-6 sm:mb-8">
+                      {{ paper.title }}
+                    </h1>
+
+                    <div class="flex flex-col gap-6">
+                      <div class="flex flex-wrap gap-x-5 gap-y-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                        <span>Lĩnh vực: <span class="text-hus-blue">{{ formatModerationValue(paper.researchArea) }}</span></span>
+                        <span>Hội thảo / Tạp chí: <span class="text-gray-600">{{ formatModerationValue(paper.journalConference, 'MIM Draft') }}</span></span>
+                        <span>Cập nhật: <span class="text-gray-600">{{ (paper.updatedAt || paper.createdAt) | date:'dd.MM.yyyy HH:mm' }}</span></span>
+                      </div>
+
+                      <div class="flex flex-wrap gap-4 items-center">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tác giả biên soạn:</span>
+                        <div class="flex flex-wrap gap-x-6 gap-y-2">
+                          <div *ngFor="let author of moderationPaperAuthors(paper)" class="text-sm font-bold text-gray-900">
+                            <a *ngIf="author.authorId"
+                               [routerLink]="['/profile', author.authorId]"
+                               class="transition-colors hover:text-hus-blue">
+                              {{ author.name }}
+                            </a>
+                            <span *ngIf="!author.authorId">{{ author.name }}</span>
+                            <span *ngIf="isMainModerationAuthor(author)" class="ml-1 text-[9px] text-hus-blue uppercase tracking-tighter font-black">(Chủ biên)</span>
+                          </div>
+                          <div *ngIf="moderationPaperAuthors(paper).length === 0" class="text-sm font-bold text-gray-400">
+                            {{ paper.authorName }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </header>
+
+                  <div class="space-y-10 sm:space-y-14">
+                    <section>
+                      <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] mb-6 inline-block border-b-4 border-hus-blue pb-1">
+                        Tóm tắt nghiên cứu
+                      </h2>
+                      <div class="research-rich-content max-w-full"
+                           [innerHTML]="paper.paperAbstract || 'Chưa có tóm tắt nghiên cứu.'"></div>
+                    </section>
+
+                    <section>
+                      <div class="flex justify-between items-baseline mb-6">
+                        <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] inline-block border-b-4 border-hus-blue pb-1">
+                          Văn bản chi tiết (PDF)
+                        </h2>
+                      </div>
+
+                      <div class="w-full aspect-[1/1.55] min-h-[560px] md:min-h-[720px] bg-gray-50 border-2 border-hus-blue/10">
+                        <app-pdf-canvas-viewer *ngIf="hasModerationPaperPdf(paper.pdfUrl); else missingInlineModerationPdf"
+                                               [src]="moderationPaperPdfUrl(paper.pdfUrl)"
+                                               [title]="paper.title"
+                                               class="block w-full h-full">
+                        </app-pdf-canvas-viewer>
+                        <ng-template #missingInlineModerationPdf>
+                          <div class="w-full h-full flex flex-col items-center justify-center text-center px-6">
+                            <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
+                              Không có file PDF.
+                            </p>
+                            <p class="mt-2 text-xs text-gray-500 max-w-md">
+                              Bài nghiên cứu này chưa được đính kèm file PDF.
+                            </p>
+                          </div>
+                        </ng-template>
+                      </div>
+                    </section>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -761,8 +965,8 @@ interface AdminTabConfig {
     styles: []
 })
 export class AdminDashboardComponent implements OnInit, OnDestroy {
+    private readonly route = inject(ActivatedRoute);
     private readonly moderationService = inject(AdminModerationService);
-    private readonly notificationService = inject(AdminNotificationService);
     private readonly contentService = inject(ContentService);
     private readonly adminContentService = inject(AdminContentService);
     private readonly adminNewsService = inject(AdminNewsService);
@@ -816,11 +1020,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
     ];
 
-    pendingPosts: ModerationPostItem[] = [];
-    pendingPapers: ModerationPaperItem[] = [];
+    pendingPosts: WritableSignal<ModerationPostItem[]> = signal([]);
+    pendingPapers: WritableSignal<ModerationPaperItem[]> = signal([]);
+    selectedPostIds: WritableSignal<string[]> = signal([]);
+    selectedPaperIds: WritableSignal<string[]> = signal([]);
+    previewPost: WritableSignal<ModerationPostItem | null> = signal(null);
+    previewPaper: WritableSignal<ModerationPaperItem | null> = signal(null);
+    private lastNotifId = '';
 
     postRejectComments: Record<string, string> = {};
     paperRejectComments: Record<string, string> = {};
+    isApprovingSelectedPosts = false;
+    isApprovingSelectedPapers = false;
 
     heroForm = {
         titlePrefix: '',
@@ -881,34 +1092,100 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     heroNotice = '';
     rbacNotice = '';
+    moderationNotice = '';
     errorMessage = '';
-    isNotificationPanelOpen = false;
+    private pollSubscription?: Subscription;
+    private routeQuerySubscription?: Subscription;
 
     // Notification signal bindings
     readonly notifications = adminNotificationSignal.notifications;
-    readonly notificationUnreadCount = adminNotificationSignal.unreadCount;
+
+    constructor() {
+        effect(() => {
+            const notifs = this.notifications();
+            if (notifs.length > 0) {
+                const latest = notifs[0];
+                if (latest.id !== this.lastNotifId) {
+                    this.lastNotifId = latest.id;
+                    this.loadPendingModeration();
+                }
+            }
+        });
+    }
 
     ngOnInit(): void {
         this.currentTab = this.resolveInitialTab();
+
+        this.routeQuerySubscription = this.route.queryParamMap.subscribe((params) => {
+            const requestedTab = params.get('tab');
+            const resolvedTab = this.resolveTabFromQuery(requestedTab);
+            if (resolvedTab) {
+                this.currentTab = resolvedTab;
+                this.errorMessage = '';
+            } else if (!this.hasAnyTabAccess()) {
+                this.currentTab = 'POSTS';
+            } else if (!this.can(this.currentTabPermission())) {
+                this.currentTab = this.resolveInitialTab();
+            }
+        });
         this.loadPendingModeration();
         this.loadHeroContent();
         this.loadNews();
         this.loadSpecializations();
         this.loadResearchCategories();
         this.loadRbacData();
-        this.notificationService.connect();
+        // Poll immediately and then every 10s to auto-refresh pending moderation without reload.
+        // Using timer(0, ...) ensures it runs immediately on init.
+        this.pollSubscription = timer(0, 10_000).subscribe(() => {
+            this.loadPendingModeration();
+        });
     }
 
     ngOnDestroy(): void {
-        this.notificationService.disconnect();
+        this.pollSubscription?.unsubscribe();
+        this.routeQuerySubscription?.unsubscribe();
     }
 
     can(permission: string): boolean {
         return authSignal.hasPermission(permission);
     }
 
+    get currentTabConfig(): AdminTabConfig | null {
+        return this.adminTabs.find((tab) => tab.key === this.currentTab) ?? null;
+    }
+
+    get totalPendingCount(): number {
+        return this.pendingPosts().length + this.pendingPapers().length;
+    }
+
     get visibleTabs(): AdminTabConfig[] {
         return this.adminTabs.filter((tab) => this.can(tab.permission));
+    }
+
+    get selectedPostCount(): number {
+        return this.selectedPostIds().length;
+    }
+
+    get selectedPaperCount(): number {
+        return this.selectedPaperIds().length;
+    }
+
+    get allPostsSelected(): boolean {
+        const posts = this.pendingPosts();
+        return posts.length > 0 && posts.every((post) => this.selectedPostIds().includes(post.id));
+    }
+
+    get somePostsSelected(): boolean {
+        return this.selectedPostCount > 0 && !this.allPostsSelected;
+    }
+
+    get allPapersSelected(): boolean {
+        const papers = this.pendingPapers();
+        return papers.length > 0 && papers.every((paper) => this.selectedPaperIds().includes(paper.id));
+    }
+
+    get somePapersSelected(): boolean {
+        return this.selectedPaperCount > 0 && !this.allPapersSelected;
     }
 
     hasAnyTabAccess(): boolean {
@@ -918,88 +1195,178 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     selectTab(tab: AdminTabKey): void {
         this.currentTab = tab;
         this.errorMessage = '';
+        this.moderationNotice = '';
+        this.closeModerationPreview();
     }
 
     tabBadge(tab: AdminTabKey): number | null {
         if (tab === 'POSTS') {
-            return this.pendingPosts.length;
+            return this.pendingPosts().length;
         }
         if (tab === 'PAPERS') {
-            return this.pendingPapers.length;
+            return this.pendingPapers().length;
         }
         return null;
     }
 
-    toggleNotificationPanel(): void {
-        this.isNotificationPanelOpen = !this.isNotificationPanelOpen;
+    isPostSelected(id: string): boolean {
+        return this.selectedPostIds().includes(id);
     }
 
-    markAllNotificationsRead(): void {
-        adminNotificationSignal.markAllAsRead();
+    isPaperSelected(id: string): boolean {
+        return this.selectedPaperIds().includes(id);
     }
 
-    onNotificationClick(notif: { id: string; contentType: string; read: boolean }): void {
-        if (!notif.read) {
-            adminNotificationSignal.markAsRead(notif.id);
+    togglePostSelection(id: string, checked: boolean): void {
+        this.selectedPostIds.update((prev) => checked
+            ? [...new Set([...prev, id])]
+            : prev.filter((item) => item !== id));
+    }
+
+    togglePaperSelection(id: string, checked: boolean): void {
+        this.selectedPaperIds.update((prev) => checked
+            ? [...new Set([...prev, id])]
+            : prev.filter((item) => item !== id));
+    }
+
+    toggleAllPosts(checked: boolean): void {
+        this.selectedPostIds.set(checked ? this.pendingPosts().map((post) => post.id) : []);
+    }
+
+    toggleAllPapers(checked: boolean): void {
+        this.selectedPaperIds.set(checked ? this.pendingPapers().map((paper) => paper.id) : []);
+    }
+
+    openPostPreview(post: ModerationPostItem): void {
+        this.previewPaper.set(null);
+        this.previewPost.set(post);
+    }
+
+    openPaperPreview(paper: ModerationPaperItem): void {
+        this.previewPost.set(null);
+        this.previewPaper.set(paper);
+    }
+
+    closeModerationPreview(): void {
+        this.previewPost.set(null);
+        this.previewPaper.set(null);
+    }
+
+    approveSelectedPosts(): void {
+        const ids = this.selectedPostIds();
+        if (ids.length === 0 || this.isApprovingSelectedPosts) {
+            return;
         }
-        this.isNotificationPanelOpen = false;
-        // Navigate to the correct moderation tab
-        if (notif.contentType === 'POST') {
-            this.selectTab('POSTS');
-        } else if (notif.contentType === 'PAPER') {
-            this.selectTab('PAPERS');
+
+        this.errorMessage = '';
+        this.moderationNotice = '';
+        this.isApprovingSelectedPosts = true;
+
+        forkJoin(ids.map((id) => this.moderationService.approvePost(id).pipe(take(1))))
+            .pipe(finalize(() => {
+                this.isApprovingSelectedPosts = false;
+            }))
+            .subscribe((results) => {
+                const approvedIds = ids.filter((id, index) => results[index]);
+                const failedCount = ids.length - approvedIds.length;
+
+                if (approvedIds.length > 0) {
+                    this.removePostsFromQueue(approvedIds);
+                    this.moderationNotice = `Đã duyệt ${approvedIds.length} bài tuyển dụng.`;
+                }
+
+                if (failedCount > 0) {
+                    this.errorMessage = `Có ${failedCount} bài tuyển dụng đã bị xóa hoặc không còn ở trạng thái chờ duyệt.`;
+                    this.loadPendingModeration();
+                }
+            });
+    }
+
+    approveSelectedPapers(): void {
+        const ids = this.selectedPaperIds();
+        if (ids.length === 0 || this.isApprovingSelectedPapers) {
+            return;
         }
-        // Reload moderation data
-        this.loadPendingModeration();
+
+        this.errorMessage = '';
+        this.moderationNotice = '';
+        this.isApprovingSelectedPapers = true;
+
+        forkJoin(ids.map((id) => this.moderationService.approvePaper(id).pipe(take(1))))
+            .pipe(finalize(() => {
+                this.isApprovingSelectedPapers = false;
+            }))
+            .subscribe((results) => {
+                const approvedIds = ids.filter((id, index) => results[index]);
+                const failedCount = ids.length - approvedIds.length;
+
+                if (approvedIds.length > 0) {
+                    this.removePapersFromQueue(approvedIds);
+                    this.moderationNotice = `Đã duyệt ${approvedIds.length} bài nghiên cứu.`;
+                }
+
+                if (failedCount > 0) {
+                    this.errorMessage = `Có ${failedCount} bài nghiên cứu đã bị xóa hoặc không còn ở trạng thái chờ duyệt.`;
+                    this.loadPendingModeration();
+                }
+            });
     }
 
     approvePost(id: string): void {
         this.errorMessage = '';
+        this.moderationNotice = '';
         this.moderationService.approvePost(id).subscribe((ok) => {
             if (!ok) {
-                this.errorMessage = 'Không thể duyệt bài tuyển dụng.';
+                this.errorMessage = 'Bài tuyển dụng đã bị xóa hoặc không còn ở trạng thái chờ duyệt.';
+                this.loadPendingModeration();
                 return;
             }
-            this.pendingPosts = this.pendingPosts.filter((item) => item.id !== id);
-            delete this.postRejectComments[id];
+            this.removePostsFromQueue([id]);
+            this.moderationNotice = 'Đã duyệt bài tuyển dụng.';
         });
     }
 
     rejectPost(id: string): void {
         this.errorMessage = '';
+        this.moderationNotice = '';
         const comment = this.postRejectComments[id] ?? '';
         this.moderationService.rejectPost(id, comment).subscribe((ok) => {
             if (!ok) {
-                this.errorMessage = 'Không thể từ chối bài tuyển dụng.';
+                this.errorMessage = 'Bài tuyển dụng đã bị xóa hoặc không còn ở trạng thái chờ duyệt.';
+                this.loadPendingModeration();
                 return;
             }
-            this.pendingPosts = this.pendingPosts.filter((item) => item.id !== id);
-            delete this.postRejectComments[id];
+            this.removePostsFromQueue([id]);
+            this.moderationNotice = 'Đã từ chối bài tuyển dụng.';
         });
     }
 
     approvePaper(id: string): void {
         this.errorMessage = '';
+        this.moderationNotice = '';
         this.moderationService.approvePaper(id).subscribe((ok) => {
             if (!ok) {
-                this.errorMessage = 'Không thể duyệt bài nghiên cứu.';
+                this.errorMessage = 'Bài nghiên cứu đã bị xóa hoặc không còn ở trạng thái chờ duyệt.';
+                this.loadPendingModeration();
                 return;
             }
-            this.pendingPapers = this.pendingPapers.filter((item) => item.id !== id);
-            delete this.paperRejectComments[id];
+            this.removePapersFromQueue([id]);
+            this.moderationNotice = 'Đã duyệt bài nghiên cứu.';
         });
     }
 
     rejectPaper(id: string): void {
         this.errorMessage = '';
+        this.moderationNotice = '';
         const comment = this.paperRejectComments[id] ?? '';
         this.moderationService.rejectPaper(id, comment).subscribe((ok) => {
             if (!ok) {
-                this.errorMessage = 'Không thể từ chối bài nghiên cứu.';
+                this.errorMessage = 'Bài nghiên cứu đã bị xóa hoặc không còn ở trạng thái chờ duyệt.';
+                this.loadPendingModeration();
                 return;
             }
-            this.pendingPapers = this.pendingPapers.filter((item) => item.id !== id);
-            delete this.paperRejectComments[id];
+            this.removePapersFromQueue([id]);
+            this.moderationNotice = 'Đã từ chối bài nghiên cứu.';
         });
     }
 
@@ -1445,6 +1812,192 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
     }
 
+    formatModerationValue(value?: string | number | null, fallback = 'Chưa cập nhật'): string {
+        if (typeof value === 'number') {
+            return Number.isFinite(value) ? String(value) : fallback;
+        }
+        const normalized = (value ?? '').toString().trim();
+        return normalized || fallback;
+    }
+
+    moderationPostTypeLabel(value?: string | null): string {
+        const normalized = this.normalizeEnumValue(value);
+        return MODERATION_POST_TYPE_LABELS[normalized] || this.humanizeEnumValue(normalized) || 'Chưa cập nhật';
+    }
+
+    moderationJobTypeLabel(value?: string | null): string {
+        const normalized = this.normalizeEnumValue(value);
+        return MODERATION_JOB_TYPE_LABELS[normalized] || this.humanizeEnumValue(normalized) || 'Chưa cập nhật';
+    }
+
+    moderationPostStatusLabel(value?: string | null): string {
+        const normalized = this.normalizeEnumValue(value);
+        return MODERATION_POST_STATUS_LABELS[normalized] || this.humanizeEnumValue(normalized) || 'Chưa cập nhật';
+    }
+
+    moderationResearchCategoryLabel(value?: string | null): string {
+        const normalized = this.normalizeEnumValue(value);
+        return MODERATION_RESEARCH_CATEGORY_LABELS[normalized] || this.humanizeEnumValue(normalized) || 'Chưa cập nhật';
+    }
+
+    toModerationPreviewPost(post: ModerationPostItem): Post {
+        const createdAt = this.moderationDate(post.createdAt);
+        const updatedAt = this.moderationDate(post.updatedAt, createdAt);
+
+        return {
+            id: post.id,
+            authorId: '',
+            authorName: post.authorName || 'Unknown',
+            authorAvatarUrl: post.authorAvatarUrl,
+            title: post.title || 'Chưa có tiêu đề',
+            description: post.description || post.summary || '',
+            requirements: post.requirements,
+            achievements: post.achievements,
+            benefits: post.benefits,
+            postType: (post.postType || 'STUDENT_SEEKING_JOB') as Post['postType'],
+            jobType: (post.jobType || 'FULL_TIME') as Post['jobType'],
+            tags: [...(post.tags ?? [])],
+            studentCvUrl: post.studentCvUrl,
+            contactEmail: post.contactEmail,
+            contactPhone: post.contactPhone,
+            researchPaperLinks: (post.researchPaperLinks ?? []).map((item) => ({
+                id: item.id,
+                title: item.title,
+                url: item.url || ''
+            })),
+            displayInfo: post.displayInfo,
+            location: post.location,
+            salaryRange: post.salaryRange,
+            status: (post.status || 'OPEN') as Post['status'],
+            approvalStatus: post.approvalStatus as Post['approvalStatus'],
+            createdAt,
+            updatedAt
+        };
+    }
+
+    isCompanyModerationPost(post: ModerationPostItem | null | undefined): boolean {
+        return this.normalizeEnumValue(post?.postType).includes('COMPANY');
+    }
+
+    moderationPostAudienceLabel(post: ModerationPostItem | null | undefined): string {
+        return this.isCompanyModerationPost(post) ? 'Đối tác doanh nghiệp' : 'Ứng viên tiềm năng';
+    }
+
+    moderationStudentInfoValue(post: ModerationPostItem, key: string): string {
+        const value = post.displayInfo?.[key];
+        if (typeof value === 'string' && value.trim()) {
+            return value.trim();
+        }
+
+        if (key === 'studentBio') {
+            const fallback = (post.description ?? '').trim();
+            if (fallback) {
+                return fallback;
+            }
+        }
+
+        if (key === 'studentAchievements') {
+            const fallback = (post.achievements ?? '').trim();
+            if (fallback) {
+                return fallback;
+            }
+        }
+
+        return 'Chưa cập nhật';
+    }
+
+    openModerationResearchPaper(id?: string): void {
+        const paperId = (id ?? '').trim();
+        if (!paperId || typeof window === 'undefined') {
+            return;
+        }
+
+        window.open(`/paper/${paperId}`, '_blank', 'noopener');
+    }
+
+    moderationPaperPdfUrl(rawUrl?: string | null): string {
+        const value = (rawUrl ?? '').trim();
+        if (!value) {
+            return '';
+        }
+
+        if (value.startsWith('http://') || value.startsWith('https://')) {
+            return value.replace('/api/v1/storage/research-pdfs/', '/api/public/storage/research-pdfs/');
+        }
+
+        if (value.startsWith('/api/public/storage/research-pdfs/')) {
+            return `${API_CONFIG.BASE_URL}${value}`;
+        }
+
+        if (value.startsWith('/api/v1/storage/research-pdfs/')) {
+            return `${API_CONFIG.BASE_URL}${value.replace('/api/v1/storage/research-pdfs/', '/api/public/storage/research-pdfs/')}`;
+        }
+
+        if (value.startsWith('/')) {
+            return `${API_CONFIG.BASE_URL}${value}`;
+        }
+
+        return `${API_CONFIG.BASE_URL}/api/public/storage/research-pdfs/${encodeURIComponent(value)}`;
+    }
+
+    hasModerationPaperPdf(rawUrl?: string | null): boolean {
+        return !!this.moderationPaperPdfUrl(rawUrl);
+    }
+
+    moderationDisplayInfoEntries(post: ModerationPostItem): ModerationDisplayInfoEntry[] {
+        const raw = post.displayInfo;
+        if (!raw || typeof raw !== 'object') {
+            return [];
+        }
+
+        const displayInfo = raw as Record<string, unknown>;
+        const orderedKeys = [
+            'studentUniversity',
+            'studentMajor',
+            'studentType',
+            'studentDesiredPosition',
+            'studentBio',
+            'studentCareerGoal',
+            'studentAchievements'
+        ];
+
+        const seen = new Set<string>();
+        const entries: ModerationDisplayInfoEntry[] = [];
+
+        const pushEntry = (key: string): void => {
+            if (seen.has(key)) {
+                return;
+            }
+            seen.add(key);
+            const formatted = this.formatDisplayInfoValue(displayInfo[key]);
+            if (!formatted) {
+                return;
+            }
+            entries.push({
+                label: MODERATION_DISPLAY_INFO_LABELS[key] || this.humanizeKey(key),
+                value: formatted,
+                wide: key === 'studentBio' || key === 'studentCareerGoal' || key === 'studentAchievements' || formatted.length > 120
+            });
+        };
+
+        orderedKeys.forEach(pushEntry);
+        Object.keys(displayInfo).forEach(pushEntry);
+
+        return entries;
+    }
+
+    moderationPaperAuthors(paper: ModerationPaperItem) {
+        return [...(paper.authors ?? [])].sort((left, right) => {
+            const leftOrder = left.authorOrder ?? Number.MAX_SAFE_INTEGER;
+            const rightOrder = right.authorOrder ?? Number.MAX_SAFE_INTEGER;
+            return leftOrder - rightOrder;
+        });
+    }
+
+    isMainModerationAuthor(author: { mainAuthor?: boolean; isMainAuthor?: boolean } | null | undefined): boolean {
+        return Boolean(author?.isMainAuthor ?? author?.mainAuthor);
+    }
+
     primaryRole(roles: string[] | null | undefined): string {
         if (!roles || roles.length === 0) {
             return '';
@@ -1465,21 +2018,85 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         return firstAccessibleTab?.key ?? 'POSTS';
     }
 
-    private loadPendingModeration(): void {
-        if (this.can('MODERATION_POSTS_VIEW')) {
-            this.moderationService.getPosts('PENDING').subscribe((posts) => {
-                this.pendingPosts = posts;
-            });
-        } else {
-            this.pendingPosts = [];
+    private resolveTabFromQuery(tab: string | null): AdminTabKey | null {
+        const normalized = (tab ?? '').trim().toUpperCase();
+        if (!normalized) {
+            return null;
         }
 
-        if (this.can('MODERATION_PAPERS_VIEW')) {
-            this.moderationService.getPapers('PENDING').subscribe((papers) => {
-                this.pendingPapers = papers;
+        const requested = this.adminTabs.find((item) => item.key === normalized);
+        if (!requested) {
+            return null;
+        }
+
+        return this.can(requested.permission) ? requested.key : null;
+    }
+
+    private currentTabPermission(): string {
+        return this.currentTabConfig?.permission ?? '';
+    }
+
+    private loadPendingModeration(): void {
+        // Allow VIEW if user has either VIEW or ACTION permission
+        const canViewPosts = this.can('MODERATION_POSTS_VIEW') || this.can('MODERATION_POSTS_ACTION');
+        const canViewPapers = this.can('MODERATION_PAPERS_VIEW') || this.can('MODERATION_PAPERS_ACTION');
+
+        if (canViewPosts) {
+            this.moderationService.getPosts(ApprovalStatus.PENDING).pipe(take(1)).subscribe((posts) => {
+                this.pendingPosts.set(posts);
+                this.selectedPostIds.update((selected) => selected.filter((id) => posts.some((post) => post.id === id)));
+                const activePreview = this.previewPost();
+                if (activePreview) {
+                    const refreshed = posts.find((post) => post.id === activePreview.id) ?? null;
+                    this.previewPost.set(refreshed);
+                }
             });
         } else {
-            this.pendingPapers = [];
+            this.pendingPosts.set([]);
+            this.selectedPostIds.set([]);
+            this.previewPost.set(null);
+        }
+
+        if (canViewPapers) {
+            this.moderationService.getPapers(ApprovalStatus.PENDING).pipe(take(1)).subscribe((papers) => {
+                this.pendingPapers.set(papers);
+                this.selectedPaperIds.update((selected) => selected.filter((id) => papers.some((paper) => paper.id === id)));
+                const activePreview = this.previewPaper();
+                if (activePreview) {
+                    const refreshed = papers.find((paper) => paper.id === activePreview.id) ?? null;
+                    this.previewPaper.set(refreshed);
+                }
+            });
+        } else {
+            this.pendingPapers.set([]);
+            this.selectedPaperIds.set([]);
+            this.previewPaper.set(null);
+        }
+    }
+
+    private removePostsFromQueue(ids: string[]): void {
+        const removedIds = new Set(ids);
+        this.pendingPosts.update((prev) => prev.filter((item) => !removedIds.has(item.id)));
+        this.selectedPostIds.update((prev) => prev.filter((id) => !removedIds.has(id)));
+        for (const id of ids) {
+            delete this.postRejectComments[id];
+        }
+        const activePreview = this.previewPost();
+        if (activePreview && removedIds.has(activePreview.id)) {
+            this.previewPost.set(null);
+        }
+    }
+
+    private removePapersFromQueue(ids: string[]): void {
+        const removedIds = new Set(ids);
+        this.pendingPapers.update((prev) => prev.filter((item) => !removedIds.has(item.id)));
+        this.selectedPaperIds.update((prev) => prev.filter((id) => !removedIds.has(id)));
+        for (const id of ids) {
+            delete this.paperRejectComments[id];
+        }
+        const activePreview = this.previewPaper();
+        if (activePreview && removedIds.has(activePreview.id)) {
+            this.previewPaper.set(null);
         }
     }
 
@@ -1578,6 +2195,56 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             default:
                 return 99;
         }
+    }
+
+    private formatDisplayInfoValue(value: unknown): string {
+        if (typeof value === 'string') {
+            const normalized = value.trim();
+            return normalized || '';
+        }
+        if (typeof value === 'number' || typeof value === 'boolean') {
+            return String(value);
+        }
+        if (Array.isArray(value)) {
+            return value
+                .map((item) => this.formatDisplayInfoValue(item))
+                .filter((item) => !!item)
+                .join(', ');
+        }
+        return '';
+    }
+
+    private normalizeEnumValue(value?: string | null): string {
+        return (value ?? '').toString().trim().toUpperCase();
+    }
+
+    private moderationDate(value?: string | null, fallback = new Date()): Date {
+        if (!value) {
+            return new Date(fallback);
+        }
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? new Date(fallback) : parsed;
+    }
+
+    private humanizeEnumValue(value?: string | null): string {
+        const normalized = this.normalizeEnumValue(value);
+        if (!normalized) {
+            return '';
+        }
+        return normalized
+            .split('_')
+            .filter((part) => !!part)
+            .map((part) => part.charAt(0) + part.substring(1).toLowerCase())
+            .join(' ');
+    }
+
+    private humanizeKey(value: string): string {
+        return value
+            .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+            .replace(/[_-]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .replace(/^./, (char) => char.toUpperCase());
     }
 
     private buildRolePriority(roleMatrix: RbacRolePermission[]): Record<string, number> {

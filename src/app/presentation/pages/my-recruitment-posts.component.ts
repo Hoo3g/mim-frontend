@@ -1,6 +1,7 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { Subscription, finalize, switchMap, timer } from 'rxjs';
 
 import { Post } from '../../core/models/post.model';
 import { PostService } from '../../core/services/post.service';
@@ -111,6 +112,12 @@ import { PostDetailComponent } from './post-detail.component';
                    class="px-4 py-2 border border-amber-300 text-amber-800 text-[10px] font-black uppercase tracking-widest hover:bg-amber-50 transition-colors">
                   Xác thực email để sửa
                 </a>
+                <button type="button"
+                        (click)="deletePost(post, $event)"
+                        [disabled]="deletingPostIds.has(post.id)"
+                        class="px-4 py-2 border border-red-200 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  {{ deletingPostIds.has(post.id) ? 'Đang xóa...' : 'Xóa' }}
+                </button>
               </div>
             </div>
           </article>
@@ -127,6 +134,7 @@ import { PostDetailComponent } from './post-detail.component';
 export class MyRecruitmentPostsComponent implements OnInit, OnDestroy {
   private readonly postService = inject(PostService);
   private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected readonly ROUTES = ROUTES;
   protected readonly canCreateContent = authSignal.canCreateContent;
@@ -136,6 +144,8 @@ export class MyRecruitmentPostsComponent implements OnInit, OnDestroy {
   noticeMessage = '';
   errorMessage = '';
   selectedPost: Post | null = null;
+  deletingPostIds = new Set<string>();
+  private pollSubscription?: Subscription;
 
   ngOnInit(): void {
     const currentUser = authSignal.user();
@@ -164,6 +174,7 @@ export class MyRecruitmentPostsComponent implements OnInit, OnDestroy {
       next: (posts) => {
         this.posts = posts;
         this.loading = false;
+        this.syncPolling(currentUser.id);
       },
       error: () => {
         this.errorMessage = 'Không thể tải danh sách bài đăng tuyển dụng.';
@@ -173,7 +184,31 @@ export class MyRecruitmentPostsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.pollSubscription?.unsubscribe();
     this.unlockBodyScroll();
+  }
+
+  private startPolling(userId: string): void {
+    if (this.pollSubscription) return;
+
+    // Only poll when there are posts in PENDING approval status
+    const hasPending = this.posts.some((p) => !p.approvalStatus || p.approvalStatus === 'PENDING');
+    if (!hasPending) return;
+
+    // Poll every 10 seconds, bypassing cache, to reflect approval status quickly
+    this.pollSubscription = timer(10000, 10000).pipe(
+      switchMap(() => this.postService.getMyPosts(userId, true))
+    ).subscribe({
+      next: (posts) => {
+        this.posts = posts;
+        // Stop polling once all posts have a final status (no more PENDING)
+        const stillPending = posts.some((p) => !p.approvalStatus || p.approvalStatus === 'PENDING');
+        if (!stillPending) {
+          this.pollSubscription?.unsubscribe();
+          this.pollSubscription = undefined;
+        }
+      }
+    });
   }
 
   openPreview(post: Post): void {
@@ -189,6 +224,59 @@ export class MyRecruitmentPostsComponent implements OnInit, OnDestroy {
   editPost(post: Post, event: Event): void {
     event.stopPropagation();
     this.router.navigateByUrl(ROUTES.RECRUITMENT_EDITOR_EDIT(post.id));
+  }
+
+  deletePost(post: Post, event: Event): void {
+    event.stopPropagation();
+
+    if (this.deletingPostIds.has(post.id)) {
+      return;
+    }
+
+    if (!confirm(`Bạn có chắc muốn xóa bài đăng "${post.title}"?`)) {
+      return;
+    }
+
+    const currentUserId = authSignal.user()?.id;
+    if (!currentUserId) {
+      this.router.navigateByUrl(ROUTES.AUTH.LOGIN);
+      return;
+    }
+
+    this.errorMessage = '';
+    this.noticeMessage = '';
+    this.pollSubscription?.unsubscribe();
+    this.pollSubscription = undefined;
+    this.deletingPostIds.add(post.id);
+
+    this.postService.deleteMyPost(post.id).pipe(
+      finalize(() => {
+        this.deletingPostIds.delete(post.id);
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: (deleted) => {
+        if (!deleted) {
+          this.errorMessage = 'Không thể xóa bài đăng đã chọn.';
+          this.syncPolling(currentUserId);
+          this.cdr.detectChanges();
+          return;
+        }
+
+        this.posts = this.posts.filter((item) => item.id !== post.id);
+        if (this.selectedPost?.id === post.id) {
+          this.closePreview();
+        }
+        this.noticeMessage = 'Đã xóa bài đăng tuyển dụng.';
+        this.syncPolling(currentUserId);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.errorMessage = 'Không thể xóa bài đăng đã chọn.';
+        this.syncPolling(currentUserId);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   statusLabel(status: Post['status']): string {
@@ -235,5 +323,17 @@ export class MyRecruitmentPostsComponent implements OnInit, OnDestroy {
 
   private unlockBodyScroll(): void {
     document.body.style.overflow = 'auto';
+  }
+
+  private syncPolling(userId: string): void {
+    const hasPending = this.posts.some((post) => !post.approvalStatus || post.approvalStatus === 'PENDING');
+
+    if (!hasPending) {
+      this.pollSubscription?.unsubscribe();
+      this.pollSubscription = undefined;
+      return;
+    }
+
+    this.startPolling(userId);
   }
 }
