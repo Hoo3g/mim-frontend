@@ -10,6 +10,7 @@ export const ROUTES = {
     RECRUITMENT: '/recruitment',
     RECRUITMENT_DETAIL: (id: string) => `/recruitment/${id}`,
     RECRUITMENT_MY_POSTS: '/recruitment/my-posts',
+    RECRUITMENT_POST_STATS: (id: string) => `/recruitment/my-posts/${id}/statistics`,
     RECRUITMENT_EDITOR: '/recruitment/editor',
     RECRUITMENT_EDITOR_EDIT: (id: string) => `/recruitment/editor/${id}`,
     AUTH: {

@@ -76,6 +76,8 @@ interface ApiPendingApplicant {
     postId?: string;
     postTitle?: string;
     applicantId?: string;
+    applicantPostId?: string;
+    status?: string;
     applicantName?: string;
     message?: string;
     cvUrl?: string;
@@ -287,14 +289,30 @@ export class PostService {
         );
     }
 
-    getReceivedPendingApplications(): Observable<PendingApplicantResponse[]> {
-        const params = new HttpParams().set('status', ApprovalStatus.PENDING);
+    getReceivedApplications(status: 'PENDING' | 'REVIEWED' | 'REJECTED' = 'PENDING'): Observable<PendingApplicantResponse[]> {
+        const params = new HttpParams().set('status', status);
         return this.http.get<ApiResponse<ApiPendingApplicant[]>>(
             API_ENDPOINTS.RECRUITMENT.APPLICATIONS_RECEIVED,
             { params }
         ).pipe(
             map((response) => unwrapList(response).map((item) => this.toPendingApplicant(item))),
             catchError(() => of([]))
+        );
+    }
+
+    getReceivedPendingApplications(): Observable<PendingApplicantResponse[]> {
+        return this.getReceivedApplications('PENDING');
+    }
+
+    updateReceivedApplicationStatus(applicationId: string, status: 'REVIEWED' | 'REJECTED'): Observable<boolean> {
+        const params = new HttpParams().set('status', status);
+        return this.http.patch<ApiResponse<boolean>>(
+            API_ENDPOINTS.RECRUITMENT.APPLICATION_STATUS(applicationId),
+            {},
+            { params }
+        ).pipe(
+            map((response) => Boolean(response.success && response.data)),
+            catchError(() => of(false))
         );
     }
 
@@ -587,6 +605,8 @@ export class PostService {
             postId: item.postId ?? '',
             postTitle: item.postTitle ?? '',
             applicantId: item.applicantId ?? '',
+            applicantPostId: item.applicantPostId ?? '',
+            status: item.status ?? 'PENDING',
             applicantName: item.applicantName ?? '',
             message: item.message ?? '',
             cvUrl: item.cvUrl ?? '',

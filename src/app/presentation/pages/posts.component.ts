@@ -244,8 +244,8 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                       </div>
                     </div>
                     <div class="flex flex-col items-end gap-1">
-                       <span class="text-[10px] font-bold text-gray-300 uppercase tabular-nums">{{ post.createdAt | date:'dd.MM.yyyy' }}</span>
-                       <div class="w-4 h-0.5 bg-gray-100 group-hover:bg-hus-blue/30 transition-colors"></div>
+                       <span class="text-[10px] font-black text-gray-600 uppercase tracking-wide tabular-nums">{{ post.createdAt | date:'dd.MM.yyyy' }}</span>
+                       <div class="w-5 h-0.5 bg-hus-blue/70 group-hover:bg-hus-blue transition-colors"></div>
                     </div>
                   </div>
 

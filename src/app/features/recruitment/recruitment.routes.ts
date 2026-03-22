@@ -14,6 +14,11 @@ export const recruitmentRoutes: Routes = [
         loadComponent: () => import('../../presentation/pages/my-recruitment-posts.component').then(m => m.MyRecruitmentPostsComponent)
     },
     {
+        path: 'my-posts/:id/statistics',
+        canActivate: [authGuard],
+        loadComponent: () => import('../../presentation/pages/recruitment-post-statistics.component').then(m => m.RecruitmentPostStatisticsComponent)
+    },
+    {
         path: 'editor',
         canActivate: [authGuard, verifiedGuard],
         loadComponent: () => import('../../presentation/pages/post-editor.component').then(m => m.PostEditorComponent)

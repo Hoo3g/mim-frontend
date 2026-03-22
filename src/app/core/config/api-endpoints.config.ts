@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
         APPLY: (id: string) => `${API_CONFIG.PREFIX}/posts/${id}/apply`,
         APPLICATIONS_MY: `${API_CONFIG.PREFIX}/posts/applications/me`,
         APPLICATIONS_RECEIVED: `${API_CONFIG.PREFIX}/posts/applications/received`,
+        APPLICATION_STATUS: (id: string) => `${API_CONFIG.PREFIX}/posts/applications/${id}/status`,
     },
     CONTENT: {
         RESEARCH_HERO: `${API_CONFIG.PREFIX}/content/research-hero`,

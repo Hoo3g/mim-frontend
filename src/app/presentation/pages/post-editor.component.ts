@@ -486,7 +486,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                 </div>
 
                 <div class="flex flex-col items-end gap-1">
-                  <span class="text-[9px] font-bold text-gray-300 uppercase tabular-nums">{{ today | date:'dd.MM.yyyy' }}</span>
+                  <span class="text-[9px] font-black text-gray-500 uppercase tabular-nums">{{ today | date:'dd.MM.yyyy' }}</span>
                   <div class="w-4 h-0.5 bg-gray-100"></div>
                 </div>
               </div>

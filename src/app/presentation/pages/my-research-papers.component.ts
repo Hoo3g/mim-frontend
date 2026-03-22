@@ -92,8 +92,12 @@ import { authSignal } from '../../core/signals/auth.signal';
                 <button *ngIf="canCreateContent()"
                         type="button"
                         (click)="editPaper(paper.id, $event)"
-                        class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
-                  Chỉnh sửa
+                        title="Chỉnh sửa"
+                        aria-label="Chỉnh sửa"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-hus-blue text-hus-blue hover:bg-hus-blue hover:text-white transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                  </svg>
                 </button>
                 <a *ngIf="!canCreateContent()"
                    [routerLink]="ROUTES.PROFILE"
@@ -104,8 +108,16 @@ import { authSignal } from '../../core/signals/auth.signal';
                 <button type="button"
                         (click)="deletePaper(paper, $event)"
                         [disabled]="deletingPaperIds.has(paper.id)"
-                        class="px-4 py-2 border border-red-200 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                  {{ deletingPaperIds.has(paper.id) ? 'Đang xóa...' : 'Xóa' }}
+                        title="Xóa bài nghiên cứu"
+                        aria-label="Xóa bài nghiên cứu"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-red-200 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <svg *ngIf="!deletingPaperIds.has(paper.id)" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.347 9m-4.786 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21.75H8.084A2.25 2.25 0 0 1 5.84 19.673L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0V4.875A2.25 2.25 0 0 0 13.5 2.625h-3a2.25 2.25 0 0 0-2.25 2.25V5.79m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                  </svg>
+                  <svg *ngIf="deletingPaperIds.has(paper.id)" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"></circle>
+                    <path class="opacity-90" fill="currentColor" d="M12 3a9 9 0 0 1 9 9h-2a7 7 0 0 0-7-7V3Z"></path>
+                  </svg>
                 </button>
               </div>
             </article>

@@ -426,10 +426,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                       <span *ngIf="pendingCountForPost(post.id) !== null"> | pending: {{ pendingCountForPost(post.id) }}</span>
                     </p>
                   </div>
-                  <a [routerLink]="ROUTES.RECRUITMENT_EDITOR_EDIT(post.id)"
-                     class="inline-flex items-center justify-center px-3 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
-                    Chỉnh sửa
-                  </a>
+                  
                 </div>
               </div>
             </article>

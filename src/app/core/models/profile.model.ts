@@ -171,6 +171,8 @@ export interface PendingApplicantResponse {
     postId: string;
     postTitle: string;
     applicantId: string;
+    applicantPostId?: string | null;
+    status?: string | null;
     applicantName: string;
     message?: string | null;
     cvUrl?: string | null;

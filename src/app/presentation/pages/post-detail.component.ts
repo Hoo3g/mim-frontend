@@ -99,23 +99,23 @@ import { HttpErrorResponse } from '@angular/common/http';
         <!-- Right: Details (Scrollable) -->
         <div class="flex-grow flex flex-col min-w-0 md:min-h-0 md:h-full">
           <!-- Header -->
-          <div class="p-5 sm:p-8 border-b border-gray-100 flex justify-between items-start gap-3">
+          <div class="px-5 py-4 sm:px-8 sm:py-5 border-b border-gray-100 flex justify-between items-start gap-3">
             <div class="pr-0 sm:pr-8 min-w-0">
-              <div class="flex flex-wrap items-center gap-2 mb-2">
+              <div class="flex flex-wrap items-center gap-2 mb-1.5">
                 <span class="px-2 py-0.5 bg-gray-900 text-white text-[9px] font-black uppercase tracking-widest">
                   {{ post.jobType }}
                 </span>
-                <span class="text-[10px] font-bold text-gray-300 uppercase tracking-widest tabular-nums">
+                <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest tabular-nums">
                   Đăng ngày {{ post.createdAt | date:'dd.MM.yyyy' }}
                 </span>
               </div>
-              <h1 class="text-lg sm:text-2xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
+              <h1 class="text-[0.95rem] sm:text-[1.4rem] font-black text-gray-900 leading-[1.08] uppercase tracking-[-0.025em] max-w-[820px]">
                 {{ post.title }}
               </h1>
             </div>
             <button (click)="handleClose()"
-                    class="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center flex-shrink-0 text-gray-400 hover:text-gray-600">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    class="inline-flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -125,9 +125,8 @@ import { HttpErrorResponse } from '@angular/common/http';
           <div class="flex-grow min-h-0 overflow-visible md:overflow-y-auto p-5 sm:p-8 space-y-8 sm:space-y-10 custom-scrollbar">
             <!-- Description -->
             <section>
-              <h3 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-4 flex items-center gap-2">
-                <span class="w-1.5 h-1.5 bg-hus-blue"></span>
-                Giới thiệu
+              <h3 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-4">
+                Mô tả công việc
               </h3>
               <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-600 leading-relaxed whitespace-pre-line font-medium">
                 {{ post.description }}
@@ -135,8 +134,7 @@ import { HttpErrorResponse } from '@angular/common/http';
             </section>
 
             <section *ngIf="!post.postType.includes('COMPANY')" class="space-y-6">
-              <h3 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
-                <span class="w-1.5 h-1.5 bg-gray-900"></span>
+              <h3 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight mb-4">
                 Thông tin hồ sơ sinh viên
               </h3>
               <div class="grid sm:grid-cols-2 gap-4 bg-gray-50 p-5 border border-gray-100">
@@ -159,8 +157,7 @@ import { HttpErrorResponse } from '@angular/common/http';
               </div>
 
               <div>
-                <h4 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-3 flex items-center gap-2">
-                  <span class="w-1.5 h-1.5 bg-hus-blue"></span>
+                <h4 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-3">
                   Thành tích & Project
                 </h4>
                 <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
@@ -173,8 +170,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 
             <!-- Requirements (Company) -->
             <section *ngIf="post.postType.includes('COMPANY') && post.requirements">
-              <h3 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
-                <span class="w-1.5 h-1.5 bg-gray-900"></span>
+              <h3 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight mb-4">
                 Yêu cầu & Kỹ năng
               </h3>
               <div class="bg-gray-50 p-6 border-l-4 border-gray-900">
@@ -186,8 +182,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 
             <!-- Student Documents & Research -->
             <section *ngIf="!post.postType.includes('COMPANY') && (post.studentCvUrl || (post.researchPaperLinks && post.researchPaperLinks.length > 0))">
-              <h3 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-4 flex items-center gap-2">
-                <span class="w-1.5 h-1.5 bg-hus-blue"></span>
+              <h3 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-4">
                 Hồ sơ & Nghiên cứu
               </h3>
               <div class="space-y-4">
@@ -243,33 +238,28 @@ import { HttpErrorResponse } from '@angular/common/http';
 
             <!-- Benefits (If Company) -->
             <section *ngIf="post.benefits">
-              <h3 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-4 flex items-center gap-2">
-                <span class="w-1.5 h-1.5 bg-hus-blue"></span>
+              <h3 class="text-sm sm:text-base font-extrabold text-hus-blue tracking-tight mb-4">
                 Quyền lợi hấp dẫn
               </h3>
               <p class="max-w-full overflow-hidden break-words [overflow-wrap:anywhere] text-sm text-gray-600 leading-relaxed whitespace-pre-line font-medium">
                 {{ post.benefits }}
               </p>
             </section>
+
           </div>
 
-          <div *ngIf="showActions && post.postType.includes('COMPANY') && isAuth()" class="px-5 sm:px-8 pt-5 sm:pt-6 bg-gray-50/50 border-t border-gray-100">
-            <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
-              Lời nhắn ứng tuyển (tuỳ chọn)
-            </label>
-            <textarea [(ngModel)]="applyMessage"
-                      rows="3"
-                      class="w-full border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-hus-blue"
-                      placeholder="Ví dụ: Em mong muốn trao đổi thêm về yêu cầu vị trí..."></textarea>
+          <div *ngIf="showActions && post.postType.includes('COMPANY') && isAuth() && (applyFeedback || missingDefaultCv)"
+               class="px-5 sm:px-8 py-4 bg-gray-50/50 border-t border-gray-100">
             <p *ngIf="applyFeedback"
-               class="mt-2 text-[10px] font-bold uppercase tracking-widest"
+               class="text-[10px] font-bold uppercase tracking-widest"
                [ngClass]="applyError ? 'text-red-500' : 'text-emerald-600'">
               {{ applyFeedback }}
             </p>
             <a *ngIf="missingDefaultCv"
                [routerLink]="['/profile']"
                (click)="handleClose()"
-               class="mt-2 inline-block text-[10px] font-black uppercase tracking-widest text-hus-blue hover:underline">
+               class="inline-block text-[10px] font-black uppercase tracking-widest text-hus-blue hover:underline"
+               [class.mt-2]="!!applyFeedback">
               Tải CV mặc định tại Profile
             </a>
           </div>
