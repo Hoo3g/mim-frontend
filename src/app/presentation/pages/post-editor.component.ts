@@ -14,6 +14,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
 import { finalize } from 'rxjs';
 
 type PostingMode = 'JOB' | 'INTERNSHIP';
+type CompanyContentField = 'description' | 'requirements' | 'benefits';
 
 @Component({
   selector: 'app-post-editor',
@@ -109,18 +110,16 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
                     </div>
                   </div>
 
-                  <div>
+                  <div *ngIf="!isCompanyRole">
                     <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                      {{ isCompanyRole ? 'Mô tả chi tiết' : 'Giới thiệu' }}
+                      Giới thiệu
                     </label>
                     <textarea [(ngModel)]="form.description"
                               name="description"
                               rows="6"
                               required
                               class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
-                              [placeholder]="isCompanyRole
-                                ? 'Mô tả công việc, mục tiêu hoặc thông tin bạn muốn chia sẻ...'
-                                : 'Giới thiệu bản thân, kinh nghiệm, định hướng...'"
+                              placeholder="Giới thiệu bản thân, kinh nghiệm, định hướng..."
                     ></textarea>
                   </div>
                 </article>
@@ -130,12 +129,36 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
 
                   <div *ngIf="isCompanyRole">
                     <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                      Yêu cầu công việc
+                      Mô tả công việc
+                    </label>
+                    <textarea [(ngModel)]="form.description"
+                              name="description"
+                              rows="1"
+                              required
+                              data-company-content="true"
+                              (focus)="onCompanyContentFocus('description', $event)"
+                              (blur)="onCompanyContentBlur('description', $event)"
+                              (paste)="onCompanyContentPaste('description', $event)"
+                              (input)="onCompanyContentInput('description', $event)"
+                              (keydown.enter)="onCompanyContentEnter('description', $event)"
+                              class="w-full min-h-[120px] border border-gray-200 px-4 py-3 text-sm leading-6 text-gray-900 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
+                              placeholder="Mô tả công việc, mục tiêu hoặc thông tin bạn muốn chia sẻ..."></textarea>
+                  </div>
+
+                  <div *ngIf="isCompanyRole">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Yêu cầu ứng viên
                     </label>
                     <textarea [(ngModel)]="form.requirements"
                               name="requirements"
-                              rows="4"
-                              class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
+                              rows="1"
+                              data-company-content="true"
+                              (focus)="onCompanyContentFocus('requirements', $event)"
+                              (blur)="onCompanyContentBlur('requirements', $event)"
+                              (paste)="onCompanyContentPaste('requirements', $event)"
+                              (input)="onCompanyContentInput('requirements', $event)"
+                              (keydown.enter)="onCompanyContentEnter('requirements', $event)"
+                              class="w-full min-h-[120px] border border-gray-200 px-4 py-3 text-sm leading-6 text-gray-900 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
                               placeholder="Yêu cầu kỹ năng, kinh nghiệm, công nghệ..."></textarea>
                   </div>
 
@@ -145,8 +168,14 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
                     </label>
                     <textarea [(ngModel)]="form.benefits"
                               name="benefits"
-                              rows="4"
-                              class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
+                              rows="1"
+                              data-company-content="true"
+                              (focus)="onCompanyContentFocus('benefits', $event)"
+                              (blur)="onCompanyContentBlur('benefits', $event)"
+                              (paste)="onCompanyContentPaste('benefits', $event)"
+                              (input)="onCompanyContentInput('benefits', $event)"
+                              (keydown.enter)="onCompanyContentEnter('benefits', $event)"
+                              class="w-full min-h-[120px] border border-gray-200 px-4 py-3 text-sm leading-6 text-gray-900 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
                               placeholder="Lương thưởng, môi trường, phúc lợi..."></textarea>
                   </div>
 
@@ -466,9 +495,24 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
                 {{ form.title.trim() || 'Tiêu đề bài đăng sẽ hiển thị ở đây' }}
               </h3>
 
-              <p class="text-[11px] text-gray-500 font-light leading-relaxed mb-4 line-clamp-3 min-h-[3rem]">
-                {{ form.description.trim() || 'Mô tả ngắn sẽ xuất hiện trong danh sách tuyển dụng.' }}
-              </p>
+              <ng-container *ngIf="isCompanyRole; else studentPreviewDescription">
+                <ul *ngIf="bulletItems(form.description).length > 0; else emptyCompanyPreviewDescription"
+                    class="text-[11px] text-gray-500 font-light leading-relaxed mb-4 min-h-[3rem] pl-5 list-disc marker:text-gray-800 space-y-1">
+                  <li *ngFor="let item of bulletItems(form.description)" class="[overflow-wrap:anywhere]">
+                    {{ item }}
+                  </li>
+                </ul>
+                <ng-template #emptyCompanyPreviewDescription>
+                  <p class="text-[11px] text-gray-500 font-light leading-relaxed mb-4 min-h-[3rem] [overflow-wrap:anywhere]">
+                    Mô tả ngắn sẽ xuất hiện trong danh sách tuyển dụng.
+                  </p>
+                </ng-template>
+              </ng-container>
+              <ng-template #studentPreviewDescription>
+                <p class="text-[11px] text-gray-500 font-light leading-relaxed mb-4 min-h-[3rem] whitespace-pre-line [overflow-wrap:anywhere]">
+                  {{ form.description.trim() || 'Mô tả ngắn sẽ xuất hiện trong danh sách tuyển dụng.' }}
+                </p>
+              </ng-template>
 
               <div class="space-y-3 mb-2 flex-grow">
                 <div *ngIf="!isCompanyRole" class="border border-gray-100 bg-gray-50/60 p-3">
@@ -519,9 +563,13 @@ type PostingMode = 'JOB' | 'INTERNSHIP';
                 <div *ngIf="isCompanyRole && form.requirements.trim()" class="pt-3 border-t border-gray-50">
                   <h4 class="text-[8px] font-bold text-gray-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                     <span class="w-1 h-1 bg-gray-900"></span>
-                    Yêu cầu công việc
+                    Yêu cầu ứng viên
                   </h4>
-                  <p class="text-[10px] text-gray-600 leading-relaxed font-medium line-clamp-3">{{ form.requirements }}</p>
+                  <ul class="text-[10px] text-gray-600 leading-relaxed font-medium pl-4 list-disc marker:text-gray-800 space-y-1">
+                    <li *ngFor="let item of bulletItems(form.requirements)" class="[overflow-wrap:anywhere]">
+                      {{ item }}
+                    </li>
+                  </ul>
                 </div>
 
                 <div *ngIf="!isCompanyRole && resolvedStudentCvUrl()" class="pt-3 border-t border-gray-50">
@@ -666,6 +714,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
 
     this.isCompanyRole = currentUser.role === 'COMPANY';
     this.form.contactEmail = currentUser.email;
+    this.scheduleCompanyTextareaResize();
 
     const postId = this.route.snapshot.paramMap.get('id');
     if (postId) {
@@ -713,6 +762,98 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     } else if (this.form.jobType === JobType.INTERNSHIP) {
       this.form.jobType = JobType.FULL_TIME;
     }
+  }
+
+  onCompanyContentFocus(field: CompanyContentField, event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    if (textarea.value.trim()) {
+      this.autoResizeTextarea(textarea);
+      return;
+    }
+
+    const nextValue = '• ';
+    textarea.value = nextValue;
+    this.updateCompanyContentField(field, nextValue);
+
+    queueMicrotask(() => {
+      textarea.selectionStart = nextValue.length;
+      textarea.selectionEnd = nextValue.length;
+      this.autoResizeTextarea(textarea);
+    });
+  }
+
+  onCompanyContentInput(field: CompanyContentField, event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    this.updateCompanyContentField(field, textarea.value);
+    this.autoResizeTextarea(textarea);
+  }
+
+  onCompanyContentBlur(field: CompanyContentField, event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    const normalized = this.ensureBulletListText(textarea.value);
+    textarea.value = normalized;
+    this.updateCompanyContentField(field, normalized);
+    this.autoResizeTextarea(textarea);
+  }
+
+  onCompanyContentEnter(field: CompanyContentField, event: Event): void {
+    const keyboardEvent = event as KeyboardEvent;
+    if (keyboardEvent.isComposing || keyboardEvent.shiftKey || keyboardEvent.ctrlKey || keyboardEvent.metaKey || keyboardEvent.altKey) {
+      return;
+    }
+
+    keyboardEvent.preventDefault();
+    const textarea = keyboardEvent.target as HTMLTextAreaElement;
+    const value = textarea.value ?? '';
+    const start = textarea.selectionStart ?? value.length;
+    const end = textarea.selectionEnd ?? value.length;
+    const insertedText = '\n• ';
+    const nextValue = `${value.slice(0, start)}${insertedText}${value.slice(end)}`;
+
+    textarea.value = nextValue;
+    this.updateCompanyContentField(field, nextValue);
+    const cursorPosition = start + insertedText.length;
+
+    queueMicrotask(() => {
+      textarea.selectionStart = cursorPosition;
+      textarea.selectionEnd = cursorPosition;
+      this.autoResizeTextarea(textarea);
+    });
+  }
+
+  onCompanyContentPaste(field: CompanyContentField, event: Event): void {
+    const clipboardEvent = event as ClipboardEvent;
+    const pastedText = clipboardEvent.clipboardData?.getData('text') ?? '';
+    if (!pastedText) {
+      return;
+    }
+
+    const pastedItems = this.parseCompanyPastedItems(pastedText);
+    if (pastedItems.length === 0) {
+      return;
+    }
+
+    clipboardEvent.preventDefault();
+    const textarea = clipboardEvent.target as HTMLTextAreaElement;
+    const currentValue = textarea.value ?? '';
+    const start = textarea.selectionStart ?? currentValue.length;
+    const end = textarea.selectionEnd ?? currentValue.length;
+    const before = currentValue.slice(0, start);
+    const after = currentValue.slice(end);
+    const inserted = this.itemsToBulletText(pastedItems);
+    const needsLeadingNewline = !!before && !before.endsWith('\n');
+    const needsTrailingNewline = !!after && !after.startsWith('\n');
+    const nextValue = `${before}${needsLeadingNewline ? '\n' : ''}${inserted}${needsTrailingNewline ? '\n' : ''}${after}`;
+
+    textarea.value = nextValue;
+    this.updateCompanyContentField(field, nextValue);
+    const cursorPosition = before.length + (needsLeadingNewline ? 1 : 0) + inserted.length;
+
+    queueMicrotask(() => {
+      textarea.selectionStart = cursorPosition;
+      textarea.selectionEnd = cursorPosition;
+      this.autoResizeTextarea(textarea);
+    });
   }
 
   openPreviewModal(): void {
@@ -887,6 +1028,16 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     return normalized || 'Chưa cập nhật';
   }
 
+  bulletItems(value: string): string[] {
+    return (value ?? '')
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => !!line)
+      .map((line) => line.replace(/^[•●▪◦\-*]+\s*/, '').trim())
+      .filter((line) => !!line);
+  }
+
   save(): void {
     const currentUser = authSignal.user();
     if (!currentUser) {
@@ -897,6 +1048,12 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     if (!authSignal.canCreateContent()) {
       this.errorMessage = 'Tài khoản chưa xác thực email. Bạn chưa thể tạo hoặc cập nhật bài đăng.';
       return;
+    }
+
+    if (this.isCompanyRole) {
+      this.form.description = this.ensureBulletListText(this.form.description);
+      this.form.requirements = this.ensureBulletListText(this.form.requirements);
+      this.form.benefits = this.ensureBulletListText(this.form.benefits);
     }
 
     const trimmedTitle = this.form.title.trim();
@@ -1030,9 +1187,15 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     this.postingMode = post.postType.endsWith('INTERNSHIP') ? 'INTERNSHIP' : 'JOB';
 
     this.form.title = post.title;
-    this.form.description = post.description;
-    this.form.requirements = post.requirements ?? '';
-    this.form.benefits = post.benefits ?? '';
+    this.form.description = this.isCompanyRole
+      ? this.ensureBulletListText(post.description)
+      : post.description;
+    this.form.requirements = this.isCompanyRole
+      ? this.ensureBulletListText(post.requirements ?? '')
+      : (post.requirements ?? '');
+    this.form.benefits = this.isCompanyRole
+      ? this.ensureBulletListText(post.benefits ?? '')
+      : (post.benefits ?? '');
     this.form.achievements = post.achievements ?? '';
     this.form.location = post.location ?? '';
     this.form.salaryRange = post.salaryRange ?? '';
@@ -1074,6 +1237,8 @@ export class PostEditorComponent implements OnInit, OnDestroy {
         this.useDefaultProfileCv = false;
       }
     }
+
+    this.scheduleCompanyTextareaResize();
   }
 
   private buildStudentDisplayInfo(): Post['displayInfo'] | undefined {
@@ -1182,5 +1347,56 @@ export class PostEditorComponent implements OnInit, OnDestroy {
       .map((item) => item.trim())
       .filter((item) => !!item)
       .filter((item, index, arr) => arr.indexOf(item) === index);
+  }
+
+  private ensureBulletListText(raw: string): string {
+    const items = this.textToBulletItems(raw);
+    return items.length > 0 ? this.itemsToBulletText(items) : '';
+  }
+
+  private parseCompanyPastedItems(raw: string): string[] {
+    return this.textToBulletItems(raw).filter((item) => !!item.trim());
+  }
+
+  private textToBulletItems(raw: string): string[] {
+    return (raw ?? '')
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .map((line) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return '';
+        }
+        return trimmed.replace(/^[•●▪◦\-*]+\s*/, '').trim();
+      })
+      .filter((line) => !!line);
+  }
+
+  private itemsToBulletText(items: string[]): string {
+    return items
+      .map((item) => item.trim())
+      .filter((item) => !!item)
+      .map((item) => `• ${item}`)
+      .join('\n');
+  }
+
+  private updateCompanyContentField(field: CompanyContentField, value: string): void {
+    this.form[field] = value;
+  }
+
+  private autoResizeTextarea(textarea: HTMLTextAreaElement): void {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }
+
+  private scheduleCompanyTextareaResize(): void {
+    if (!this.isCompanyRole) {
+      return;
+    }
+
+    setTimeout(() => {
+      const companyTextareas = document.querySelectorAll<HTMLTextAreaElement>('textarea[data-company-content="true"]');
+      companyTextareas.forEach((textarea) => this.autoResizeTextarea(textarea));
+    });
   }
 }

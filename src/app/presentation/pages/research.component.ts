@@ -202,16 +202,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                </ng-template>
              </section>
 
-             <section>
-                <h3 class="text-[10px] font-bold text-gray-900 uppercase tracking-widest mb-6 opacity-30">
-                  Liên kết
-                </h3>
-                <ul class="text-[10px] space-y-2 font-bold text-gray-400 uppercase tracking-tighter">
-                  <li><a href="#" class="hover:text-hus-blue transition underline underline-offset-2">Đào tạo Đại học</a></li>
-                  <li><a href="#" class="hover:text-hus-blue transition underline underline-offset-2">Lịch công tác</a></li>
-                  <li><a href="#" class="hover:text-hus-blue transition underline underline-offset-2">Phòng thí nghiệm</a></li>
-                </ul>
-             </section>
+            
            </aside>
 
         </div>

@@ -85,7 +85,7 @@ import { PostDetailComponent } from './post-detail.component';
                   {{ post.title }}
                 </h3>
 
-                <p class="mt-3 text-[12px] text-gray-500 leading-relaxed line-clamp-2">
+                <p class="mt-3 text-[12px] text-gray-500 leading-relaxed line-clamp-2 whitespace-pre-line [overflow-wrap:anywhere]">
                   {{ post.description }}
                 </p>
 

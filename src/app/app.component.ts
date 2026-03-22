@@ -36,15 +36,7 @@ import { LoadingSpinnerComponent } from './shared/ui/loading-spinner/loading-spi
               </p>
             </section>
 
-            <section>
-              <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-900 mb-4">Liên kết nhanh</h3>
-              <ul class="space-y-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                <li><a routerLink="/" class="hover:text-hus-blue transition-colors">Cổng nghiên cứu</a></li>
-                <li><a routerLink="/recruitment" class="hover:text-hus-blue transition-colors">Tuyển dụng & Sự nghiệp</a></li>
-                <li><a routerLink="/profile" class="hover:text-hus-blue transition-colors">Thông tin cá nhân</a></li>
-                <li><a routerLink="/paper/my-papers" class="hover:text-hus-blue transition-colors">Bài viết của tôi</a></li>
-              </ul>
-            </section>
+            
 
             <section>
               <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-900 mb-4">Thông tin liên hệ</h3>

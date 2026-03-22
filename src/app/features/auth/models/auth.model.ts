@@ -13,12 +13,20 @@ export interface RegisterRequest {
     password: string;
     fullName: string;
     studentId?: string;
+    title?: string;
+    companyName?: string;
     userType: UserType;
 }
 
 export interface GoogleLoginRequest {
     idToken: string;
     userType?: UserType;
+    fullName?: string;
+    studentId?: string;
+    studentFaculty?: string;
+    title?: string;
+    companyName?: string;
+    companyWebsite?: string;
 }
 
 export interface AuthApiUser {

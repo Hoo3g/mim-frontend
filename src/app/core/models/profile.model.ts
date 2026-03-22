@@ -36,6 +36,7 @@ export interface LecturerProfileData {
 export interface ProfileMeResponse {
     userId: string;
     email: string;
+    fullName?: string | null;
     role: ProfileRole;
     accountStatus?: string | null;
     avatarUrl?: string | null;

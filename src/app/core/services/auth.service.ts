@@ -37,9 +37,7 @@ export class AuthService {
         );
     }
 
-    loginWithGoogle(idToken: string, userType: UserType = 'STUDENT'): Observable<AuthResponse> {
-        const payload: GoogleLoginRequest = { idToken, userType };
-
+    loginWithGoogle(payload: GoogleLoginRequest): Observable<AuthResponse> {
         return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, payload, { withCredentials: true }).pipe(
             map((response) => unwrap(response)),
             map((auth) => this.persistAuth(auth))
@@ -167,24 +165,25 @@ export class AuthService {
     }
 
     private buildDisplayNameFromProfile(profile: ProfileMeResponse): string {
+        const genericName = profile.fullName?.trim() || '';
         const emailFallback = profile.email?.split('@')[0] || profile.email || 'User';
 
         if (profile.role === Role.COMPANY) {
             const companyName = profile.company?.name?.trim();
-            return companyName || emailFallback;
+            return companyName || genericName || emailFallback;
         }
 
         if (profile.role === Role.STUDENT) {
             const fullName = `${profile.student?.firstName || ''} ${profile.student?.lastName || ''}`.trim();
-            return fullName || emailFallback;
+            return fullName || genericName || emailFallback;
         }
 
         if (profile.role === Role.LECTURER) {
             const fullName = `${profile.lecturer?.firstName || ''} ${profile.lecturer?.lastName || ''}`.trim();
-            return fullName || emailFallback;
+            return fullName || genericName || emailFallback;
         }
 
-        return emailFallback;
+        return genericName || emailFallback;
     }
 
     private normalizeAccountStatus(status?: string | null): 'PENDING' | 'APPROVED' | 'BLOCKED' | string {

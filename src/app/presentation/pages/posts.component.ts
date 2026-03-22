@@ -253,7 +253,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                     {{ post.title }}
                   </h3>
                   
-                  <p class="text-[13px] sm:text-sm text-gray-600 font-normal leading-7 mb-5 line-clamp-3">{{ post.description }}</p>
+                  <p class="text-[13px] sm:text-sm text-gray-600 font-normal leading-7 mb-5 line-clamp-3 whitespace-pre-line [overflow-wrap:anywhere]">{{ post.description }}</p>
 
                   <div class="space-y-4 mb-2">
                     <div *ngIf="!post.postType.includes('COMPANY')" class="border border-gray-100 bg-gray-50/60 p-3">
@@ -298,9 +298,9 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                     <div *ngIf="post.postType.includes('COMPANY') && post.requirements" class="pt-3 border-t border-gray-50">
                       <h4 class="text-[9px] font-bold text-gray-900 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
                         <span class="w-1 h-1 bg-gray-900"></span>
-                        Yêu cầu công việc
+                        Yêu cầu ứng viên
                       </h4>
-                      <p class="text-[12px] text-gray-700 leading-6 font-medium line-clamp-3">
+                      <p class="text-[12px] text-gray-700 leading-6 font-medium line-clamp-3 whitespace-pre-line [overflow-wrap:anywhere]">
                         {{ post.requirements }}
                       </p>
                     </div>
@@ -328,13 +328,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 	                </button>
 	              </div>
 
-	              <section class="mt-10 pt-6 border-t border-gray-100">
-	                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Liên kết</h3>
-	                <ul class="text-[10px] space-y-2 font-bold text-gray-400 uppercase tracking-tighter">
-	                  <li><a href="#" class="hover:text-hus-blue transition underline underline-offset-2">Mẫu CV Sinh viên</a></li>
-	                  <li><a href="#" class="hover:text-hus-blue transition underline underline-offset-2">Cẩm nang phỏng vấn</a></li>
-	                </ul>
-	              </section>
+	              
 	            </div>
 
             <ng-template #loading>

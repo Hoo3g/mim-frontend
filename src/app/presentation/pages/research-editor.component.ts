@@ -122,9 +122,7 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
                 <p>
                   {{ selectedPdfName ? 'Tệp đã chọn: ' + selectedPdfName : (existingPdfUrl ? 'Tệp hiện tại: ' + existingPdfFileName : 'Chưa có file PDF') }}
                 </p>
-                <p class="text-gray-300">
-                  Bạn có thể lưu bài viết mà không cần tải tệp PDF.
-                </p>
+                
       
                 <a *ngIf="effectivePdfUrl"
                    [href]="effectivePdfUrl"

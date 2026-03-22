@@ -1014,7 +1014,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         },
         {
             key: 'RBAC',
-            label: 'Phân quyền RBAC',
+            label: 'Phân quyền',
             helper: 'Cấp quyền thao tác nâng cao',
             permission: 'RBAC_MANAGE'
         }

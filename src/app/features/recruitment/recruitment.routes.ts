@@ -5,6 +5,7 @@ import { verifiedGuard } from '../../core/guards/verified.guard';
 export const recruitmentRoutes: Routes = [
     {
         path: '',
+        canActivate: [authGuard],
         loadComponent: () => import('../../presentation/pages/posts.component').then(m => m.PostsComponent)
     },
     {
@@ -24,6 +25,7 @@ export const recruitmentRoutes: Routes = [
     },
     {
         path: ':id',
+        canActivate: [authGuard],
         loadComponent: () => import('../../presentation/pages/post-detail.component').then(m => m.PostDetailComponent)
     }
 ];

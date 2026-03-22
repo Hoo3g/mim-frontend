@@ -319,20 +319,20 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 
           <div *ngIf="isCompany()" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 space-y-4">
-              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <h3 class="text-lg font-black uppercase tracking-tight text-gray-900">Hồ sơ doanh nghiệp</h3>
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="text-base sm:text-lg font-black uppercase tracking-tight text-gray-900">Hồ sơ doanh nghiệp</h3>
                 <div class="flex flex-wrap items-center gap-2">
                   <button *ngIf="canEditProfile() && !editingCompany"
                           (click)="beginEditCompany()"
-                          class="px-4 py-2 border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
+                          class="px-3 sm:px-4 py-1.5 sm:py-2 border border-hus-blue text-hus-blue text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
                     Chỉnh sửa
                   </button>
                   <button *ngIf="canEditProfile() && editingCompany"
                           (click)="cancelEditCompany()"
-                          class="px-4 py-2 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:border-gray-300 hover:text-gray-700 transition-colors">
+                          class="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-200 text-gray-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:border-gray-300 hover:text-gray-700 transition-colors">
                     Hủy
                   </button>
-                  <p *ngIf="!canEditProfile()" class="text-[10px] font-black uppercase tracking-widest text-amber-700">
+                  <p *ngIf="!canEditProfile()" class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-amber-700">
                     Chỉ xem
                   </p>
                 </div>
@@ -394,9 +394,11 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                   Xem ảnh đại diện hiện tại
                 </a>
 
-                <button (click)="saveCompanyProfile()" class="px-5 py-2.5 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">
-                  Lưu hồ sơ doanh nghiệp
-                </button>
+                <div class="flex justify-end">
+                  <button (click)="saveCompanyProfile()" class="px-5 py-2.5 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">
+                    Lưu hồ sơ
+                  </button>
+                </div>
               </div>
             </article>
 
@@ -534,9 +536,11 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                   Xem ảnh đại diện hiện tại
                 </a>
 
-                <button (click)="saveLecturerProfile()" class="px-5 py-2.5 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">
-                  Lưu hồ sơ giảng viên
-                </button>
+                <div class="flex justify-end">
+                  <button (click)="saveLecturerProfile()" class="px-5 py-2.5 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">
+                    Lưu hồ sơ
+                  </button>
+                </div>
               </div>
             </article>
 
