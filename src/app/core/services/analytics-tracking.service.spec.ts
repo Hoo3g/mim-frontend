@@ -77,7 +77,7 @@ describe('AnalyticsTrackingService', () => {
     }));
 
     it('skips auth path and tracks first eligible path after auth', fakeAsync(() => {
-        spyOnProperty(router, 'url', 'get').and.returnValue('/auth/callback');
+        vi.spyOn(router, 'url', 'get').mockReturnValue('/auth/callback');
 
         service.start();
         httpMock.expectNone(API_ENDPOINTS.ANALYTICS.TRACK_PAGE_VIEW);

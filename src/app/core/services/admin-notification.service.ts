@@ -6,6 +6,8 @@ import { authSignal } from '../signals/auth.signal';
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { AdminModerationService } from './admin-moderation.service';
 
+type NotificationStreamAuthMode = 'cookie' | 'token-query';
+
 /**
  * Manages SSE connection for real-time admin notifications.
  * Automatically reconnects on connection loss.
@@ -20,6 +22,7 @@ export class AdminNotificationService implements OnDestroy {
     private reconnectDelayMs = 3000;
     private maxReconnectDelayMs = 30000;
     private isConnecting = false;
+    private streamAuthMode: NotificationStreamAuthMode = 'cookie';
     private static readonly SYNC_INTERVAL_MS = 30_000;
 
     /**
@@ -39,43 +42,14 @@ export class AdminNotificationService implements OnDestroy {
 
         this.isConnecting = true;
         this.startPendingQueueSync();
-        const url = `${API_ENDPOINTS.ADMIN.NOTIFICATIONS_STREAM}?token=${encodeURIComponent(token)}`;
 
         try {
-            this.eventSource = new EventSource(url);
+            this.eventSource = this.createEventSource(this.streamAuthMode, token);
+            this.bindEventSourceHandlers(this.streamAuthMode, token);
         } catch {
             this.isConnecting = false;
             this.scheduleReconnect();
-            return;
         }
-
-        this.eventSource.addEventListener('connected', () => {
-            this.isConnecting = false;
-            this.reconnectDelayMs = 3000; // Reset delay on successful connection
-        });
-
-        this.eventSource.addEventListener('pending-content', (event: MessageEvent) => {
-            this.zone.run(() => {
-                try {
-                    const data = JSON.parse(event.data);
-                    adminNotificationSignal.upsertNotification({
-                        contentId: data.contentId || '',
-                        contentType: data.contentType || 'UNKNOWN',
-                        contentTitle: data.contentTitle || '',
-                        authorLabel: data.authorEmail || '',
-                        timestamp: data.timestamp || Date.now(),
-                    });
-                } catch {
-                    // Ignore malformed events
-                }
-            });
-        });
-
-        this.eventSource.onerror = () => {
-            this.isConnecting = false;
-            this.disconnect();
-            this.scheduleReconnect();
-        };
     }
 
     /**
@@ -154,5 +128,76 @@ export class AdminNotificationService implements OnDestroy {
                 }))
             ]);
         });
+    }
+
+    private createEventSource(mode: NotificationStreamAuthMode, token: string): EventSource {
+        if (mode === 'cookie') {
+            return new EventSource(API_ENDPOINTS.ADMIN.NOTIFICATIONS_STREAM, { withCredentials: true });
+        }
+        const streamUrl = `${API_ENDPOINTS.ADMIN.NOTIFICATIONS_STREAM}?token=${encodeURIComponent(token)}`;
+        return new EventSource(streamUrl);
+    }
+
+    private bindEventSourceHandlers(mode: NotificationStreamAuthMode, token: string): void {
+        if (!this.eventSource) {
+            return;
+        }
+
+        this.eventSource.addEventListener('connected', () => {
+            this.isConnecting = false;
+            this.reconnectDelayMs = 3000; // Reset delay on successful connection
+        });
+
+        this.eventSource.addEventListener('pending-content', (event: MessageEvent) => {
+            this.zone.run(() => {
+                try {
+                    const data = JSON.parse(event.data);
+                    adminNotificationSignal.upsertNotification({
+                        contentId: data.contentId || '',
+                        contentType: data.contentType || 'UNKNOWN',
+                        contentTitle: data.contentTitle || '',
+                        authorLabel: data.authorEmail || '',
+                        timestamp: data.timestamp || Date.now(),
+                    });
+                } catch {
+                    // Ignore malformed events
+                }
+            });
+        });
+
+        this.eventSource.onerror = () => {
+            if (this.tryFallbackToTokenQuery(mode, token)) {
+                return;
+            }
+            this.isConnecting = false;
+            this.disconnect();
+            this.scheduleReconnect();
+        };
+    }
+
+    private tryFallbackToTokenQuery(mode: NotificationStreamAuthMode, token: string): boolean {
+        if (mode !== 'cookie' || !token) {
+            return false;
+        }
+
+        this.closeCurrentEventSource();
+        this.streamAuthMode = 'token-query';
+
+        try {
+            this.eventSource = this.createEventSource(this.streamAuthMode, token);
+            this.bindEventSourceHandlers(this.streamAuthMode, token);
+            return true;
+        } catch {
+            this.closeCurrentEventSource();
+            return false;
+        }
+    }
+
+    private closeCurrentEventSource(): void {
+        if (!this.eventSource) {
+            return;
+        }
+        this.eventSource.close();
+        this.eventSource = null;
     }
 }

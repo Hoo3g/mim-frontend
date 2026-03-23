@@ -5,7 +5,7 @@ import { ROUTES } from '../constants/route.const';
 
 export const verifiedGuard: CanActivateFn = () => {
     const router = inject(Router);
-    if (!authSignal.isAuth()) {
+    if (!authSignal.isAuth() || !authSignal.token()) {
         return router.createUrlTree([ROUTES.AUTH.LOGIN]);
     }
     if (authSignal.canCreateContent()) {

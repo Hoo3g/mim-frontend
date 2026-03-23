@@ -34,16 +34,16 @@ export const authSignal = {
     sessionId(): string | null {
         return readAuthSessionId();
     },
-    isAuth: computed(() => _user() !== null),
+    isAuth: computed(() => _user() !== null && !!_token()),
     isAdmin: computed(() => _user()?.role === Role.ADMIN),
     isVerified: computed(() => normalizeAccountStatus(_user()?.accountStatus) === 'APPROVED'),
     canCreateContent: computed(() => {
         const user = _user();
-        return !!user && normalizeAccountStatus(user.accountStatus) === 'APPROVED';
+        return !!user && !!_token() && normalizeAccountStatus(user.accountStatus) === 'APPROVED';
     }),
     canAccessAdmin: computed(() => {
         const user = _user();
-        if (!user) {
+        if (!user || !_token()) {
             return false;
         }
         if (user.role === Role.ADMIN) {
@@ -67,7 +67,7 @@ export const authSignal = {
 
     hasPermission(permission: string): boolean {
         const user = _user();
-        if (!user) {
+        if (!user || !_token()) {
             return false;
         }
         if (user.role === Role.ADMIN) {
@@ -136,23 +136,27 @@ export const authSignal = {
         const token = localStorage.getItem('token');
         const userJson = localStorage.getItem('user');
         if (token && userJson) {
-            const parsed = JSON.parse(userJson) as Partial<AuthUser>;
-            if (!parsed?.id || !parsed?.email || !parsed?.fullName || !parsed?.role) {
-                this.clearAuth();
-                return;
-            }
+            try {
+                const parsed = JSON.parse(userJson) as Partial<AuthUser>;
+                if (!parsed?.id || !parsed?.email || !parsed?.fullName || !parsed?.role) {
+                    this.clearAuth();
+                    return;
+                }
 
-            _token.set(token);
-            _user.set({
-                id: parsed.id,
-                email: parsed.email,
-                fullName: parsed.fullName,
-                role: normalizeRole(parsed.role) ?? parsed.role,
-                avatarUrl: parsed.avatarUrl,
-                accountStatus: normalizeAccountStatus(parsed.accountStatus) ?? 'APPROVED',
-                permissions: normalizePermissions(parsed.permissions)
-            });
-            ensureAuthSession(parsed.id);
+                _token.set(token);
+                _user.set({
+                    id: parsed.id,
+                    email: parsed.email,
+                    fullName: parsed.fullName,
+                    role: normalizeRole(parsed.role) ?? parsed.role,
+                    avatarUrl: parsed.avatarUrl,
+                    accountStatus: normalizeAccountStatus(parsed.accountStatus) ?? 'APPROVED',
+                    permissions: normalizePermissions(parsed.permissions)
+                });
+                ensureAuthSession(parsed.id);
+            } catch {
+                this.clearAuth();
+            }
         }
     }
 };

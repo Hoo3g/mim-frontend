@@ -9,11 +9,12 @@ import { AuthRefreshCoordinatorService } from '../services/auth-refresh-coordina
 export const adminGuard: CanActivateFn = () => {
     const router = inject(Router);
     const refreshCoordinator = inject(AuthRefreshCoordinatorService);
+    const token = authSignal.token();
 
-    if (authSignal.canAccessAdmin()) {
+    if (authSignal.canAccessAdmin() && !!token) {
         return true;
     }
-    if (!authSignal.token()) {
+    if (!token) {
         return router.createUrlTree([ROUTES.HOME]);
     }
 
