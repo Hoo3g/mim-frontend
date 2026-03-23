@@ -937,9 +937,9 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                   </svg>
                 </div>
 
-                <div class="mt-3 flex justify-between gap-2 text-[9px] font-bold uppercase tracking-widest text-gray-400">
-                  <span *ngFor="let item of analytics.monthlyTraffic">{{ item.monthLabel }}</span>
-                </div>
+	                <div class="mt-3 flex justify-between gap-2 text-[9px] font-bold uppercase tracking-widest text-gray-400">
+	                  <span *ngFor="let item of analyticsChartMonths()">{{ item.monthLabel }}</span>
+	                </div>
 
                 <div class="mt-4 grid gap-3 sm:grid-cols-2">
                   <div class="border border-gray-100 bg-gray-50 px-3 py-3">
@@ -1530,12 +1530,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         return null;
     }
 
-    analyticsMonths(): AdminMonthlyTrafficPoint[] {
-        return this.analyticsOverview?.monthlyTraffic ?? [];
+    analyticsChartMonths(): AdminMonthlyTrafficPoint[] {
+        const months = [...(this.analyticsOverview?.monthlyTraffic ?? [])];
+        if (months.length === 0) {
+            return [];
+        }
+
+        const now = new Date();
+        const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const currentMonthIndex = months.findIndex((item) => item.monthKey === currentMonthKey);
+        const monthsFromCurrent = currentMonthIndex >= 0 ? months.slice(currentMonthIndex) : months.slice(-1);
+
+        return monthsFromCurrent.filter((item, index) =>
+            index === 0 || item.views > 0 || item.uniqueVisitors > 0
+        );
     }
 
     analyticsLinePoints(metric: 'views' | 'uniqueVisitors'): string {
-        return buildLinePoints(this.analyticsMonths(), metric);
+        return buildLinePoints(this.analyticsChartMonths(), metric);
     }
 
     analyticsGridLines(): number[] {
@@ -1606,7 +1618,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     private analyticsMaxMetricValue(): number {
-        return maxMetricValue(this.analyticsMonths());
+        return maxMetricValue(this.analyticsChartMonths());
     }
 
     private tryLoadAnalyticsOverview(): void {
@@ -1623,7 +1635,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
         this.analyticsError = '';
 
-        this.adminAnalyticsService.getOverview(12, 10).pipe(
+        this.adminAnalyticsService.getOverview(12, 2).pipe(
             finalize(() => {
                 this.analyticsLoading = false;
             })

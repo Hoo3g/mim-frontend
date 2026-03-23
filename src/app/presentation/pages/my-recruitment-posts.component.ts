@@ -80,8 +80,8 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
         <div *ngIf="!loading && posts.length > 0" class="divide-y divide-gray-100 border border-gray-100">
           <article *ngFor="let post of posts"
                    class="p-6 md:p-8 group hover:bg-gray-50 transition-colors">
-            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-              <div class="min-w-0">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-3 mb-3 text-[10px] font-bold uppercase tracking-widest">
                   <span class="text-hus-blue">{{ postTypeLabel(post.postType) }}</span>
                   <span class="text-gray-300">|</span>
@@ -108,7 +108,7 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
                 </p>
               </div>
 
-              <div class="relative flex flex-col items-end gap-3 md:pl-4" data-post-actions>
+              <div class="relative shrink-0" data-post-actions>
                 <button type="button"
                         (click)="toggleActionMenu(post.id, $event)"
                         [attr.aria-expanded]="openedActionPostId === post.id"
@@ -203,14 +203,13 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
                     </svg>
                   </button>
                 </div>
-
-                <a *ngIf="!canCreateContent()"
-                   [routerLink]="ROUTES.PROFILE"
-                   class="text-[10px] font-black uppercase tracking-widest text-amber-800 hover:text-amber-900 transition-colors">
-                  Xác thực email để chỉnh sửa bài
-                </a>
               </div>
             </div>
+            <a *ngIf="!canCreateContent()"
+               [routerLink]="ROUTES.PROFILE"
+               class="mt-4 inline-flex text-[10px] font-black uppercase tracking-widest text-amber-800 hover:text-amber-900 transition-colors">
+              Xác thực email để chỉnh sửa bài
+            </a>
           </article>
         </div>
       </div>

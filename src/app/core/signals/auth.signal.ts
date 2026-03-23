@@ -15,6 +15,8 @@ export interface AuthUser {
 // ─── Auth Signal ────────────────────────────────────────────
 const _user = signal<AuthUser | null>(null);
 const _token = signal<string | null>(null);
+const AUTH_SESSION_ID_STORAGE_KEY = 'mim_auth_session_id';
+const AUTH_SESSION_USER_ID_STORAGE_KEY = 'mim_auth_session_user_id';
 const ADMIN_UI_PERMISSIONS = [
     'ADMIN_DASHBOARD_VIEW',
     'MODERATION_POSTS_VIEW',
@@ -29,6 +31,9 @@ const ADMIN_UI_PERMISSIONS = [
 export const authSignal = {
     user: _user.asReadonly(),
     token: _token.asReadonly(),
+    sessionId(): string | null {
+        return readAuthSessionId();
+    },
     isAuth: computed(() => _user() !== null),
     isAdmin: computed(() => _user()?.role === Role.ADMIN),
     isVerified: computed(() => normalizeAccountStatus(_user()?.accountStatus) === 'APPROVED'),
@@ -57,6 +62,7 @@ export const authSignal = {
         _token.set(token);
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(normalizedUser));
+        ensureAuthSession(normalizedUser.id);
     },
 
     hasPermission(permission: string): boolean {
@@ -85,6 +91,7 @@ export const authSignal = {
         _token.set(null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        clearAuthSession();
     },
 
     updateAvatar(avatarUrl?: string | null): void {
@@ -145,9 +152,45 @@ export const authSignal = {
                 accountStatus: normalizeAccountStatus(parsed.accountStatus) ?? 'APPROVED',
                 permissions: normalizePermissions(parsed.permissions)
             });
+            ensureAuthSession(parsed.id);
         }
     }
 };
+
+function ensureAuthSession(userId: string): void {
+    const normalizedUserId = (userId ?? '').trim();
+    if (!normalizedUserId) {
+        return;
+    }
+
+    const currentSessionId = localStorage.getItem(AUTH_SESSION_ID_STORAGE_KEY)?.trim();
+    const currentSessionUserId = localStorage.getItem(AUTH_SESSION_USER_ID_STORAGE_KEY)?.trim();
+
+    if (currentSessionId && currentSessionUserId === normalizedUserId) {
+        return;
+    }
+
+    localStorage.setItem(AUTH_SESSION_ID_STORAGE_KEY, generateAuthSessionId());
+    localStorage.setItem(AUTH_SESSION_USER_ID_STORAGE_KEY, normalizedUserId);
+}
+
+function clearAuthSession(): void {
+    localStorage.removeItem(AUTH_SESSION_ID_STORAGE_KEY);
+    localStorage.removeItem(AUTH_SESSION_USER_ID_STORAGE_KEY);
+}
+
+function readAuthSessionId(): string | null {
+    const value = localStorage.getItem(AUTH_SESSION_ID_STORAGE_KEY)?.trim();
+    return value || null;
+}
+
+function generateAuthSessionId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    const randomPart = Math.random().toString(36).slice(2, 12);
+    return `auth-session-${Date.now()}-${randomPart}`;
+}
 
 function normalizeRole(role?: string | null): Role | null {
     const value = (role ?? '').toString().trim().toUpperCase();

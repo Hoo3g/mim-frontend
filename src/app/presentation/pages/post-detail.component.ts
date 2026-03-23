@@ -1,4 +1,4 @@
-import { Component, DestroyRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Post } from '../../core/models/post.model';
@@ -336,6 +336,7 @@ export class PostDetailComponent implements OnChanges {
     private router = inject(Router);
     private postService = inject(PostService);
     private destroyRef = inject(DestroyRef);
+    private cdr = inject(ChangeDetectorRef);
 
     @Input({ required: true }) post!: Post;
     @Input() showActions = true;
@@ -500,9 +501,11 @@ export class PostDetailComponent implements OnChanges {
                 this.applyFeedback = normalizedMessage;
                 this.applyError = true;
                 this.missingDefaultCv = normalizedMessage.toLowerCase().includes('default cv');
+                this.cdr.detectChanges();
             },
             complete: () => {
                 this.isProcessingApplication = false;
+                this.cdr.detectChanges();
             }
         });
     }
@@ -517,6 +520,7 @@ export class PostDetailComponent implements OnChanges {
                     this.applyFeedback = 'Hủy ứng tuyển thất bại';
                     this.applyError = true;
                     this.missingDefaultCv = false;
+                    this.cdr.detectChanges();
                     return;
                 }
 
@@ -525,6 +529,7 @@ export class PostDetailComponent implements OnChanges {
                 this.applyFeedback = 'Đã hủy ứng tuyển';
                 this.applyError = false;
                 this.missingDefaultCv = false;
+                this.cdr.detectChanges();
             });
     }
 
@@ -547,6 +552,7 @@ export class PostDetailComponent implements OnChanges {
                 }
                 this.hasApplied = applications.some((application) => application.postId === this.post.id);
                 this.isLoadingApplicationState = false;
+                this.cdr.detectChanges();
             });
     }
 

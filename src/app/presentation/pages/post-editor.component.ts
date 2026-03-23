@@ -24,8 +24,8 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="bg-white min-h-screen">
-      <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-3 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+      <div class="border-b border-gray-100 bg-blue-50/50 py-2.5 px-2 sm:py-3 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2 sm:gap-4 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-gray-400">
           <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS" class="text-hus-blue hover:text-hus-dark transition">
             Bài tuyển dụng của tôi
           </a>
@@ -34,21 +34,21 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
         </div>
       </div>
 
-      <div class="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-10 md:py-12">
+      <div class="mx-auto w-full px-1 sm:max-w-5xl sm:px-6 lg:px-8 py-5 sm:py-8 md:py-10">
           <section class="min-w-0">
-            <div class="bg-white border border-gray-100 p-6 md:p-8">
-              <h1 class="text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
+            <div class="bg-white border-0 sm:border sm:border-gray-100 p-2.5 sm:p-6 md:p-8">
+              <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
                 {{ isEditMode ? 'Chỉnh sửa bài tuyển dụng' : 'Soạn bài tuyển dụng mới' }}
               </h1>
-              <p class="mt-4 text-sm text-gray-400 font-bold uppercase tracking-widest">
+              <p class="mt-3 text-[11px] sm:text-sm text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
                 {{ isCompanyRole
                   ? 'Doanh nghiệp: đăng nhu cầu tuyển dụng và yêu cầu công việc.'
                   : 'Sinh viên: đăng hồ sơ ứng tuyển và thành tích nổi bật.' }}
               </p>
 
-              <div class="mt-4 inline-flex items-center gap-2 border border-gray-200 px-3 py-2">
-                <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Chế độ tài khoản</span>
-                <span class="text-[10px] font-black uppercase tracking-widest"
+              <div class="mt-4 inline-flex max-w-full flex-wrap items-center gap-1.5 sm:gap-2 border border-gray-200 px-2.5 py-1.5 sm:px-3 sm:py-2">
+                <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400">Chế độ tài khoản</span>
+                <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest"
                       [ngClass]="isCompanyRole ? 'text-hus-blue' : 'text-emerald-600'">
                   {{ isCompanyRole ? 'Doanh nghiệp' : 'Sinh viên' }}
                 </span>
@@ -56,31 +56,33 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
               
 
               <div *ngIf="roleBlocked"
-                   class="mt-8 border border-red-200 bg-red-50 text-red-600 px-4 py-3 text-xs font-bold uppercase tracking-widest">
+                   class="mt-6 sm:mt-8 border border-red-200 bg-red-50 text-red-600 px-4 py-3 text-xs font-bold uppercase tracking-widest">
                 {{ blockedMessage() }}
               </div>
 
               <div *ngIf="loading"
-                   class="mt-8 border border-dashed border-gray-200 px-4 py-8 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                   class="mt-6 sm:mt-8 border border-dashed border-gray-200 px-4 py-8 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
                 Đang tải dữ liệu bài đăng...
               </div>
 
-              <form *ngIf="!roleBlocked && !loading" class="mt-8 space-y-5" (ngSubmit)="save()">
-                <article class="border border-gray-100 p-5 space-y-4">
+              <form *ngIf="!roleBlocked && !loading" class="mt-6 sm:mt-8 space-y-4 sm:space-y-5" (ngSubmit)="save()">
+                <article class="border border-gray-100 p-3 sm:p-5 space-y-4">
                   <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-900">Thông tin chính</h2>
 
                   <div>
                     <label for="title" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
                       Tiêu đề bài đăng
                     </label>
-                    <input id="title"
-                           name="title"
-                           type="text"
-                           [(ngModel)]="form.title"
-                           maxlength="255"
-                           required
-                           class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
-                           placeholder="Ví dụ: Tuyển thực tập sinh Data Analyst">
+                    <textarea id="title"
+                              name="title"
+                              [(ngModel)]="form.title"
+                              maxlength="255"
+                              rows="2"
+                              required
+                              data-title-field="true"
+                              (input)="onTitleInput($event)"
+                              class="w-full min-h-[76px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
+                              placeholder="Ví dụ: Tuyển thực tập sinh Data Analyst"></textarea>
                   </div>
 
                   <div class="grid sm:grid-cols-2 gap-4">
@@ -91,7 +93,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       <select [(ngModel)]="postingMode"
                               name="postingMode"
                               (ngModelChange)="onPostingModeChange()"
-                              class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors">
+                              class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
                         <option value="JOB">Việc làm</option>
                         <option value="INTERNSHIP">Thực tập</option>
                       </select>
@@ -103,7 +105,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       </label>
                       <select [(ngModel)]="form.jobType"
                               name="jobType"
-                              class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors">
+                              class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
                         <option [ngValue]="JOB_TYPES.FULL_TIME">Toàn thời gian</option>
                         <option [ngValue]="JOB_TYPES.PART_TIME">Bán thời gian</option>
                         <option [ngValue]="JOB_TYPES.CONTRACT">Hợp đồng</option>
@@ -120,13 +122,13 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                               name="description"
                               rows="6"
                               required
-                              class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
+                              class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
                               placeholder="Giới thiệu bản thân, kinh nghiệm, định hướng..."
                     ></textarea>
                   </div>
                 </article>
 
-                <article class="border border-gray-100 p-5 space-y-4">
+                <article class="border border-gray-100 p-3 sm:p-5 space-y-4">
                   <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-900">Nội dung theo vai trò</h2>
 
                   <div *ngIf="isCompanyRole">
@@ -143,7 +145,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                               (paste)="onCompanyContentPaste('description', $event)"
                               (input)="onCompanyContentInput('description', $event)"
                               (keydown.enter)="onCompanyContentEnter('description', $event)"
-                              class="w-full min-h-[120px] border border-gray-200 px-4 py-3 text-sm leading-6 text-gray-900 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
+                              class="w-full min-h-[132px] sm:min-h-[120px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
                               placeholder="Mô tả công việc, mục tiêu hoặc thông tin bạn muốn chia sẻ..."></textarea>
                   </div>
 
@@ -160,7 +162,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                               (paste)="onCompanyContentPaste('requirements', $event)"
                               (input)="onCompanyContentInput('requirements', $event)"
                               (keydown.enter)="onCompanyContentEnter('requirements', $event)"
-                              class="w-full min-h-[120px] border border-gray-200 px-4 py-3 text-sm leading-6 text-gray-900 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
+                              class="w-full min-h-[132px] sm:min-h-[120px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
                               placeholder="Yêu cầu kỹ năng, kinh nghiệm, công nghệ..."></textarea>
                   </div>
 
@@ -177,19 +179,19 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                               (paste)="onCompanyContentPaste('benefits', $event)"
                               (input)="onCompanyContentInput('benefits', $event)"
                               (keydown.enter)="onCompanyContentEnter('benefits', $event)"
-                              class="w-full min-h-[120px] border border-gray-200 px-4 py-3 text-sm leading-6 text-gray-900 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
+                              class="w-full min-h-[132px] sm:min-h-[120px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
                               placeholder="Lương thưởng, môi trường, phúc lợi..."></textarea>
                   </div>
 
                   <div *ngIf="!isCompanyRole">
-                    <div class="flex items-center justify-between gap-3 mb-2">
+                    <div class="mb-2 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                         Hồ sơ sinh viên hiển thị trên thẻ tuyển dụng
                       </label>
                       <button type="button"
                               *ngIf="studentProfile"
                               (click)="applyStudentProfilePrefill(true)"
-                              class="px-3 py-1.5 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-colors">
+                              class="w-full sm:w-auto px-3 py-1.5 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-colors">
                         Lấy từ hồ sơ
                       </button>
                     </div>
@@ -244,7 +246,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       <input [(ngModel)]="form.location"
                              name="location"
                              type="text"
-                             class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
+                             class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
                              [placeholder]="isCompanyRole ? 'Hà Nội, Hybrid hoặc Remote' : 'Ví dụ: Hà Nội hoặc Remote'">
                     </div>
 
@@ -255,20 +257,20 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       <input [(ngModel)]="form.salaryRange"
                              name="salaryRange"
                              type="text"
-                             class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
+                             class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
                              placeholder="Ví dụ: 12M - 18M">
                     </div>
                   </div>
                 </article>
 
-                <article *ngIf="!isCompanyRole" class="border border-gray-100 p-5 space-y-4">
+                <article *ngIf="!isCompanyRole" class="border border-gray-100 p-3 sm:p-5 space-y-4">
                   <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-900">Đính kèm hồ sơ và nghiên cứu</h2>
 
                   <div class="border border-gray-100 bg-gray-50/50 p-4 space-y-3">
                     <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">CV PDF cho bài đăng</p>
 
                     <label *ngIf="defaultProfileCvUrl"
-                           class="flex items-center gap-2 text-xs font-semibold text-gray-600">
+                           class="flex items-start gap-2 text-xs font-semibold text-gray-600">
                       <input type="checkbox"
                              name="useDefaultProfileCv"
                              [(ngModel)]="useDefaultProfileCv"
@@ -285,7 +287,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       CV riêng đã chọn: <span class="text-gray-900 font-bold">{{ uploadedCvFileName || cvFileName(uploadedCvUrl) }}</span>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                       <input type="file"
                              accept="application/pdf,.pdf"
                              (change)="onStudentCvSelected($event)"
@@ -294,7 +296,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       <button type="button"
                               *ngIf="uploadedCvUrl"
                               (click)="removeUploadedCv()"
-                              class="px-3 py-1.5 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-colors">
+                              class="w-full sm:w-auto px-3 py-1.5 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-colors">
                         Gỡ CV riêng
                       </button>
                     </div>
@@ -314,7 +316,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                   </div>
 
                   <div class="border border-gray-100 bg-gray-50/50 p-4 space-y-3">
-                    <div class="flex items-center justify-between gap-3">
+                    <div class="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                       <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Bài nghiên cứu gắn kèm</p>
                       <span class="text-[10px] font-black uppercase tracking-widest text-hus-blue">
                         {{ selectedResearchPaperIds.size }} đã chọn
@@ -334,13 +336,13 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                     <div *ngIf="!loadingMyPapers && myResearchPapers.length > 0"
                          class="max-h-52 overflow-y-auto border border-gray-100 bg-white divide-y divide-gray-100">
                       <label *ngFor="let paper of myResearchPapers"
-                             class="flex items-start gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50">
+                             class="flex items-start gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50">
                         <input type="checkbox"
                                [checked]="isPaperSelected(paper.id)"
                                (change)="togglePaperSelection(paper, $event)"
                                class="mt-1 h-4 w-4 border-gray-300 text-hus-blue focus:ring-hus-blue" />
                         <span class="min-w-0">
-                          <span class="block text-xs font-bold text-gray-900 leading-snug truncate">{{ paper.title }}</span>
+                          <span class="block text-xs font-bold text-gray-900 leading-snug line-clamp-2 [overflow-wrap:anywhere]">{{ paper.title }}</span>
                           <span class="block text-[10px] font-semibold uppercase tracking-widest text-gray-400 mt-1">
                             {{ paper.researchArea }} | {{ paper.publicationYear }}
                           </span>
@@ -350,7 +352,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                   </div>
                 </article>
 
-                <article class="border border-gray-100 p-5 space-y-4">
+                <article class="border border-gray-100 p-3 sm:p-5 space-y-4">
                   <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-900">Liên hệ và trạng thái</h2>
 
                   <div class="grid sm:grid-cols-2 gap-4">
@@ -361,7 +363,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       <input [(ngModel)]="form.contactEmail"
                              name="contactEmail"
                              type="email"
-                             class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
+                             class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
                              placeholder="contact@company.com">
                     </div>
 
@@ -372,13 +374,13 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       <input [(ngModel)]="form.contactPhone"
                              name="contactPhone"
                              type="text"
-                             class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
+                             class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
                              placeholder="0987xxxxxx">
                     </div>
                   </div>
 
                   <div class="space-y-3">
-                    <div class="flex items-center justify-between gap-3">
+                    <div class="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                       <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                         Danh mục tuyển dụng
                       </label>
@@ -400,7 +402,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                     <div *ngIf="!loadingRecruitmentCategories && recruitmentCategories.length > 0"
                          class="grid sm:grid-cols-2 gap-2 border border-gray-100 bg-gray-50/50 p-3">
                       <label *ngFor="let category of recruitmentCategories"
-                             class="flex items-center gap-3 px-3 py-2 bg-white border border-gray-100 cursor-pointer hover:border-hus-blue/30 transition-colors">
+                             class="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-100 cursor-pointer hover:border-hus-blue/30 transition-colors">
                         <input type="checkbox"
                                [checked]="isRecruitmentCategorySelected(category.name)"
                                (change)="toggleRecruitmentCategory(category.name, $event)"
@@ -417,7 +419,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       </label>
                       <select [(ngModel)]="form.status"
                               name="status"
-                              class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors">
+                              class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
                         <option value="OPEN">Đang mở</option>
                         <option value="CLOSED">Đã đóng</option>
                         <option value="DRAFT">Nháp</option>
@@ -431,31 +433,35 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                 </p>
 
                 <div class="pt-4 border-t border-gray-100">
-                  <div class="grid grid-cols-2 gap-3 lg:flex lg:items-center lg:justify-end">
+                  <div class="flex items-center justify-between gap-2 lg:justify-end lg:gap-3">
                     <button type="button"
                             (click)="cancel()"
-                            class="inline-flex items-center justify-center gap-2 h-11 px-4 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
+                            class="inline-flex h-8 sm:h-9 lg:h-10 shrink-0 items-center justify-center px-2.5 sm:px-3 border border-gray-200 text-gray-500 text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
                       Hủy
                     </button>
 
-                    <button type="button"
-                            (click)="openPreviewModal()"
-                            class="inline-flex items-center justify-center gap-2 h-11 px-4 border border-hus-blue/30 bg-blue-50/40 text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white hover:border-hus-blue transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      Xem preview
-                    </button>
+                    <div class="ml-auto flex items-center gap-2">
+                      <button type="button"
+                              (click)="openPreviewModal()"
+                              class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center gap-1 px-2.5 sm:px-3 border border-hus-blue/30 bg-blue-50/40 text-hus-blue text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:bg-hus-blue hover:text-white hover:border-hus-blue transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="hidden sm:block h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span class="sm:hidden">Preview</span>
+                        <span class="hidden sm:inline">Xem preview</span>
+                      </button>
 
-                    <button type="submit"
-                            [disabled]="saving || cvUploading"
-                            class="col-span-2 lg:col-span-1 inline-flex items-center justify-center gap-2 h-11 px-6 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors shadow-[0_10px_24px_-16px_rgba(30,102,170,0.9)] disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                      </svg>
-                      {{ saving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật bài đăng' : 'Đăng bài tuyển dụng') }}
-                    </button>
+                      <button type="submit"
+                              [disabled]="saving || cvUploading"
+                              class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center gap-1 px-2.5 sm:px-3 lg:px-4 bg-hus-blue text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:bg-hus-dark transition-colors shadow-[0_10px_24px_-16px_rgba(30,102,170,0.9)] disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="hidden sm:block h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span class="sm:hidden">{{ saving ? 'Lưu...' : (isEditMode ? 'Cập nhật' : 'Đăng') }}</span>
+                        <span class="hidden sm:inline">{{ saving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật bài đăng' : 'Đăng bài tuyển dụng') }}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </form>
@@ -463,10 +469,10 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
           </section>
       </div>
 
-      <div *ngIf="showPreviewModal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6">
+      <div *ngIf="showPreviewModal" class="fixed inset-0 z-[120] flex items-stretch justify-center p-0 sm:items-center sm:p-6">
         <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" (click)="closePreviewModal()"></div>
-        <div class="relative w-full max-w-2xl max-h-[90vh] bg-white border border-gray-100 shadow-2xl flex flex-col">
-          <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-3">
+        <div class="relative flex h-full w-full max-w-full flex-col bg-white shadow-2xl sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:border sm:border-gray-100">
+          <div class="px-3 py-2.5 sm:px-4 sm:py-3 border-b border-gray-100 flex items-center justify-between gap-3">
             <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Bản xem trước bài đăng</p>
             <button type="button"
                     (click)="closePreviewModal()"
@@ -478,8 +484,8 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
             </button>
           </div>
 
-          <div class="p-4 sm:p-6 overflow-y-auto">
-            <div class="bg-white border border-gray-100 p-5 transition-all duration-300 flex flex-col h-full relative">
+          <div class="flex-1 overflow-y-auto p-3 sm:p-6">
+            <div class="bg-white border-0 sm:border sm:border-gray-100 p-4 sm:p-5 transition-all duration-300 flex flex-col h-full relative">
               <div class="flex items-start justify-between mb-5">
                 <div class="flex items-center gap-3 min-w-0">
                   <div class="relative">
@@ -515,7 +521,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                 </div>
               </div>
 
-              <h3 class="text-base font-bold text-gray-900 mb-2 leading-tight line-clamp-2 min-h-[2.5rem]">
+              <h3 class="text-base font-bold text-gray-900 mb-2 leading-tight whitespace-pre-wrap [overflow-wrap:anywhere]">
                 {{ form.title.trim() || 'Tiêu đề bài đăng sẽ hiển thị ở đây' }}
               </h3>
 
@@ -818,6 +824,11 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     this.autoResizeTextarea(textarea);
   }
 
+  onTitleInput(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    this.autoResizeTextarea(textarea);
+  }
+
   onCompanyContentBlur(field: CompanyContentField, event: Event): void {
     const textarea = event.target as HTMLTextAreaElement;
     const normalized = this.ensureBulletListText(textarea.value);
@@ -953,6 +964,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     }
 
     this.profilePrefilledNotice = true;
+    this.scheduleTitleTextareaResize();
   }
 
   onStudentCvSelected(event: Event): void {
@@ -1323,6 +1335,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     }
 
     this.scheduleCompanyTextareaResize();
+    this.scheduleTitleTextareaResize();
   }
 
   private buildStudentDisplayInfo(): Post['displayInfo'] | undefined {
@@ -1586,6 +1599,16 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       const companyTextareas = document.querySelectorAll<HTMLTextAreaElement>('textarea[data-company-content="true"]');
       companyTextareas.forEach((textarea) => this.autoResizeTextarea(textarea));
+    });
+  }
+
+  private scheduleTitleTextareaResize(): void {
+    setTimeout(() => {
+      const titleTextarea = document.querySelector<HTMLTextAreaElement>('textarea[data-title-field="true"]');
+      if (!titleTextarea) {
+        return;
+      }
+      this.autoResizeTextarea(titleTextarea);
     });
   }
 }

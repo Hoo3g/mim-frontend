@@ -56,7 +56,7 @@ interface AdminAnalyticsOverviewApiModel {
 export class AdminAnalyticsService {
     private readonly http = inject(HttpClient);
 
-    getOverview(months = 12, onlineWindowMinutes = 10): Observable<AdminAnalyticsOverview> {
+    getOverview(months = 12, onlineWindowMinutes = 2): Observable<AdminAnalyticsOverview> {
         const params = new HttpParams()
             .set('months', String(months))
             .set('onlineWindowMinutes', String(onlineWindowMinutes));
@@ -108,7 +108,7 @@ export class AdminAnalyticsService {
             routeDistribution,
             realtime: {
                 onlineUsersNow: Number(data.realtime?.onlineUsersNow ?? 0),
-                onlineWindowMinutes: Number(data.realtime?.onlineWindowMinutes ?? 10),
+                onlineWindowMinutes: Number(data.realtime?.onlineWindowMinutes ?? 2),
                 trackedVisitors24h: Number(data.realtime?.trackedVisitors24h ?? 0),
                 lastUpdatedAt: parseDate(data.realtime?.lastUpdatedAt)
             },

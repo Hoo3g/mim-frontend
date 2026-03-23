@@ -29,14 +29,14 @@ describe('AdminAnalyticsService', () => {
     it('maps overview payload to frontend model', () => {
         let received: unknown;
 
-        service.getOverview(12, 10).subscribe((result) => {
+        service.getOverview(12, 2).subscribe((result) => {
             received = result;
         });
 
         const request = httpMock.expectOne((req) =>
             req.url === API_ENDPOINTS.ADMIN.ANALYTICS_OVERVIEW
             && req.params.get('months') === '12'
-            && req.params.get('onlineWindowMinutes') === '10'
+            && req.params.get('onlineWindowMinutes') === '2'
         );
         expect(request.request.method).toBe('GET');
 
@@ -80,7 +80,7 @@ describe('AdminAnalyticsService', () => {
                 ],
                 realtime: {
                     onlineUsersNow: 12,
-                    onlineWindowMinutes: 10,
+                    onlineWindowMinutes: 2,
                     trackedVisitors24h: 88,
                     lastUpdatedAt: '2026-03-23T00:00:00Z'
                 },

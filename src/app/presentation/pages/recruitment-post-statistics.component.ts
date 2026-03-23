@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
@@ -18,9 +18,9 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
   imports: [CommonModule, RouterModule],
   template: `
     <section class="min-h-screen bg-gray-50">
-      <div class="mx-auto max-w-6xl px-3 py-8 sm:px-6 lg:px-8 lg:py-10">
+      <div class="mx-auto max-w-6xl px-3 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
-           class="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-hus-blue transition-colors hover:text-hus-dark">
+           class="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-hus-blue transition-colors hover:text-hus-dark sm:text-[10px]">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
@@ -43,24 +43,21 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
         </div>
 
         <ng-container *ngIf="!loading && post">
-          <header class="mt-6 border border-gray-100 bg-white px-5 py-6 sm:px-8 sm:py-8">
+          <header class="mt-6 border border-gray-100 bg-white px-4 py-5 sm:px-8 sm:py-8">
             <div class="min-w-0">
               <p class="text-[10px] font-black uppercase tracking-[0.25em] text-hus-blue">Thống kê ứng viên</p>
-              <h1 class="mt-3 max-w-4xl text-2xl font-black leading-tight text-gray-900 sm:text-3xl">
+              <h1 class="mt-3 max-w-4xl text-xl font-black leading-tight text-gray-900 sm:text-3xl">
                 {{ post.title }}
               </h1>
-              <div class="mt-4 flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                <span class="text-hus-blue">{{ postTypeLabel(post.postType) }}</span>
-                <span>|</span>
-                <span>{{ jobTypeLabel(post.jobType) }}</span>
-                <span>|</span>
-                <span>{{ statusLabel(post.status) }}</span>
-                <span>|</span>
-                <span>{{ totalApplicantCount() }} hồ sơ đã ứng tuyển</span>
+              <div class="mt-4 flex flex-wrap items-center gap-2 text-[9px] font-bold uppercase tracking-widest sm:text-[10px]">
+                <span class="inline-flex items-center bg-blue-50 px-2.5 py-1 text-hus-blue">{{ postTypeLabel(post.postType) }}</span>
+                <span class="inline-flex items-center bg-gray-100 px-2.5 py-1 text-gray-500">{{ jobTypeLabel(post.jobType) }}</span>
+                <span class="inline-flex items-center bg-gray-100 px-2.5 py-1 text-gray-500">{{ statusLabel(post.status) }}</span>
+                <span class="inline-flex items-center bg-gray-100 px-2.5 py-1 text-gray-500">{{ totalApplicantCount() }} hồ sơ đã ứng tuyển</span>
               </div>
             </div>
 
-            <div class="mt-6 grid gap-4 md:grid-cols-3">
+            <div class="mt-5 grid gap-3 sm:mt-6 sm:gap-4 md:grid-cols-3">
               <div class="border border-gray-100 bg-gray-50 px-4 py-4">
                 <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Địa điểm</p>
                 <p class="mt-2 text-sm font-bold text-gray-900">{{ post.location || 'Chưa cập nhật' }}</p>
@@ -77,15 +74,15 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
           </header>
 
           <section class="mt-6 border border-gray-100 bg-white">
-            <div class="flex flex-col gap-2 border-b border-gray-100 px-5 py-5 sm:px-8">
+            <div class="flex flex-col gap-2 border-b border-gray-100 px-4 py-4 sm:px-8 sm:py-5">
               <h2 class="text-lg font-black text-gray-900">Danh sách sinh viên ứng tuyển</h2>
               
-              <div class="mt-3 flex flex-wrap items-center gap-3 sm:flex-nowrap">
-                <div class="flex flex-wrap items-center gap-3">
+              <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                   <button type="button"
                           (click)="setApplicantFilter('PENDING')"
                           [ngClass]="activeFilter === 'PENDING' ? 'border-hus-blue bg-blue-50 text-hus-blue' : 'border-gray-200 text-gray-500 hover:border-hus-blue/40 hover:text-hus-blue'"
-                          class="inline-flex items-center gap-2 border px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors">
+                          class="inline-flex w-full items-center justify-between gap-2 border px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors sm:w-auto sm:justify-center">
                     <span>Chờ xử lý</span>
                     <span class="rounded-full bg-white px-2 py-0.5 text-[9px] leading-none text-gray-500">
                       {{ pendingApplicants.length }}
@@ -94,19 +91,19 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
                   <button type="button"
                           (click)="setApplicantFilter('REVIEWED')"
                           [ngClass]="activeFilter === 'REVIEWED' ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-gray-200 text-gray-500 hover:border-emerald-300 hover:text-emerald-600'"
-                          class="inline-flex items-center gap-2 border px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors">
+                          class="inline-flex w-full items-center justify-between gap-2 border px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors sm:w-auto sm:justify-center">
                     <span>Đã được đánh dấu</span>
                     <span class="rounded-full bg-white px-2 py-0.5 text-[9px] leading-none text-gray-500">
                       {{ reviewedApplicants.length }}
                     </span>
                   </button>
                 </div>
-                <div class="ml-auto flex flex-wrap items-center gap-3">
+                <div class="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
                   <label *ngIf="visibleApplicants().length > 0 && hasAnyVisibleSelected()"
-                         class="inline-flex items-center gap-2 border border-gray-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                         class="inline-flex h-9 items-center gap-2 border border-gray-200 px-3 text-[10px] font-black uppercase tracking-widest text-gray-500 sm:px-4">
                     <input type="checkbox"
                            class="h-4 w-4 border-gray-300 text-hus-blue focus:ring-hus-blue"
-                           [checked]="selectAllVisibleChecked"
+                           [checked]="isAllVisibleSelected()"
                            (click)="$event.stopPropagation()"
                            (change)="toggleSelectAllVisible($any($event.target).checked, $event)">
                     <span>Tất cả</span>
@@ -117,7 +114,7 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
                           [disabled]="isBulkDeleting"
                           title="Xóa tất cả đã chọn"
                           aria-label="Xóa tất cả đã chọn"
-                          class="inline-flex h-9 w-9 items-center justify-center border border-red-200 text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
+                          class="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-red-200 text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M6 7.5h12m-9.75 0V6a1.5 1.5 0 0 1 1.5-1.5h4.5A1.5 1.5 0 0 1 15.75 6v1.5m-8.25 0v10.125A1.875 1.875 0 0 0 9.375 19.5h5.25a1.875 1.875 0 0 0 1.875-1.875V7.5M10.5 10.5v6m3-6v6" />
                     </svg>
@@ -127,15 +124,15 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
             </div>
 
             <div *ngIf="visibleApplicants().length === 0"
-                 class="px-5 py-16 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 sm:px-8">
+                 class="px-4 py-14 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 sm:px-8 sm:py-16">
               {{ activeFilter === 'PENDING' ? 'Chưa có sinh viên ứng tuyển vào bài đăng này.' : 'Chưa có hồ sơ nào được đánh dấu.' }}
             </div>
 
             <div *ngIf="visibleApplicants().length > 0" class="divide-y divide-gray-100">
               <article *ngFor="let applicant of visibleApplicants()"
-                       class="px-5 py-5 transition-colors sm:px-8">
+                       class="px-4 py-4 transition-colors sm:px-8 sm:py-5">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div class="flex min-w-0 items-start gap-3">
+                  <div class="flex min-w-0 items-start gap-3 lg:flex-1">
                     <input type="checkbox"
                            class="mt-1 h-4 w-4 shrink-0 border-gray-300 text-hus-blue focus:ring-hus-blue"
                            [checked]="isApplicantSelected(applicant)"
@@ -144,8 +141,8 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
                     <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-3">
                       <h3 (click)="openApplicantPost(applicant, $event)"
-                          [ngClass]="hasApplicantPost(applicant) ? 'cursor-pointer hover:text-hus-blue' : ''"
-                          class="text-base font-black text-gray-900 [overflow-wrap:anywhere] transition-colors">
+                          [ngClass]="canOpenApplicantDetail(applicant) ? 'cursor-pointer hover:text-hus-blue' : ''"
+                          class="text-[15px] font-black text-gray-900 [overflow-wrap:anywhere] transition-colors sm:text-base">
                         {{ applicant.applicantName || 'Sinh viên' }}
                       </h3>
                       <span *ngIf="applicant.status === 'REVIEWED'"
@@ -166,17 +163,17 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
                     </p>
 
                     <p *ngIf="applicant.message"
-                       class="mt-3 max-w-3xl whitespace-pre-line text-sm leading-7 text-gray-600 [overflow-wrap:anywhere]">
+                       class="mt-3 max-w-3xl whitespace-pre-line text-[13px] leading-6 text-gray-600 [overflow-wrap:anywhere] sm:text-sm sm:leading-7">
                       {{ applicant.message }}
                     </p>
                     </div>
                   </div>
 
-                  <div class="flex flex-wrap items-center gap-3 lg:justify-end">
+                  <div class="flex w-full flex-wrap items-center gap-3 lg:w-auto lg:justify-end">
                     <button type="button"
                             [disabled]="!hasApplicantEmail(applicant)"
                             (click)="contactApplicant(applicant, $event)"
-                            class="inline-flex items-center justify-center border border-gray-200 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest transition-colors"
+                            class="inline-flex w-full items-center justify-center border border-gray-200 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest transition-colors sm:w-auto"
                             [ngClass]="hasApplicantEmail(applicant)
                               ? 'text-gray-600 hover:border-hus-blue hover:text-hus-blue'
                               : 'cursor-not-allowed text-gray-300'">
@@ -197,6 +194,7 @@ export class RecruitmentPostStatisticsComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly postService = inject(PostService);
   private readonly recruitmentApplicationViewState = inject(RecruitmentApplicationViewStateService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected readonly ROUTES = ROUTES;
 
@@ -208,7 +206,6 @@ export class RecruitmentPostStatisticsComponent implements OnInit {
   pendingApplicants: PendingApplicantResponse[] = [];
   reviewedApplicants: PendingApplicantResponse[] = [];
   isBulkDeleting = false;
-  selectAllVisibleChecked = false;
   private readonly selectedApplicationIds = new Set<string>();
 
   ngOnInit(): void {
@@ -254,21 +251,30 @@ export class RecruitmentPostStatisticsComponent implements OnInit {
           .map((item) => ({ ...item, status: item.status ?? 'REVIEWED' }))
           .sort((left, right) => this.sortByAppliedAt(right.appliedAt) - this.sortByAppliedAt(left.appliedAt));
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.errorMessage = 'Không thể tải thống kê ứng viên cho bài đăng này.';
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
 
   hasApplicantPost(applicant: PendingApplicantResponse): boolean {
-    return !!applicant.applicantPostId;
+    return !!applicant.applicantPostId?.trim();
+  }
+
+  hasApplicantCv(applicant: PendingApplicantResponse): boolean {
+    return !!applicant.cvUrl?.trim();
+  }
+
+  canOpenApplicantDetail(applicant: PendingApplicantResponse): boolean {
+    return this.hasApplicantPost(applicant) || this.hasApplicantCv(applicant);
   }
 
   setApplicantFilter(filter: ApplicantFilter): void {
     this.activeFilter = filter;
-    this.selectAllVisibleChecked = false;
   }
 
   visibleApplicants(): PendingApplicantResponse[] {
@@ -287,16 +293,23 @@ export class RecruitmentPostStatisticsComponent implements OnInit {
     event?.stopPropagation();
     this.recruitmentApplicationViewState.markViewed(applicant.applicationId);
 
-    if (!applicant.applicantPostId) {
+    const applicantPostId = applicant.applicantPostId?.trim();
+    if (applicantPostId) {
+      this.router.navigateByUrl(ROUTES.RECRUITMENT_DETAIL(applicantPostId), {
+        state: {
+          returnUrl: this.router.url,
+          showActions: false
+        }
+      });
       return;
     }
 
-    this.router.navigateByUrl(ROUTES.RECRUITMENT_DETAIL(applicant.applicantPostId), {
-      state: {
-        returnUrl: this.router.url,
-        showActions: false
-      }
-    });
+    const applicantCvUrl = applicant.cvUrl?.trim();
+    if (!applicantCvUrl || typeof window === 'undefined') {
+      return;
+    }
+
+    window.open(applicantCvUrl, '_blank', 'noopener,noreferrer');
   }
 
   hasApplicantEmail(applicant: PendingApplicantResponse): boolean {
@@ -319,9 +332,13 @@ export class RecruitmentPostStatisticsComponent implements OnInit {
     return this.visibleApplicants().some((item) => this.selectedApplicationIds.has(item.applicationId));
   }
 
+  isAllVisibleSelected(): boolean {
+    const applicants = this.visibleApplicants();
+    return applicants.length > 0 && applicants.every((item) => this.selectedApplicationIds.has(item.applicationId));
+  }
+
   toggleApplicantSelection(applicant: PendingApplicantResponse, event: Event): void {
     event.stopPropagation();
-    this.selectAllVisibleChecked = false;
 
     if (this.selectedApplicationIds.has(applicant.applicationId)) {
       this.selectedApplicationIds.delete(applicant.applicationId);
@@ -333,7 +350,6 @@ export class RecruitmentPostStatisticsComponent implements OnInit {
 
   toggleSelectAllVisible(checked: boolean, event: Event): void {
     event.stopPropagation();
-    this.selectAllVisibleChecked = checked;
 
     this.visibleApplicants().forEach((applicant) => {
       if (checked) {
@@ -374,6 +390,7 @@ export class RecruitmentPostStatisticsComponent implements OnInit {
       const deletedIds = applicationIds.filter((_, index) => results[index]);
       if (deletedIds.length === 0) {
         this.errorMessage = 'Không thể xóa các hồ sơ đã chọn.';
+        this.cdr.detectChanges();
         return;
       }
 
@@ -382,6 +399,7 @@ export class RecruitmentPostStatisticsComponent implements OnInit {
       this.noticeMessage = deletedIds.length === applicationIds.length
         ? `Đã xóa ${deletedIds.length} hồ sơ ứng tuyển.`
         : `Đã xóa ${deletedIds.length}/${applicationIds.length} hồ sơ ứng tuyển.`;
+      this.cdr.detectChanges();
     });
   }
 
@@ -428,7 +446,6 @@ export class RecruitmentPostStatisticsComponent implements OnInit {
     this.reviewedApplicants = this.reviewedApplicants.filter((item) => !deletedIds.has(item.applicationId));
     applicationIds.forEach((id) => this.selectedApplicationIds.delete(id));
     this.recruitmentApplicationViewState.removeViewed(applicationIds);
-    this.selectAllVisibleChecked = false;
   }
 
   private allApplicants(): PendingApplicantResponse[] {

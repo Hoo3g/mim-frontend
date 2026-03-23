@@ -23,6 +23,7 @@ interface TrackHeartbeatPayload {
 @Injectable({ providedIn: 'root' })
 export class AnalyticsTrackingService implements OnDestroy {
     private static readonly VISITOR_ID_STORAGE_KEY = 'mim_analytics_visitor_id';
+    private static readonly PAGE_VIEW_TRACKED_SCOPE_STORAGE_KEY = 'mim_analytics_page_view_tracked_scope';
     private static readonly HEARTBEAT_INTERVAL_MS = 60_000;
 
     private readonly http = inject(HttpClient);
@@ -32,6 +33,8 @@ export class AnalyticsTrackingService implements OnDestroy {
     private visitorId = '';
     private currentRouteKey = 'OTHER';
     private currentPath = '/';
+    private pageViewTracked = false;
+    private pageViewTrackedScope = '';
 
     private routerEventsSub?: Subscription;
     private heartbeatSub?: Subscription;
@@ -47,8 +50,9 @@ export class AnalyticsTrackingService implements OnDestroy {
 
         this.currentPath = this.normalizePath(this.router.url);
         this.currentRouteKey = this.routeKeyFromPath(this.currentPath);
+        this.syncPageViewTrackingState();
 
-        this.trackPageView(this.currentPath);
+        this.trackFirstEligiblePageView(this.currentPath);
         this.trackHeartbeat();
 
         this.routerEventsSub = this.router.events.subscribe((event) => {
@@ -59,7 +63,8 @@ export class AnalyticsTrackingService implements OnDestroy {
             const path = this.normalizePath(event.urlAfterRedirects || event.url || '/');
             this.currentPath = path;
             this.currentRouteKey = this.routeKeyFromPath(path);
-            this.trackPageView(path);
+            this.syncPageViewTrackingState();
+            this.trackFirstEligiblePageView(path);
         });
 
         this.heartbeatSub = timer(
@@ -93,6 +98,8 @@ export class AnalyticsTrackingService implements OnDestroy {
             this.visibilityChangeHandler = undefined;
         }
 
+        this.pageViewTracked = false;
+        this.pageViewTrackedScope = '';
         this.started = false;
     }
 
@@ -114,6 +121,40 @@ export class AnalyticsTrackingService implements OnDestroy {
                     // Ignore tracking failures to keep UX unaffected.
                 }
             });
+    }
+
+    private trackFirstEligiblePageView(path: string): void {
+        this.syncPageViewTrackingState();
+        if (this.pageViewTracked || !this.isTrackablePagePath(path)) {
+            return;
+        }
+
+        this.pageViewTracked = true;
+        localStorage.setItem(AnalyticsTrackingService.PAGE_VIEW_TRACKED_SCOPE_STORAGE_KEY, this.pageViewTrackedScope);
+        this.trackPageView(path);
+    }
+
+    private isTrackablePagePath(path: string): boolean {
+        return !path.startsWith('/auth');
+    }
+
+    private syncPageViewTrackingState(): void {
+        const currentScope = this.resolvePageViewTrackingScope();
+        if (currentScope === this.pageViewTrackedScope) {
+            return;
+        }
+
+        this.pageViewTrackedScope = currentScope;
+        const trackedScope = localStorage.getItem(AnalyticsTrackingService.PAGE_VIEW_TRACKED_SCOPE_STORAGE_KEY)?.trim();
+        this.pageViewTracked = trackedScope === currentScope;
+    }
+
+    private resolvePageViewTrackingScope(): string {
+        const authSessionId = authSignal.sessionId();
+        if (authSessionId) {
+            return `auth:${authSessionId}`;
+        }
+        return `anon:${this.visitorId}`;
     }
 
     private trackHeartbeat(): void {

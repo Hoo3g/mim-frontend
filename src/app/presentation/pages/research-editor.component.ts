@@ -19,8 +19,8 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
   imports: [CommonModule, FormsModule, RouterModule, QuillEditorComponent],
   template: `
     <div class="bg-white min-h-screen">
-      <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-3 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+      <div class="border-b border-gray-100 bg-blue-50/50 py-2.5 px-2 sm:py-3 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2 sm:gap-4 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-gray-400">
           <a [routerLink]="ROUTES.RESEARCH_MY_PAPERS" class="text-hus-blue hover:text-hus-dark transition">
             Bài viết của tôi
           </a>
@@ -29,29 +29,31 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-12">
-        <div class="w-full border-2 border-hus-blue/10 bg-white p-6 md:p-8 lg:p-10">
-          <h1 class="text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
+      <div class="mx-auto w-full px-1 sm:max-w-7xl sm:px-6 lg:px-8 py-5 sm:py-8 md:py-10">
+        <div class="w-full border-0 sm:border-2 sm:border-hus-blue/10 bg-white p-2.5 sm:p-6 md:p-8 lg:p-10">
+          <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
             {{ isEditMode ? 'Chỉnh sửa bài viết nghiên cứu' : 'Soạn thảo bài viết nghiên cứu' }}
           </h1>
-          <p class="mt-4 text-sm text-gray-400 font-bold uppercase tracking-widest">
+          <p class="mt-3 text-[11px] sm:text-sm text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
             Điền thông tin cơ bản cho bài viết: tên đề tài, lĩnh vực nghiên cứu và phần tóm tắt.
           </p>
 
           <ng-container *ngIf="!isLoadingPaper; else loadingPaperTpl">
-          <form class="mt-8 space-y-6" (ngSubmit)="save()">
+          <form class="mt-6 sm:mt-8 space-y-5 sm:space-y-6" (ngSubmit)="save()">
             <div>
               <label for="title" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
                 Tên đề tài
               </label>
-              <input id="title"
-                     name="title"
-                     type="text"
-                     [(ngModel)]="title"
-                     maxlength="255"
-                     required
-                     class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
-                     placeholder="Nhập tên đề tài nghiên cứu">
+              <textarea id="title"
+                        name="title"
+                        [(ngModel)]="title"
+                        maxlength="255"
+                        rows="2"
+                        required
+                        data-title-field="true"
+                        (input)="onTitleInput($event)"
+                        class="w-full min-h-[76px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
+                        placeholder="Nhập tên đề tài nghiên cứu"></textarea>
             </div>
 
             <div>
@@ -62,7 +64,7 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
                       name="researchArea"
                       [(ngModel)]="selectedResearchArea"
                       required
-                      class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors">
+                      class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
                 <option value="" disabled>
                   {{ isLoadingCategories ? 'Đang tải danh mục...' : 'Chọn phân loại' }}
                 </option>
@@ -80,7 +82,7 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
               </p>
             </div>
 
-            <div class="max-w-4xl">
+            <div class="w-full sm:max-w-4xl">
               <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
                 Tóm tắt
               </label>
@@ -116,7 +118,7 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
                      type="file"
                      accept="application/pdf,.pdf"
                      (change)="onPdfSelected($event)"
-                     class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue transition-colors file:mr-3 file:border-0 file:bg-hus-blue file:px-3 file:py-2 file:text-[10px] file:font-black file:text-white file:uppercase file:tracking-widest hover:file:bg-hus-dark">
+                     class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue transition-colors file:mr-2 sm:file:mr-3 file:border-0 file:bg-hus-blue file:px-2.5 sm:file:px-3 file:py-2 file:text-[9px] sm:file:text-[10px] file:font-black file:text-white file:uppercase file:tracking-widest hover:file:bg-hus-dark">
 
               <div class="mt-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 space-y-2">
                 <p>
@@ -137,23 +139,27 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
               {{ errorMessage }}
             </p>
 
-            <div class="flex flex-col sm:flex-row gap-3 pt-2">
-              <button type="button"
-                      (click)="cancel()"
-                      class="sm:min-w-36 px-5 py-3 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors">
-                Hủy
-              </button>
-              <button type="submit"
-                      [disabled]="isSaving"
-                      class="sm:min-w-44 px-5 py-3 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">
-                {{ isSaving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật bài viết' : 'Lưu bài viết') }}
-              </button>
+            <div class="pt-3 border-t border-gray-100">
+              <div class="flex items-center justify-end gap-2 lg:gap-3">
+                <button type="button"
+                        (click)="cancel()"
+                        class="inline-flex h-8 sm:h-9 lg:h-10 shrink-0 items-center justify-center px-2.5 sm:px-3 border border-gray-200 text-gray-500 text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
+                  Hủy
+                </button>
+
+                <button type="submit"
+                        [disabled]="isSaving"
+                        class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center px-2.5 sm:px-3 lg:px-4 bg-hus-blue text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:bg-hus-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                  <span class="sm:hidden">{{ isSaving ? 'Lưu...' : (isEditMode ? 'Cập nhật' : 'Lưu') }}</span>
+                  <span class="hidden sm:inline">{{ isSaving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật bài viết' : 'Lưu bài viết') }}</span>
+                </button>
+              </div>
             </div>
           </form>
           </ng-container>
 
           <ng-template #loadingPaperTpl>
-            <div class="mt-8 border border-dashed border-gray-200 px-4 py-8 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            <div class="mt-6 sm:mt-8 border border-dashed border-gray-200 px-4 py-8 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
               Đang tải dữ liệu bài viết...
             </div>
           </ng-template>
@@ -238,6 +244,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     const paperId = this.route.snapshot.paramMap.get('id');
     if (!paperId) {
       this.isEditorReady = true;
+      this.scheduleTitleTextareaResize();
       return;
     }
 
@@ -263,6 +270,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       this.abstract = this.normalizeToEditorHtml(normalizeRichTextHtml(paper.abstract));
       this.existingPdfUrl = paper.pdfUrl?.trim() ? paper.pdfUrl.trim() : null;
       this.selectedResearchArea = paper.researchArea ?? '';
+      this.scheduleTitleTextareaResize();
       this.cdr.detectChanges();
     });
   }
@@ -367,6 +375,11 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
   }
 
+  onTitleInput(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    this.autoResizeTextarea(textarea);
+  }
+
   isAbstractBlank(): boolean {
     return !this.toPlainText(this.abstract);
   }
@@ -414,6 +427,21 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       URL.revokeObjectURL(this.selectedPdfPreviewUrl);
     }
     this.selectedPdfPreviewUrl = null;
+  }
+
+  private autoResizeTextarea(textarea: HTMLTextAreaElement): void {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }
+
+  private scheduleTitleTextareaResize(): void {
+    setTimeout(() => {
+      const titleTextarea = document.querySelector<HTMLTextAreaElement>('textarea[data-title-field="true"]');
+      if (!titleTextarea) {
+        return;
+      }
+      this.autoResizeTextarea(titleTextarea);
+    });
   }
 
   private loadResearchCategories(): void {
