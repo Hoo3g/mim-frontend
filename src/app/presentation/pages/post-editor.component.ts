@@ -11,6 +11,8 @@ import { ProfileMeResponse } from '../../core/models/profile.model';
 import { ProfileService } from '../../core/services/profile.service';
 import { ResearchPaper } from '../../core/models/research-paper.model';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
+import { ResearchCategory } from '../../core/models/research-category.model';
+import { RecruitmentCategoryService } from '../../core/services/recruitment-category.service';
 import { finalize } from 'rxjs';
 
 type PostingMode = 'JOB' | 'INTERNSHIP';
@@ -375,15 +377,37 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                     </div>
                   </div>
 
-                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                      Thẻ phân loại (phân tách bằng dấu phẩy)
-                    </label>
-                    <input [(ngModel)]="tagsText"
-                           name="tagsText"
-                           type="text"
-                           class="w-full border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-hus-blue transition-colors"
-                           placeholder="AI, Data Science, Java, ...">
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                      <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                        Danh mục tuyển dụng
+                      </label>
+                      <span class="text-[10px] font-black uppercase tracking-widest text-hus-blue">
+                        {{ selectedRecruitmentCategories.length }} đã chọn
+                      </span>
+                    </div>
+
+                    <div *ngIf="loadingRecruitmentCategories"
+                         class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                      Đang tải danh mục tuyển dụng...
+                    </div>
+
+                    <div *ngIf="!loadingRecruitmentCategories && recruitmentCategories.length === 0"
+                         class="text-xs text-gray-500 font-semibold border border-dashed border-gray-200 px-4 py-3">
+                      Chưa có danh mục tuyển dụng do admin cấu hình.
+                    </div>
+
+                    <div *ngIf="!loadingRecruitmentCategories && recruitmentCategories.length > 0"
+                         class="grid sm:grid-cols-2 gap-2 border border-gray-100 bg-gray-50/50 p-3">
+                      <label *ngFor="let category of recruitmentCategories"
+                             class="flex items-center gap-3 px-3 py-2 bg-white border border-gray-100 cursor-pointer hover:border-hus-blue/30 transition-colors">
+                        <input type="checkbox"
+                               [checked]="isRecruitmentCategorySelected(category.name)"
+                               (change)="toggleRecruitmentCategory(category.name, $event)"
+                               class="h-4 w-4 border-gray-300 text-hus-blue focus:ring-hus-blue" />
+                        <span class="text-[11px] font-bold uppercase tracking-tight text-gray-700">{{ category.name }}</span>
+                      </label>
+                    </div>
                   </div>
 
                   <div class="grid sm:grid-cols-2 gap-4">
@@ -623,12 +647,14 @@ export class PostEditorComponent implements OnInit, OnDestroy {
   private readonly postService = inject(PostService);
   private readonly profileService = inject(ProfileService);
   private readonly researchPaperService = inject(ResearchPaperService);
+  private readonly recruitmentCategoryService = inject(RecruitmentCategoryService);
 
   protected readonly ROUTES = ROUTES;
   protected readonly JOB_TYPES = JobType;
 
   isEditMode = false;
   roleBlocked = false;
+  studentSinglePostLimitReached = false;
   isCompanyRole = false;
   loading = false;
   saving = false;
@@ -651,6 +677,9 @@ export class PostEditorComponent implements OnInit, OnDestroy {
   loadingMyPapers = false;
   myResearchPapers: ResearchPaper[] = [];
   selectedResearchPaperIds = new Set<string>();
+  recruitmentCategories: ResearchCategory[] = [];
+  loadingRecruitmentCategories = false;
+  selectedRecruitmentCategories: string[] = [];
 
   form: {
     title: string;
@@ -692,8 +721,6 @@ export class PostEditorComponent implements OnInit, OnDestroy {
       careerGoal: ''
     };
 
-  tagsText = '';
-
   ngOnInit(): void {
     const currentUser = authSignal.user();
     if (!currentUser) {
@@ -715,6 +742,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     this.isCompanyRole = currentUser.role === 'COMPANY';
     this.form.contactEmail = currentUser.email;
     this.scheduleCompanyTextareaResize();
+    this.loadRecruitmentCategories();
 
     const postId = this.route.snapshot.paramMap.get('id');
     if (postId) {
@@ -722,6 +750,8 @@ export class PostEditorComponent implements OnInit, OnDestroy {
       this.editingPostId = postId;
       this.loading = true;
       this.loadPostForEdit(postId, currentUser.id);
+    } else if (!this.isCompanyRole) {
+      this.checkStudentSinglePostLimit(currentUser.id);
     }
 
     if (!this.isCompanyRole) {
@@ -907,8 +937,11 @@ export class PostEditorComponent implements OnInit, OnDestroy {
       this.studentCardForm.careerGoal = (student.careerGoal ?? '').trim();
     }
 
-    if (shouldFill(this.tagsText)) {
-      this.tagsText = this.buildStudentDefaultTags(student).join(', ');
+    if (force || this.selectedRecruitmentCategories.length === 0) {
+      const suggestedCategories = this.suggestRecruitmentCategories(student);
+      if (suggestedCategories.length > 0) {
+        this.selectedRecruitmentCategories = suggestedCategories;
+      }
     }
 
     if (shouldFill(this.form.contactEmail)) {
@@ -1028,6 +1061,28 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     return normalized || 'Chưa cập nhật';
   }
 
+  toggleRecruitmentCategory(categoryName: string, event: Event): void {
+    const normalizedName = (categoryName ?? '').trim();
+    if (!normalizedName) {
+      return;
+    }
+
+    const checked = (event.target as HTMLInputElement).checked;
+    if (checked) {
+      this.selectedRecruitmentCategories = this.sanitizeRecruitmentCategories([
+        ...this.selectedRecruitmentCategories,
+        normalizedName
+      ]);
+      return;
+    }
+
+    this.selectedRecruitmentCategories = this.selectedRecruitmentCategories.filter((item) => item !== normalizedName);
+  }
+
+  isRecruitmentCategorySelected(categoryName: string): boolean {
+    return this.selectedRecruitmentCategories.includes((categoryName ?? '').trim());
+  }
+
   bulletItems(value: string): string[] {
     return (value ?? '')
       .replace(/\r\n/g, '\n')
@@ -1047,6 +1102,11 @@ export class PostEditorComponent implements OnInit, OnDestroy {
 
     if (!authSignal.canCreateContent()) {
       this.errorMessage = 'Tài khoản chưa xác thực email. Bạn chưa thể tạo hoặc cập nhật bài đăng.';
+      return;
+    }
+
+    if (!this.isEditMode && this.studentSinglePostLimitReached) {
+      this.errorMessage = 'Tài khoản sinh viên chỉ được tạo duy nhất 1 bài tuyển dụng. Bạn hãy chỉnh sửa bài đã có.';
       return;
     }
 
@@ -1080,7 +1140,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
       contactEmail: this.form.contactEmail,
       contactPhone: this.form.contactPhone,
       status: this.form.status,
-      tags: this.parseTags(this.tagsText),
+      tags: [...this.selectedRecruitmentCategories],
       studentCvUrl: this.isCompanyRole ? undefined : this.resolvedStudentCvUrl() ?? undefined,
       researchPaperLinks: this.isCompanyRole
         ? undefined
@@ -1148,10 +1208,34 @@ export class PostEditorComponent implements OnInit, OnDestroy {
   }
 
   blockedMessage(): string {
+    if (this.studentSinglePostLimitReached) {
+      return 'Tài khoản sinh viên chỉ được tạo duy nhất 1 bài tuyển dụng. Bạn hãy chỉnh sửa bài đã có.';
+    }
     if (!authSignal.canCreateContent()) {
       return 'Tài khoản chưa xác thực email. Bạn chưa thể tạo hoặc chỉnh sửa bài đăng.';
     }
     return 'Chỉ tài khoản sinh viên hoặc doanh nghiệp mới có thể thao tác bài đăng tuyển dụng.';
+  }
+
+  private checkStudentSinglePostLimit(currentUserId: string): void {
+    this.loading = true;
+    this.postService.getMyPosts(currentUserId, true).pipe(
+      finalize(() => {
+        this.loading = false;
+      })
+    ).subscribe({
+      next: (posts) => {
+        if (posts.length === 0) {
+          return;
+        }
+        this.studentSinglePostLimitReached = true;
+        this.roleBlocked = true;
+        this.errorMessage = 'Tài khoản sinh viên chỉ được tạo duy nhất 1 bài tuyển dụng. Bạn hãy chỉnh sửa bài đã có.';
+      },
+      error: () => {
+        this.errorMessage = 'Không thể kiểm tra giới hạn tạo bài tuyển dụng cho tài khoản sinh viên.';
+      }
+    });
   }
 
   private loadStudentProfileAndPrefill(): void {
@@ -1203,7 +1287,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     this.form.contactPhone = post.contactPhone ?? '';
     this.form.jobType = post.jobType;
     this.form.status = post.status;
-    this.tagsText = (post.tags ?? []).join(', ');
+    this.selectedRecruitmentCategories = this.sanitizeRecruitmentCategories(post.tags ?? []);
 
     if (!this.isCompanyRole) {
       const displayInfo = post.displayInfo;
@@ -1319,16 +1403,6 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     return blocks.join('\n\n');
   }
 
-  private buildStudentDefaultTags(student: ProfileMeResponse['student']): string[] {
-    const values = [
-      (student?.major ?? '').trim(),
-      (student?.desiredPosition ?? '').trim(),
-      (student?.studentType ?? '').trim()
-    ].filter((item) => !!item);
-
-    return values.filter((item, index, arr) => arr.indexOf(item) === index);
-  }
-
   private resolvePostType(role: string): PostType {
     if (role === 'COMPANY') {
       return this.postingMode === 'INTERNSHIP'
@@ -1341,12 +1415,127 @@ export class PostEditorComponent implements OnInit, OnDestroy {
       : PostType.STUDENT_SEEKING_JOB;
   }
 
-  private parseTags(raw: string): string[] {
-    return raw
-      .split(',')
-      .map((item) => item.trim())
+  private loadRecruitmentCategories(): void {
+    this.loadingRecruitmentCategories = true;
+    this.recruitmentCategoryService.getActiveCategories().subscribe({
+      next: (categories) => {
+        this.recruitmentCategories = categories;
+        this.selectedRecruitmentCategories = this.sanitizeRecruitmentCategories(this.selectedRecruitmentCategories);
+
+        if (!this.isCompanyRole && this.studentProfile && this.selectedRecruitmentCategories.length === 0) {
+          this.selectedRecruitmentCategories = this.suggestRecruitmentCategories(this.studentProfile);
+        }
+
+        this.loadingRecruitmentCategories = false;
+      },
+      error: () => {
+        this.recruitmentCategories = [];
+        this.selectedRecruitmentCategories = [];
+        this.loadingRecruitmentCategories = false;
+      }
+    });
+  }
+
+  private sanitizeRecruitmentCategories(values: string[]): string[] {
+    const normalizedValues = (values ?? [])
+      .map((item) => (item ?? '').trim())
+      .filter((item, index, items) => !!item && items.indexOf(item) === index);
+
+    if (this.recruitmentCategories.length === 0) {
+      return normalizedValues;
+    }
+
+    const allowedNames = new Map(
+      this.recruitmentCategories.map((category) => [
+        this.normalizeRecruitmentText(category.name),
+        category.name.trim()
+      ])
+    );
+
+    return normalizedValues
+      .map((value) => allowedNames.get(this.normalizeRecruitmentText(value)) ?? '')
+      .filter((item, index, items) => !!item && items.indexOf(item) === index);
+  }
+
+  private suggestRecruitmentCategories(student: ProfileMeResponse['student']): string[] {
+    const profileText = [
+      student?.major,
+      student?.desiredPosition,
+      student?.bio,
+      student?.careerGoal,
+      student?.achievements,
+      this.form.title,
+      this.form.description,
+      this.form.achievements
+    ]
+      .map((item) => (item ?? '').trim())
       .filter((item) => !!item)
-      .filter((item, index, arr) => arr.indexOf(item) === index);
+      .join(' ');
+
+    const normalizedProfileText = this.normalizeRecruitmentText(profileText);
+    if (!normalizedProfileText) {
+      return [];
+    }
+
+    const matchedCategories = this.recruitmentCategories
+      .filter((category) => this.recruitmentCategoryKeywords(category.name)
+        .some((keyword) => this.containsRecruitmentKeyword(normalizedProfileText, keyword)))
+      .map((category) => category.name);
+
+    return this.sanitizeRecruitmentCategories(matchedCategories);
+  }
+
+  private recruitmentCategoryKeywords(categoryName: string): string[] {
+    const normalizedName = this.normalizeRecruitmentText(categoryName);
+
+    switch (normalizedName) {
+      case 'backend':
+        return ['backend', 'back end', 'server', 'java', 'spring', 'dotnet', '.net', 'nodejs', 'node js', 'api'];
+      case 'frontend':
+        return ['frontend', 'front end', 'react', 'angular', 'vue', 'javascript', 'typescript'];
+      case 'fullstack':
+      case 'full stack':
+        return ['fullstack', 'full stack'];
+      case 'ai':
+        return ['ai', 'artificial intelligence', 'tri tue nhan tao', 'machine learning', 'deep learning', 'nlp', 'computer vision'];
+      case 'mobile':
+        return ['mobile', 'android', 'ios', 'flutter', 'react native'];
+      case 'game':
+        return ['game', 'unity', 'unreal'];
+      case 'data':
+        return ['data', 'data analyst', 'data science', 'data engineer', 'phan tich du lieu', 'khoa hoc du lieu'];
+      case 'devops':
+        return ['devops', 'docker', 'kubernetes', 'ci cd', 'cloud', 'sre'];
+      case 'qa':
+        return ['qa', 'tester', 'kiem thu', 'test automation'];
+      case 'ui ux':
+      case 'ux ui':
+        return ['ui ux', 'ux ui', 'figma', 'product design', 'thiet ke giao dien'];
+      default:
+        return [categoryName];
+    }
+  }
+
+  private containsRecruitmentKeyword(normalizedText: string, keyword: string): boolean {
+    const normalizedKeyword = this.normalizeRecruitmentText(keyword);
+    if (!normalizedKeyword) {
+      return false;
+    }
+
+    if (normalizedKeyword.length <= 2) {
+      return ` ${normalizedText} `.includes(` ${normalizedKeyword} `);
+    }
+
+    return normalizedText.includes(normalizedKeyword);
+  }
+
+  private normalizeRecruitmentText(value: string | null | undefined): string {
+    return (value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
   }
 
   private ensureBulletListText(raw: string): string {

@@ -1,13 +1,26 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { AppComponent } from './app.component';
+import { AnalyticsTrackingService } from './core/services/analytics-tracking.service';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
-      providers: [provideRouter([]), provideHttpClient()],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AnalyticsTrackingService,
+          useValue: {
+            start: () => void 0,
+            stop: () => void 0
+          }
+        }
+      ],
     }).compileComponents();
   });
 

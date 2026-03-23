@@ -1,6 +1,10 @@
 import { API_CONFIG } from './api.config';
 
 export const API_ENDPOINTS = {
+    ANALYTICS: {
+        TRACK_PAGE_VIEW: `${API_CONFIG.BASE_URL}/api/public/analytics/page-view`,
+        HEARTBEAT: `${API_CONFIG.BASE_URL}/api/public/analytics/heartbeat`,
+    },
     AUTH: {
         LOGIN: `${API_CONFIG.PREFIX}/auth/login`,
         GOOGLE_LOGIN: `${API_CONFIG.PREFIX}/auth/google`,
@@ -25,6 +29,7 @@ export const API_ENDPOINTS = {
     RECRUITMENT: {
         LIST: `${API_CONFIG.PREFIX}/posts`,
         LIST_PAGED: `${API_CONFIG.PREFIX}/posts/paged`,
+        CATEGORIES: `${API_CONFIG.PREFIX}/recruitment-categories`,
         DETAIL: (id: string) => `${API_CONFIG.PREFIX}/posts/${id}`,
         CREATE: `${API_CONFIG.PREFIX}/posts`,
         UPDATE: (id: string) => `${API_CONFIG.PREFIX}/posts/${id}`,
@@ -32,6 +37,7 @@ export const API_ENDPOINTS = {
         APPLY: (id: string) => `${API_CONFIG.PREFIX}/posts/${id}/apply`,
         APPLICATIONS_MY: `${API_CONFIG.PREFIX}/posts/applications/me`,
         APPLICATIONS_RECEIVED: `${API_CONFIG.PREFIX}/posts/applications/received`,
+        APPLICATION_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/posts/applications/${id}`,
         APPLICATION_STATUS: (id: string) => `${API_CONFIG.PREFIX}/posts/applications/${id}/status`,
     },
     CONTENT: {
@@ -71,8 +77,11 @@ export const API_ENDPOINTS = {
         RESEARCH_CATEGORY_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/research-categories/${id}`,
         SPECIALIZATIONS: `${API_CONFIG.PREFIX}/admin/specializations`,
         SPECIALIZATION_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/specializations/${id}`,
+        RECRUITMENT_CATEGORIES: `${API_CONFIG.PREFIX}/admin/recruitment-categories`,
+        RECRUITMENT_CATEGORY_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/recruitment-categories/${id}`,
         NEWS: `${API_CONFIG.PREFIX}/admin/news`,
         NEWS_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/news/${id}`,
         NOTIFICATIONS_STREAM: `${API_CONFIG.PREFIX}/admin/notifications/stream`,
+        ANALYTICS_OVERVIEW: `${API_CONFIG.PREFIX}/admin/analytics/overview`,
     },
 } as const;

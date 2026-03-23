@@ -8,18 +8,18 @@ import { ResearchCategory, UpsertResearchCategoryRequest } from '../models/resea
 import { unwrapList, unwrapOr } from '../utils/api-response.util';
 
 @Injectable({ providedIn: 'root' })
-export class AdminResearchCategoryService {
+export class AdminRecruitmentCategoryService {
     private readonly http = inject(HttpClient);
 
     getAll(): Observable<ResearchCategory[]> {
-        return this.http.get<ApiResponse<ResearchCategory[]>>(API_ENDPOINTS.ADMIN.RESEARCH_CATEGORIES).pipe(
+        return this.http.get<ApiResponse<ResearchCategory[]>>(API_ENDPOINTS.ADMIN.RECRUITMENT_CATEGORIES).pipe(
             map((response) => this.normalize(unwrapList(response))),
             catchError(() => of([]))
         );
     }
 
     create(payload: UpsertResearchCategoryRequest): Observable<ResearchCategory | null> {
-        return this.http.post<ApiResponse<ResearchCategory>>(API_ENDPOINTS.ADMIN.RESEARCH_CATEGORIES, payload).pipe(
+        return this.http.post<ApiResponse<ResearchCategory>>(API_ENDPOINTS.ADMIN.RECRUITMENT_CATEGORIES, payload).pipe(
             map((response) => {
                 const data = unwrapOr(response, null);
                 return data ? this.toItem(data) : null;
@@ -29,7 +29,7 @@ export class AdminResearchCategoryService {
     }
 
     update(categoryId: string, payload: UpsertResearchCategoryRequest): Observable<ResearchCategory | null> {
-        return this.http.put<ApiResponse<ResearchCategory>>(API_ENDPOINTS.ADMIN.RESEARCH_CATEGORY_DETAIL(categoryId), payload).pipe(
+        return this.http.put<ApiResponse<ResearchCategory>>(API_ENDPOINTS.ADMIN.RECRUITMENT_CATEGORY_DETAIL(categoryId), payload).pipe(
             map((response) => {
                 const data = unwrapOr(response, null);
                 return data ? this.toItem(data) : null;
@@ -39,7 +39,7 @@ export class AdminResearchCategoryService {
     }
 
     delete(categoryId: string): Observable<boolean> {
-        return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.ADMIN.RESEARCH_CATEGORY_DETAIL(categoryId)).pipe(
+        return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.ADMIN.RECRUITMENT_CATEGORY_DETAIL(categoryId)).pipe(
             map((response) => !!response.success),
             catchError(() => of(false))
         );

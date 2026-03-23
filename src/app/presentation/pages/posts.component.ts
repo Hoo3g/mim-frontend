@@ -7,7 +7,7 @@ import { Post } from '../../core/models/post.model';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { PostDetailComponent } from './post-detail.component';
-import { SpecializationService } from '../../core/services/specialization.service';
+import { RecruitmentCategoryService } from '../../core/services/recruitment-category.service';
 import { ResearchCategory } from '../../core/models/research-category.model';
 import { authSignal } from '../../core/signals/auth.signal';
 import { ROUTES } from '../../core/constants/route.const';
@@ -134,32 +134,32 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 		                <section class="bg-white border-t border-gray-100 first:border-t-0 lg:border lg:border-gray-100">
 		                  <button
 		                    type="button"
-		                    (click)="toggleMobileSection('specializations')"
+		                    (click)="toggleMobileSection('categories')"
 		                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue/10 border-b border-hus-blue/20">
-		                    <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">Chuyên ngành</h3>
+		                    <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">Danh mục</h3>
 		                    <span *ngIf="isMobileViewport"
 		                          class="text-sm font-black text-hus-blue/70 leading-none min-w-[1rem] text-right">
-		                      {{ isMobileSectionOpen('specializations') ? '-' : '+' }}
+		                      {{ isMobileSectionOpen('categories') ? '-' : '+' }}
 		                    </span>
 		                  </button>
 
-		                  <div *ngIf="shouldShowSection('specializations') && isLoadingSpecializations" class="space-y-2 px-3 py-3 sm:px-4 sm:py-4">
+		                  <div *ngIf="shouldShowSection('categories') && isLoadingCategories" class="space-y-2 px-3 py-3 sm:px-4 sm:py-4">
 		                    <div *ngFor="let item of [1, 2, 3, 4]" class="h-9 border border-gray-100 bg-gray-50 animate-pulse"></div>
 		                  </div>
 
-		                  <div *ngIf="shouldShowSection('specializations') && !isLoadingSpecializations" class="space-y-2 px-3 py-3 sm:px-4 sm:py-4">
+		                  <div *ngIf="shouldShowSection('categories') && !isLoadingCategories" class="space-y-2 px-3 py-3 sm:px-4 sm:py-4">
 		                    <button
 		                      type="button"
-		                      *ngFor="let specialization of specializations"
-		                      (click)="toggleSpecializationFilter(specialization.name)"
-		                      [class.text-hus-blue]="isSpecializationSelected(specialization.name)"
-		                      [class.bg-blue-50]="isSpecializationSelected(specialization.name)"
+		                      *ngFor="let category of categories"
+		                      (click)="toggleCategoryFilter(category.name)"
+		                      [class.text-hus-blue]="isCategorySelected(category.name)"
+		                      [class.bg-blue-50]="isCategorySelected(category.name)"
 		                      class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
 		                      <span
 		                        class="w-3.5 h-3.5 border transition-colors flex items-center justify-center"
-		                        [ngClass]="isSpecializationSelected(specialization.name) ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+		                        [ngClass]="isCategorySelected(category.name) ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
 		                        <svg
-		                          *ngIf="isSpecializationSelected(specialization.name)"
+		                          *ngIf="isCategorySelected(category.name)"
 		                          viewBox="0 0 12 12"
 		                          class="w-2.5 h-2.5 text-white"
 		                          fill="none"
@@ -169,12 +169,12 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 		                          <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
 		                        </svg>
 		                      </span>
-		                      <span class="break-words">{{ specialization.name }}</span>
+		                      <span class="break-words">{{ category.name }}</span>
 		                    </button>
 		                    <div
-		                      *ngIf="specializations.length === 0"
+		                      *ngIf="categories.length === 0"
 		                      class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-300 border border-dashed border-gray-100">
-		                      Chưa có chuyên ngành
+		                      Chưa có danh mục
 		                    </div>
 		                  </div>
 		                </section>
@@ -347,9 +347,9 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
   `
 })
 export class PostsComponent implements OnInit {
-  private static readonly SPECIALIZATION_STATE_KEY = 'recruitmentFilterSpecializations';
+  private static readonly CATEGORY_STATE_KEY = 'recruitmentFilterCategories';
   private readonly postService = inject(PostService);
-  private readonly specializationService = inject(SpecializationService);
+  private readonly recruitmentCategoryService = inject(RecruitmentCategoryService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -357,20 +357,20 @@ export class PostsComponent implements OnInit {
   protected readonly ROUTES = ROUTES;
 
   searchTerm = '';
-  specializations: ResearchCategory[] = [];
+  categories: ResearchCategory[] = [];
 
   posts: Post[] = [];
-  isLoadingSpecializations = true;
+  isLoadingCategories = true;
   isLoadingPosts = false;
   hasMorePosts = false;
   filterType: 'COMPANY' | 'STUDENT' = 'COMPANY';
-  selectedSpecializations: string[] = [];
+  selectedCategories: string[] = [];
   selectedPost: Post | null = null;
   showMobileFilters = false;
   isMobileViewport = false;
-  mobileSectionsOpen: Record<'roles' | 'specializations', boolean> = {
+  mobileSectionsOpen: Record<'roles' | 'categories', boolean> = {
     roles: false,
-    specializations: false
+    categories: false
   };
   private currentPage = 0;
   private readonly pageSize = 10;
@@ -388,19 +388,21 @@ export class PostsComponent implements OnInit {
         this.syncFiltersToUrl();
       });
 
-    this.loadSpecializations();
+    this.loadCategories();
     this.route.queryParamMap.subscribe((params) => {
       const type = params.get('type');
       const keyword = params.get('q');
-      const selectedSpecializations = this.parseSpecializationsFromQuery(
+      const selectedCategories = this.parseCategoriesFromQuery(
+        params.getAll('category'),
+        params.get('category'),
         params.getAll('specialization'),
         params.get('specialization')
       );
 
       this.filterType = type === 'STUDENT' ? 'STUDENT' : 'COMPANY';
-      this.selectedSpecializations = selectedSpecializations.length > 0
-        ? selectedSpecializations
-        : this.readSelectedSpecializationsFromHistoryState();
+      this.selectedCategories = selectedCategories.length > 0
+        ? selectedCategories
+        : this.readSelectedCategoriesFromHistoryState();
       this.searchTerm = keyword?.trim() ?? '';
       this.resetAndLoadPosts();
     });
@@ -412,7 +414,7 @@ export class PostsComponent implements OnInit {
   }
 
   get shouldShowFilterActions(): boolean {
-    return this.filterType !== 'COMPANY' || this.selectedSpecializations.length > 0 || !!this.searchTerm.trim();
+    return this.filterType !== 'COMPANY' || this.selectedCategories.length > 0 || !!this.searchTerm.trim();
   }
 
   onSearchChange(val: string): void {
@@ -425,31 +427,31 @@ export class PostsComponent implements OnInit {
     this.syncFiltersToUrl();
   }
 
-  toggleSpecializationFilter(value: string): void {
+  toggleCategoryFilter(value: string): void {
     const normalizedValue = (value ?? '').trim();
     if (!normalizedValue) {
       return;
     }
 
-    if (this.selectedSpecializations.includes(normalizedValue)) {
-      this.selectedSpecializations = this.selectedSpecializations.filter((item) => item !== normalizedValue);
+    if (this.selectedCategories.includes(normalizedValue)) {
+      this.selectedCategories = this.selectedCategories.filter((item) => item !== normalizedValue);
       this.syncFiltersToUrl();
       return;
     }
 
-    this.selectedSpecializations = [...this.selectedSpecializations, normalizedValue];
+    this.selectedCategories = [...this.selectedCategories, normalizedValue];
     this.syncFiltersToUrl();
   }
 
-  isSpecializationSelected(value: string): boolean {
-    return this.selectedSpecializations.includes((value ?? '').trim());
+  isCategorySelected(value: string): boolean {
+    return this.selectedCategories.includes((value ?? '').trim());
   }
 
-  shouldShowSection(section: 'roles' | 'specializations'): boolean {
+  shouldShowSection(section: 'roles' | 'categories'): boolean {
     return !this.isMobileViewport || this.mobileSectionsOpen[section];
   }
 
-  toggleMobileSection(section: 'roles' | 'specializations'): void {
+  toggleMobileSection(section: 'roles' | 'categories'): void {
     if (!this.isMobileViewport) {
       return;
     }
@@ -457,13 +459,13 @@ export class PostsComponent implements OnInit {
     this.mobileSectionsOpen[section] = !this.mobileSectionsOpen[section];
   }
 
-  isMobileSectionOpen(section: 'roles' | 'specializations'): boolean {
+  isMobileSectionOpen(section: 'roles' | 'categories'): boolean {
     return this.mobileSectionsOpen[section];
   }
 
   clearFilters(): void {
     this.filterType = 'COMPANY';
-    this.selectedSpecializations = [];
+    this.selectedCategories = [];
     this.searchTerm = '';
     this.syncFiltersToUrl();
   }
@@ -482,10 +484,10 @@ export class PostsComponent implements OnInit {
     document.body.style.overflow = 'auto';
   }
 
-  private loadSpecializations(): void {
-    this.specializationService.getActiveSpecializations().subscribe((items) => {
-      this.specializations = items;
-      this.isLoadingSpecializations = false;
+  private loadCategories(): void {
+    this.recruitmentCategoryService.getActiveCategories().subscribe((items) => {
+      this.categories = items;
+      this.isLoadingCategories = false;
     });
   }
 
@@ -520,7 +522,7 @@ export class PostsComponent implements OnInit {
   private loadPostsPage(page: number): void {
     this.postService.getPostsPage({
       type: this.filterType,
-      specialization: this.selectedSpecializations,
+      category: this.selectedCategories,
       q: this.searchTerm
     }, page, this.pageSize).subscribe({
       next: (result) => {
@@ -551,19 +553,26 @@ export class PostsComponent implements OnInit {
       replaceUrl: true,
       state: {
         ...(typeof history !== 'undefined' ? history.state as Record<string, unknown> : {}),
-        [PostsComponent.SPECIALIZATION_STATE_KEY]: [...this.selectedSpecializations]
+        [PostsComponent.CATEGORY_STATE_KEY]: [...this.selectedCategories]
       }
     });
   }
 
-  private parseSpecializationsFromQuery(specializations: string[], fallback: string | null): string[] {
-    if (specializations.length > 0) {
-      return specializations
+  private parseCategoriesFromQuery(categories: string[], categoryFallback: string | null, legacySpecializations: string[], legacyFallback: string | null): string[] {
+    const resolved = categories.length > 0
+      ? categories
+      : legacySpecializations.length > 0
+        ? legacySpecializations
+        : [];
+
+    if (resolved.length > 0) {
+      return resolved
         .flatMap((item) => item.split(','))
         .map((item) => item.trim())
         .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
     }
 
+    const fallback = categoryFallback?.trim() ? categoryFallback : legacyFallback;
     if (!fallback?.trim()) {
       return [];
     }
@@ -574,20 +583,20 @@ export class PostsComponent implements OnInit {
       .filter((item, index, arr) => !!item && arr.indexOf(item) === index);
   }
 
-  private buildPostQueryParams(): { type: 'COMPANY' | 'STUDENT'; specialization: string[] | null; q: string | null } {
+  private buildPostQueryParams(): { type: 'COMPANY' | 'STUDENT'; category: string[] | null; q: string | null } {
     return {
       type: this.filterType,
-      specialization: this.selectedSpecializations.length > 0 ? this.selectedSpecializations : null,
+      category: this.selectedCategories.length > 0 ? this.selectedCategories : null,
       q: this.searchTerm.trim() || null
     };
   }
 
-  private readSelectedSpecializationsFromHistoryState(): string[] {
+  private readSelectedCategoriesFromHistoryState(): string[] {
     if (typeof history === 'undefined') {
       return [];
     }
 
-    const rawValue = (history.state as Record<string, unknown> | null)?.[PostsComponent.SPECIALIZATION_STATE_KEY];
+    const rawValue = (history.state as Record<string, unknown> | null)?.[PostsComponent.CATEGORY_STATE_KEY];
     if (!Array.isArray(rawValue)) {
       return [];
     }

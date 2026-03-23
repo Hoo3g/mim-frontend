@@ -38,7 +38,7 @@ export class AdminSpecializationService {
         );
     }
 
-    deactivate(specializationId: string): Observable<boolean> {
+    delete(specializationId: string): Observable<boolean> {
         return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.ADMIN.SPECIALIZATION_DETAIL(specializationId)).pipe(
             map((response) => !!response.success),
             catchError(() => of(false))

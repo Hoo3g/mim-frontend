@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs';
 import { authSignal } from './core/signals/auth.signal';
 import { appSignal } from './core/signals/app.signal';
 import { AuthSessionSyncService } from './core/services/auth-session-sync.service';
+import { AnalyticsTrackingService } from './core/services/analytics-tracking.service';
 import { LoadingSpinnerComponent } from './shared/ui/loading-spinner/loading-spinner.component';
 
 @Component({
@@ -87,6 +88,7 @@ import { LoadingSpinnerComponent } from './shared/ui/loading-spinner/loading-spi
 export class AppComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly authSessionSyncService = inject(AuthSessionSyncService);
+  private readonly analyticsTrackingService = inject(AnalyticsTrackingService);
   readonly currentYear = new Date().getFullYear();
   readonly isRouteLoading = appSignal.loading;
 
@@ -98,11 +100,13 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     authSignal.restoreFromStorage();
     this.authSessionSyncService.start();
+    this.analyticsTrackingService.start();
     this.bindRouteLoadingOverlay();
   }
 
   ngOnDestroy(): void {
     this.authSessionSyncService.stop();
+    this.analyticsTrackingService.stop();
     this.routeLoadingSub?.unsubscribe();
     if (this.hideLoadingTimer) {
       clearTimeout(this.hideLoadingTimer);

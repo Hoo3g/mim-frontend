@@ -172,6 +172,7 @@ export interface PendingApplicantResponse {
     postTitle: string;
     applicantId: string;
     applicantPostId?: string | null;
+    applicantEmail?: string | null;
     status?: string | null;
     applicantName: string;
     message?: string | null;

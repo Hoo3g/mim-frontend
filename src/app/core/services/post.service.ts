@@ -77,6 +77,7 @@ interface ApiPendingApplicant {
     postTitle?: string;
     applicantId?: string;
     applicantPostId?: string;
+    applicantEmail?: string;
     status?: string;
     applicantName?: string;
     message?: string;
@@ -106,7 +107,7 @@ export interface PostEditorPayload {
 export interface PostListQuery {
     q?: string;
     type?: 'COMPANY' | 'STUDENT' | null;
-    specialization?: string[] | null;
+    category?: string[] | null;
 }
 
 @Injectable({
@@ -274,7 +275,20 @@ export class PostService {
 
     applyToPost(postId: string, payload: ApplyPayload): Observable<ApiApplyResponse> {
         return this.http.post<ApiResponse<ApiApplyResponse>>(API_ENDPOINTS.RECRUITMENT.APPLY(postId), payload).pipe(
-            map((response) => unwrap(response))
+            map((response) => unwrap(response)),
+            tap(() => this.postDetailCache.clear())
+        );
+    }
+
+    cancelApplication(postId: string): Observable<boolean> {
+        return this.http.delete<ApiResponse<boolean>>(API_ENDPOINTS.RECRUITMENT.APPLY(postId)).pipe(
+            map((response) => Boolean(response.success && response.data)),
+            tap((success) => {
+                if (success) {
+                    this.postDetailCache.clear();
+                }
+            }),
+            catchError(() => of(false))
         );
     }
 
@@ -304,6 +318,15 @@ export class PostService {
         return this.getReceivedApplications('PENDING');
     }
 
+    deleteReceivedApplication(applicationId: string): Observable<boolean> {
+        return this.http.delete<ApiResponse<boolean>>(
+            API_ENDPOINTS.RECRUITMENT.APPLICATION_DETAIL(applicationId)
+        ).pipe(
+            map((response) => Boolean(response.success && response.data)),
+            catchError(() => of(false))
+        );
+    }
+
     updateReceivedApplicationStatus(applicationId: string, status: 'REVIEWED' | 'REJECTED'): Observable<boolean> {
         const params = new HttpParams().set('status', status);
         return this.http.patch<ApiResponse<boolean>>(
@@ -320,7 +343,7 @@ export class PostService {
         let params = new HttpParams();
         const keyword = (query.q ?? '').trim();
         const type = (query.type ?? '').trim();
-        const specializations = (query.specialization ?? [])
+        const categories = (query.category ?? [])
             .map((item) => (item ?? '').trim())
             .filter((item) => !!item);
 
@@ -330,8 +353,8 @@ export class PostService {
         if (type) {
             params = params.set('type', type);
         }
-        specializations.forEach((item) => {
-            params = params.append('specialization', item);
+        categories.forEach((item) => {
+            params = params.append('category', item);
         });
 
         return params;
@@ -340,12 +363,12 @@ export class PostService {
     private buildListCacheKey(query: PostListQuery): string {
         const keyword = (query.q ?? '').trim().toLowerCase();
         const type = (query.type ?? '').trim().toLowerCase();
-        const specializations = (query.specialization ?? [])
+        const categories = (query.category ?? [])
             .map((item) => (item ?? '').trim().toLowerCase())
             .filter((item) => !!item)
             .sort()
             .join('|');
-        return `q=${keyword};type=${type};specialization=${specializations}`;
+        return `q=${keyword};type=${type};category=${categories}`;
     }
 
     private unwrapPaged<T>(
@@ -606,6 +629,7 @@ export class PostService {
             postTitle: item.postTitle ?? '',
             applicantId: item.applicantId ?? '',
             applicantPostId: item.applicantPostId ?? '',
+            applicantEmail: item.applicantEmail ?? '',
             status: item.status ?? 'PENDING',
             applicantName: item.applicantName ?? '',
             message: item.message ?? '',

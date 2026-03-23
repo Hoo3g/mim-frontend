@@ -31,6 +31,6 @@ export const recruitmentRoutes: Routes = [
     {
         path: ':id',
         canActivate: [authGuard],
-        loadComponent: () => import('../../presentation/pages/post-detail.component').then(m => m.PostDetailComponent)
+        loadComponent: () => import('../../presentation/pages/recruitment-detail-page.component').then(m => m.RecruitmentDetailPageComponent)
     }
 ];

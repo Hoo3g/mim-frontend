@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, effect, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize, forkJoin, Subscription, timer } from 'rxjs';
 import { take } from 'rxjs/operators';
 
@@ -12,7 +12,9 @@ import { ContentService } from '../../../core/services/content.service';
 import { AdminRbacService } from '../../../core/services/admin-rbac.service';
 import { AdminResearchCategoryService } from '../../../core/services/admin-research-category.service';
 import { AdminSpecializationService } from '../../../core/services/admin-specialization.service';
+import { AdminRecruitmentCategoryService } from '../../../core/services/admin-recruitment-category.service';
 import { AdminNewsService } from '../../../core/services/admin-news.service';
+import { AdminAnalyticsService } from '../../../core/services/admin-analytics.service';
 import { ModerationPaperItem, ModerationPostItem } from '../../../core/models/admin-moderation.model';
 import { API_CONFIG } from '../../../core/config/api.config';
 import {
@@ -26,10 +28,12 @@ import { NewsItem, NewsStatus } from '../../../core/models/news.model';
 import { ApprovalStatus } from '../../../core/enums/post-status.enum';
 import { authSignal } from '../../../core/signals/auth.signal';
 import { Post } from '../../../core/models/post.model';
+import { AdminAnalyticsOverview, AdminMonthlyTrafficPoint } from '../../../core/models/admin-analytics.model';
+import { buildLinePoints, maxMetricValue } from '../../../core/utils/admin-analytics-chart.util';
 import { PdfCanvasViewerComponent } from '../../../shared/ui/pdf-canvas-viewer/pdf-canvas-viewer.component';
 import { PostDetailComponent } from '../post-detail.component';
 
-type AdminTabKey = 'POSTS' | 'PAPERS' | 'HERO' | 'NEWS' | 'RBAC' | 'SPECIALIZATIONS' | 'PAPER_CATEGORIES';
+type AdminTabKey = 'POSTS' | 'PAPERS' | 'ANALYTICS' | 'HERO' | 'NEWS' | 'RBAC' | 'SPECIALIZATIONS' | 'RECRUITMENT_CATEGORIES' | 'PAPER_CATEGORIES';
 
 interface AdminTabConfig {
     key: AdminTabKey;
@@ -186,7 +190,7 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                 </button>
               </div>
 
-              <div *ngFor="let post of pendingPosts()" class="bg-white border border-gray-100 p-6 space-y-4 group hover:border-hus-blue transition-all">
+              <div *ngFor="let post of pendingPosts()" class="bg-white border border-gray-100 p-6 space-y-4 transition-all">
                 <div class="flex flex-col md:flex-row justify-between items-start gap-6">
                   <div class="flex items-start gap-4 flex-grow min-w-0">
                     <label *ngIf="can('MODERATION_POSTS_ACTION')" class="pt-1 flex-shrink-0">
@@ -197,13 +201,16 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                         (click)="$event.stopPropagation()"
                         (change)="togglePostSelection(post.id, $any($event.target).checked)">
                     </label>
-                    <div class="min-w-0 flex-grow cursor-pointer" (click)="openPostPreview(post)">
+                    <div class="min-w-0 flex-grow">
                       <div class="flex flex-wrap items-center gap-2 mb-2">
                         <span class="text-[9px] font-black bg-gray-100 px-2 py-0.5 uppercase tracking-widest">{{ post.authorName }}</span>
                         <span *ngIf="post.jobType" class="text-[9px] font-black bg-blue-50 text-hus-blue px-2 py-0.5 uppercase tracking-widest">{{ post.jobType }}</span>
                         <span class="text-[9px] text-gray-400 uppercase tabular-nums">{{ post.createdAt | date:'dd.MM.yyyy' }}</span>
                       </div>
-                      <h3 class="text-lg font-bold text-gray-900 group-hover:text-hus-blue transition-colors">{{ post.title }}</h3>
+                      <h3 (click)="openPostPreview(post)"
+                          class="inline-block cursor-pointer text-lg font-bold text-gray-900 transition-colors hover:text-hus-blue">
+                        {{ post.title }}
+                      </h3>
                       <p class="text-[11px] text-gray-500 line-clamp-2 mt-1">{{ post.summary }}</p>
                       <div class="mt-3 flex flex-wrap gap-2">
                         <span *ngIf="post.location" class="text-[9px] font-bold uppercase tracking-widest text-gray-400">{{ post.location }}</span>
@@ -212,7 +219,6 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                     </div>
                   </div>
                   <div class="flex flex-wrap gap-3 flex-shrink-0" *ngIf="can('MODERATION_POSTS_ACTION')">
-                    <button type="button" (click)="openPostPreview(post)" class="px-6 py-2 border border-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-all">Xem</button>
                     <button type="button" (click)="approvePost(post.id)" class="px-6 py-2 bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest hover:bg-hus-dark transition-all">Duyệt</button>
                     <button type="button" (click)="rejectPost(post.id)" class="px-6 py-2 bg-white border border-red-200 text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-50 transition-all">Từ chối</button>
                   </div>
@@ -252,7 +258,7 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                 </button>
               </div>
 
-              <div *ngFor="let paper of pendingPapers()" class="bg-white border border-gray-100 p-6 space-y-4 group hover:border-hus-blue transition-all">
+              <div *ngFor="let paper of pendingPapers()" class="bg-white border border-gray-100 p-6 space-y-4 transition-all">
                 <div class="flex flex-col md:flex-row justify-between items-start gap-6">
                   <div class="flex items-start gap-4 flex-grow min-w-0">
                     <label *ngIf="can('MODERATION_PAPERS_ACTION')" class="pt-1 flex-shrink-0">
@@ -263,18 +269,20 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                         (click)="$event.stopPropagation()"
                         (change)="togglePaperSelection(paper.id, $any($event.target).checked)">
                     </label>
-                    <div class="min-w-0 flex-grow cursor-pointer" (click)="openPaperPreview(paper)">
+                    <div class="min-w-0 flex-grow">
                       <div class="flex flex-wrap items-center gap-2 mb-2">
                         <span class="text-[9px] font-black bg-blue-50 text-hus-blue px-2 py-0.5 uppercase tracking-widest">{{ paper.authorName }}</span>
                         <span class="text-[9px] text-gray-400 uppercase tabular-nums">{{ paper.category }}</span>
                         <span *ngIf="paper.publicationYear" class="text-[9px] text-gray-400 uppercase tabular-nums">{{ paper.publicationYear }}</span>
                       </div>
-                      <h3 class="text-lg font-bold text-gray-900 group-hover:text-hus-blue transition-colors">{{ paper.title }}</h3>
+                      <h3 (click)="openPaperPreview(paper)"
+                          class="inline-block cursor-pointer text-lg font-bold text-gray-900 transition-colors hover:text-hus-blue">
+                        {{ paper.title }}
+                      </h3>
                       <p *ngIf="paper.paperAbstract" class="text-[11px] text-gray-500 line-clamp-2 mt-1" [innerHTML]="paper.paperAbstract"></p>
                     </div>
                   </div>
                   <div class="flex flex-wrap gap-3 flex-shrink-0" *ngIf="can('MODERATION_PAPERS_ACTION')">
-                    <button type="button" (click)="openPaperPreview(paper)" class="px-6 py-2 border border-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-all">Xem</button>
                     <button type="button" (click)="approvePaper(paper.id)" class="px-6 py-2 bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest hover:bg-hus-dark transition-all">Duyệt</button>
                     <button type="button" (click)="rejectPaper(paper.id)" class="px-6 py-2 bg-white border border-red-200 text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-50 transition-all">Từ chối</button>
                   </div>
@@ -525,7 +533,7 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
         <div *ngIf="currentTab === 'SPECIALIZATIONS' && can('RESEARCH_CATEGORY_MANAGE')" class="bg-white border border-gray-100 p-6 md:p-8 space-y-6">
           <div>
             <h2 class="text-lg font-black text-gray-900 uppercase tracking-widest">Quản lý chuyên ngành dùng chung</h2>
-            <p class="mt-2 text-[11px] text-gray-500">Danh mục chuyên ngành dùng chung cho filter hệ thống, hồ sơ sinh viên và bài tuyển dụng.</p>
+            <p class="mt-2 text-[11px] text-gray-500">Danh mục chuyên ngành dùng chung cho filter hệ thống và hồ sơ sinh viên.</p>
           </div>
 
           <div *ngIf="specializationNotice" class="border border-hus-blue/20 bg-blue-50 text-hus-blue text-[10px] font-bold uppercase tracking-widest px-4 py-3">
@@ -614,10 +622,111 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                     Sửa
                   </button>
                   <button
-                    (click)="deactivateSpecialization(specialization.id)"
-                    [disabled]="!specialization.active"
+                    (click)="deleteSpecialization(specialization.id)"
                     class="px-4 py-2 border border-red-200 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    Ẩn
+                    Xóa
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="currentTab === 'RECRUITMENT_CATEGORIES' && can('RESEARCH_CATEGORY_MANAGE')" class="bg-white border border-gray-100 p-6 md:p-8 space-y-6">
+          <div>
+            <h2 class="text-lg font-black text-gray-900 uppercase tracking-widest">Quản lý danh mục tuyển dụng</h2>
+            <p class="mt-2 text-[11px] text-gray-500">Danh mục này dùng cho filter trang tuyển dụng và phần chọn danh mục khi soạn bài tuyển dụng.</p>
+          </div>
+
+          <div *ngIf="recruitmentCategoryNotice" class="border border-hus-blue/20 bg-blue-50 text-hus-blue text-[10px] font-bold uppercase tracking-widest px-4 py-3">
+            {{ recruitmentCategoryNotice }}
+          </div>
+
+          <div class="grid lg:grid-cols-[360px_1fr] gap-6">
+            <div class="border border-gray-100 p-4 space-y-4">
+              <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                {{ editingRecruitmentCategoryId ? 'Cập nhật danh mục tuyển dụng' : 'Thêm danh mục tuyển dụng mới' }}
+              </p>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tên danh mục</label>
+                <input
+                  [(ngModel)]="recruitmentCategoryForm.name"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="text"
+                  maxlength="120"
+                  placeholder="Ví dụ: Backend"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Thứ tự hiển thị</label>
+                <input
+                  [(ngModel)]="recruitmentCategoryForm.sortOrder"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="number"
+                  min="0"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Trạng thái</label>
+                <select
+                  [(ngModel)]="recruitmentCategoryForm.active"
+                  [ngModelOptions]="{ standalone: true }"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-700 focus:outline-none focus:border-hus-blue">
+                  <option [ngValue]="true">Đang hoạt động</option>
+                  <option [ngValue]="false">Tạm ẩn</option>
+                </select>
+              </div>
+
+              <div class="flex gap-3 pt-2">
+                <button
+                  (click)="saveRecruitmentCategory()"
+                  [disabled]="isSavingRecruitmentCategory"
+                  class="px-5 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors disabled:opacity-50">
+                  {{ isSavingRecruitmentCategory ? 'Đang lưu...' : (editingRecruitmentCategoryId ? 'Cập nhật' : 'Thêm danh mục') }}
+                </button>
+                <button
+                  (click)="startCreateRecruitmentCategory()"
+                  type="button"
+                  class="px-5 py-2 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-colors">
+                  Làm mới
+                </button>
+              </div>
+            </div>
+
+            <div class="border border-gray-100">
+              <div *ngIf="recruitmentCategories.length === 0"
+                   class="py-12 text-center text-[11px] text-gray-400 uppercase tracking-widest">
+                Chưa có danh mục tuyển dụng.
+              </div>
+
+              <div *ngFor="let category of recruitmentCategories"
+                   class="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <p class="text-[12px] font-black uppercase tracking-tight text-gray-900">{{ category.name }}</p>
+                    <span class="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5"
+                          [class.bg-blue-50]="category.active"
+                          [class.text-hus-blue]="category.active"
+                          [class.bg-gray-100]="!category.active"
+                          [class.text-gray-500]="!category.active">
+                      {{ category.active ? 'ACTIVE' : 'INACTIVE' }}
+                    </span>
+                  </div>
+                  <p class="mt-1 text-[10px] text-gray-400 uppercase tracking-widest">Sort: {{ category.sortOrder }}</p>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    (click)="editRecruitmentCategory(category)"
+                    class="px-4 py-2 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50 transition-colors">
+                    Sửa
+                  </button>
+                  <button
+                    (click)="deleteRecruitmentCategory(category.id)"
+                    class="px-4 py-2 border border-red-200 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Xóa
                   </button>
                 </div>
               </div>
@@ -717,16 +826,185 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                     Sửa
                   </button>
                   <button
-                    (click)="deactivatePaperCategory(category.id)"
-                    [disabled]="!category.active"
+                    (click)="deletePaperCategory(category.id)"
                     class="px-4 py-2 border border-red-200 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    Ẩn
+                    Xóa
                   </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        <div *ngIf="currentTab === 'ANALYTICS' && can('ADMIN_DASHBOARD_VIEW')" class="space-y-6">
+          <div class="bg-white border border-gray-100 p-6 md:p-8">
+            <p class="text-[10px] font-black uppercase tracking-widest text-hus-blue">Tổng quan hệ thống</p>
+            <h2 class="mt-2 text-lg font-black uppercase tracking-widest text-gray-900">Thống kê truy cập & nội dung</h2>
+            <p class="mt-2 text-[11px] text-gray-500">Dữ liệu cập nhật theo luồng truy cập thực tế, gồm lượt xem trang toàn site và số người dùng trực tiếp.</p>
+          </div>
+
+          <div *ngIf="analyticsError"
+               class="border border-red-200 bg-red-50 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-red-600">
+            {{ analyticsError }}
+          </div>
+
+          <div *ngIf="analyticsLoading && !analyticsOverview"
+               class="border border-dashed border-gray-200 bg-white px-4 py-16 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            Đang tải dữ liệu thống kê...
+          </div>
+
+          <ng-container *ngIf="analyticsOverview as analytics">
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div class="border border-gray-100 bg-white px-4 py-4">
+                <p class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Lượt truy cập 30 ngày</p>
+                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ analyticsNumber(analytics.kpis.pageViews30d) }}</p>
+                <p class="mt-1 text-[10px] font-bold uppercase tracking-widest"
+                   [ngClass]="analyticsDeltaClass(analytics.monthOverMonthDelta.viewsChangePercent)">
+                  So với tháng trước: {{ analyticsDeltaLabel(analytics.monthOverMonthDelta.viewsChangePercent) }}
+                </p>
+              </div>
+
+              <div class="border border-gray-100 bg-white px-4 py-4">
+                <p class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Người dùng trực tiếp</p>
+                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ analyticsNumber(analytics.kpis.onlineUsersNow) }}</p>
+                <p class="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                  Cửa sổ {{ analytics.realtime.onlineWindowMinutes }} phút
+                </p>
+              </div>
+
+              <div class="border border-gray-100 bg-white px-4 py-4">
+                <p class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Số bài đăng</p>
+                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ analyticsNumber(analytics.kpis.totalPosts) }}</p>
+                <p class="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-500">Nghiên cứu + tuyển dụng</p>
+              </div>
+
+              <div class="border border-gray-100 bg-white px-4 py-4">
+                <p class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Bài tuyển dụng</p>
+                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ analyticsNumber(analytics.kpis.recruitmentPosts) }}</p>
+                <p class="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-500">Tổng số trong hệ thống</p>
+              </div>
+            </div>
+
+	            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+              <section class="border border-gray-100 bg-white p-5 sm:p-6">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Lượt truy cập theo tháng</h3>
+                  <div class="flex flex-wrap items-center gap-4 text-[10px] font-black uppercase tracking-widest">
+                    <span class="inline-flex items-center gap-2 text-hus-blue">
+                      <span class="h-2.5 w-2.5 rounded-full bg-hus-blue"></span>
+                      Tổng lượt truy cập
+                    </span>
+                    <span class="inline-flex items-center gap-2 text-emerald-600">
+                      <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                      Lượt truy cập không trùng
+                    </span>
+                  </div>
+                </div>
+                <p class="mt-2 text-[10px] font-semibold text-gray-500">
+                  Tổng lượt truy cập: tính mọi lần mở trang. Lượt truy cập không trùng: mỗi người chỉ tính 1 lần trong tháng.
+                </p>
+
+                <div class="mt-5 border border-gray-100 bg-gray-50/50 px-3 py-4">
+                  <svg viewBox="0 0 640 220" class="block w-full">
+                    <ng-container *ngFor="let value of analyticsGridLines(); let i = index">
+                      <line x1="20"
+                            x2="630"
+                            [attr.y1]="analyticsGridLineY(i)"
+                            [attr.y2]="analyticsGridLineY(i)"
+                            stroke="#e5e7eb"
+                            stroke-width="1" />
+                      <text x="22"
+                            [attr.y]="analyticsGridLineY(i) - 4"
+                            fill="#9ca3af"
+                            font-size="9"
+                            font-weight="700">
+                        {{ analyticsNumber(value) }}
+                      </text>
+                    </ng-container>
+
+                    <polyline [attr.points]="analyticsLinePoints('views')"
+                              fill="none"
+                              stroke="#2f80ed"
+                              stroke-width="2.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"></polyline>
+                    <polyline [attr.points]="analyticsLinePoints('uniqueVisitors')"
+                              fill="none"
+                              stroke="#10b981"
+                              stroke-width="2.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"></polyline>
+                  </svg>
+                </div>
+
+                <div class="mt-3 flex justify-between gap-2 text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                  <span *ngFor="let item of analytics.monthlyTraffic">{{ item.monthLabel }}</span>
+                </div>
+
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div class="border border-gray-100 bg-gray-50 px-3 py-3">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-gray-400">Lượt xem tháng hiện tại</p>
+                    <p class="mt-2 text-lg font-black text-gray-900 tabular-nums">{{ analyticsNumber(analytics.monthOverMonthDelta.currentMonthViews) }}</p>
+                  </div>
+                  <div class="border border-gray-100 bg-gray-50 px-3 py-3">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-gray-400">Lượt truy cập không trùng tháng hiện tại</p>
+                    <p class="mt-2 text-lg font-black text-gray-900 tabular-nums">{{ analyticsNumber(analytics.monthOverMonthDelta.currentMonthUniqueVisitors) }}</p>
+                    <p class="mt-1 text-[10px] font-bold uppercase tracking-widest"
+                       [ngClass]="analyticsDeltaClass(analytics.monthOverMonthDelta.uniqueVisitorsChangePercent)">
+                      So với tháng trước: {{ analyticsDeltaLabel(analytics.monthOverMonthDelta.uniqueVisitorsChangePercent) }}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="border border-gray-100 bg-white p-5 sm:p-6">
+                <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Realtime</h3>
+                <div class="mt-4 space-y-3">
+                  <div class="border border-gray-100 bg-gray-50 px-3 py-3">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-gray-400">Đang online</p>
+                    <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ analyticsNumber(analytics.realtime.onlineUsersNow) }}</p>
+                  </div>
+                  <div class="border border-gray-100 bg-gray-50 px-3 py-3">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-gray-400">Người truy cập 24 giờ</p>
+                    <p class="mt-2 text-lg font-black text-gray-900 tabular-nums">{{ analyticsNumber(analytics.realtime.trackedVisitors24h) }}</p>
+                  </div>
+                  <p class="text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                    Cập nhật: {{ analytics.realtime.lastUpdatedAt | date:'dd.MM.yyyy HH:mm:ss' }}
+                  </p>
+                </div>
+	              </section>
+	            </div>
+
+	            <section class="border border-gray-100 bg-white p-5 sm:p-6">
+	              <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Phân bổ theo khu vực trang (30 ngày)</h3>
+	              <p class="mt-2 text-[10px] font-semibold text-gray-500">Tỷ trọng lượt truy cập theo từng nhóm khu vực chính.</p>
+
+	              <div *ngIf="analytics.routeDistribution.length === 0"
+	                   class="mt-5 border border-dashed border-gray-200 px-4 py-12 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
+	                Chưa có dữ liệu phân bổ khu vực.
+	              </div>
+
+	              <div *ngIf="analytics.routeDistribution.length > 0" class="mt-5 space-y-3">
+	                <div *ngFor="let item of analytics.routeDistribution" class="border border-gray-100 bg-gray-50 px-4 py-3">
+	                  <div class="flex items-center justify-between gap-3">
+	                    <p class="text-[10px] font-black uppercase tracking-widest text-hus-blue">{{ analyticsRouteLabel(item.routeKey) }}</p>
+	                    <p class="text-[10px] font-black uppercase tracking-widest text-gray-600">
+	                      {{ analyticsRouteShareLabel(item.views) }}%
+	                    </p>
+	                  </div>
+	                  <div class="mt-2 h-2 w-full bg-gray-200">
+	                    <div class="h-2 bg-hus-blue" [style.width.%]="analyticsRouteShare(item.views)"></div>
+	                  </div>
+	                  <div class="mt-2 flex items-center justify-between gap-3 text-[9px] font-bold uppercase tracking-widest text-gray-400">
+	                    <span>{{ analyticsNumber(item.views) }} lượt truy cập</span>
+	                    <span>{{ analyticsNumber(item.uniqueVisitors) }} lượt không trùng</span>
+	                  </div>
+	                </div>
+	              </div>
+	            </section>
+	
+	          </ng-container>
+	        </div>
 
         <div *ngIf="currentTab === 'RBAC' && can('RBAC_MANAGE')" class="bg-white border border-gray-100 p-6 md:p-8 space-y-6">
           <div>
@@ -966,6 +1244,7 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
 })
 export class AdminDashboardComponent implements OnInit, OnDestroy {
     private readonly route = inject(ActivatedRoute);
+    private readonly router = inject(Router);
     private readonly moderationService = inject(AdminModerationService);
     private readonly contentService = inject(ContentService);
     private readonly adminContentService = inject(AdminContentService);
@@ -973,6 +1252,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private readonly adminRbacService = inject(AdminRbacService);
     private readonly adminResearchCategoryService = inject(AdminResearchCategoryService);
     private readonly adminSpecializationService = inject(AdminSpecializationService);
+    private readonly adminRecruitmentCategoryService = inject(AdminRecruitmentCategoryService);
+    private readonly adminAnalyticsService = inject(AdminAnalyticsService);
 
     currentTab: AdminTabKey = 'POSTS';
     readonly adminTabs: AdminTabConfig[] = [
@@ -987,6 +1268,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             label: 'Bài báo khoa học',
             helper: 'Duyệt bài nghiên cứu',
             permission: 'MODERATION_PAPERS_VIEW'
+        },
+        {
+            key: 'ANALYTICS',
+            label: 'Thống kê',
+            helper: 'Lượt truy cập và realtime',
+            permission: 'ADMIN_DASHBOARD_VIEW'
         },
         {
             key: 'HERO',
@@ -1004,6 +1291,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             key: 'SPECIALIZATIONS',
             label: 'Chuyên ngành chung',
             helper: 'Quản lý chuyên ngành hệ thống',
+            permission: 'RESEARCH_CATEGORY_MANAGE'
+        },
+        {
+            key: 'RECRUITMENT_CATEGORIES',
+            label: 'Danh mục tuyển dụng',
+            helper: 'Quản lý danh mục tuyển dụng',
             permission: 'RESEARCH_CATEGORY_MANAGE'
         },
         {
@@ -1080,6 +1373,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     isSavingSpecialization = false;
     specializationNotice = '';
 
+    recruitmentCategories: ResearchCategory[] = [];
+    recruitmentCategoryForm = {
+        name: '',
+        sortOrder: 0,
+        active: true
+    };
+    editingRecruitmentCategoryId: string | null = null;
+    isSavingRecruitmentCategory = false;
+    recruitmentCategoryNotice = '';
+
     researchCategories: ResearchCategory[] = [];
     paperCategoryForm = {
         name: '',
@@ -1090,11 +1393,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     isSavingPaperCategory = false;
     paperCategoryNotice = '';
 
+    analyticsOverview: AdminAnalyticsOverview | null = null;
+    analyticsLoading = false;
+    analyticsError = '';
+
     heroNotice = '';
     rbacNotice = '';
     moderationNotice = '';
     errorMessage = '';
     private pollSubscription?: Subscription;
+    private analyticsPollSubscription?: Subscription;
     private routeQuerySubscription?: Subscription;
 
     // Notification signal bindings
@@ -1122,16 +1430,23 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             if (resolvedTab) {
                 this.currentTab = resolvedTab;
                 this.errorMessage = '';
-            } else if (!this.hasAnyTabAccess()) {
-                this.currentTab = 'POSTS';
-            } else if (!this.can(this.currentTabPermission())) {
-                this.currentTab = this.resolveInitialTab();
+                this.tryLoadAnalyticsOverview();
+                return;
             }
+
+            const fallbackTab = !this.hasAnyTabAccess()
+                ? 'POSTS'
+                : this.resolveInitialTab();
+            this.currentTab = fallbackTab;
+            this.errorMessage = '';
+            this.syncTabQueryParam(fallbackTab);
+            this.tryLoadAnalyticsOverview();
         });
         this.loadPendingModeration();
         this.loadHeroContent();
         this.loadNews();
         this.loadSpecializations();
+        this.loadRecruitmentCategories();
         this.loadResearchCategories();
         this.loadRbacData();
         // Poll immediately and then every 10s to auto-refresh pending moderation without reload.
@@ -1139,10 +1454,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.pollSubscription = timer(0, 10_000).subscribe(() => {
             this.loadPendingModeration();
         });
+        this.analyticsPollSubscription = timer(0, 30_000).subscribe(() => {
+            this.tryLoadAnalyticsOverview();
+        });
     }
 
     ngOnDestroy(): void {
         this.pollSubscription?.unsubscribe();
+        this.analyticsPollSubscription?.unsubscribe();
         this.routeQuerySubscription?.unsubscribe();
     }
 
@@ -1197,6 +1516,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.errorMessage = '';
         this.moderationNotice = '';
         this.closeModerationPreview();
+        this.syncTabQueryParam(tab);
+        this.tryLoadAnalyticsOverview();
     }
 
     tabBadge(tab: AdminTabKey): number | null {
@@ -1207,6 +1528,113 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             return this.pendingPapers().length;
         }
         return null;
+    }
+
+    analyticsMonths(): AdminMonthlyTrafficPoint[] {
+        return this.analyticsOverview?.monthlyTraffic ?? [];
+    }
+
+    analyticsLinePoints(metric: 'views' | 'uniqueVisitors'): string {
+        return buildLinePoints(this.analyticsMonths(), metric);
+    }
+
+    analyticsGridLines(): number[] {
+        const maxValue = this.analyticsMaxMetricValue();
+        return [0, 1, 2, 3].map((step) => Math.round((maxValue * step) / 3));
+    }
+
+    analyticsGridLineY(step: number): number {
+        const height = 220;
+        const paddingTop = 10;
+        const paddingBottom = 24;
+        const ratio = step / 3;
+        return paddingTop + (1 - ratio) * (height - paddingTop - paddingBottom);
+    }
+
+    analyticsRouteShare(views: number): number {
+        const totalViews = (this.analyticsOverview?.routeDistribution ?? [])
+            .reduce((sum, item) => sum + (Number(item.views) || 0), 0);
+        if (totalViews <= 0) {
+            return 0;
+        }
+        return (views / totalViews) * 100;
+    }
+
+    analyticsRouteShareLabel(views: number): string {
+        return this.analyticsRouteShare(views).toFixed(1);
+    }
+
+    analyticsDeltaLabel(value: number | null | undefined): string {
+        if (value == null || Number.isNaN(value)) {
+            return 'N/A';
+        }
+        const sign = value > 0 ? '+' : '';
+        return `${sign}${value.toFixed(1)}%`;
+    }
+
+    analyticsDeltaClass(value: number | null | undefined): string {
+        if (value == null || Number.isNaN(value) || value === 0) {
+            return 'text-gray-500';
+        }
+        return value > 0 ? 'text-emerald-600' : 'text-red-500';
+    }
+
+    analyticsRouteLabel(routeKey: string): string {
+        switch ((routeKey ?? '').toUpperCase()) {
+            case 'HOME':
+                return 'Trang chủ';
+            case 'RESEARCH':
+                return 'Nghiên cứu';
+            case 'RECRUITMENT':
+                return 'Tuyển dụng';
+            case 'NEWS':
+                return 'Bản tin';
+            case 'PROFILE':
+                return 'Hồ sơ';
+            case 'AUTH':
+                return 'Xác thực';
+            case 'ADMIN':
+                return 'Quản trị';
+            default:
+                return routeKey || 'Khác';
+        }
+    }
+
+    analyticsNumber(value: number | null | undefined): string {
+        const safeValue = Number(value ?? 0);
+        return new Intl.NumberFormat('vi-VN').format(Number.isFinite(safeValue) ? safeValue : 0);
+    }
+
+    private analyticsMaxMetricValue(): number {
+        return maxMetricValue(this.analyticsMonths());
+    }
+
+    private tryLoadAnalyticsOverview(): void {
+        if (this.currentTab !== 'ANALYTICS' || !this.can('ADMIN_DASHBOARD_VIEW')) {
+            return;
+        }
+        this.loadAnalyticsOverview();
+    }
+
+    private loadAnalyticsOverview(): void {
+        const shouldShowLoading = !this.analyticsOverview;
+        if (shouldShowLoading) {
+            this.analyticsLoading = true;
+        }
+        this.analyticsError = '';
+
+        this.adminAnalyticsService.getOverview(12, 10).pipe(
+            finalize(() => {
+                this.analyticsLoading = false;
+            })
+        ).subscribe({
+            next: (overview) => {
+                this.analyticsOverview = overview;
+            },
+            error: () => {
+                this.analyticsError = 'Không thể tải dữ liệu thống kê quản trị.';
+            }
+        });
     }
 
     isPostSelected(id: string): boolean {
@@ -1588,17 +2016,112 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         });
     }
 
-    deactivateSpecialization(specializationId: string): void {
+    deleteSpecialization(specializationId: string): void {
+        if (!confirm('Bạn có chắc muốn xóa chuyên ngành này?')) {
+            return;
+        }
+
         this.errorMessage = '';
         this.specializationNotice = '';
 
-        this.adminSpecializationService.deactivate(specializationId).subscribe((ok) => {
+        this.adminSpecializationService.delete(specializationId).subscribe((ok) => {
             if (!ok) {
-                this.errorMessage = 'Không thể ẩn chuyên ngành đã chọn.';
+                this.errorMessage = 'Không thể xóa chuyên ngành đã chọn.';
                 return;
             }
-            this.specializationNotice = 'Đã ẩn chuyên ngành.';
+            if (this.editingSpecializationId === specializationId) {
+                this.startCreateSpecialization();
+            }
+            this.specializationNotice = 'Đã xóa chuyên ngành.';
             this.loadSpecializations();
+        });
+    }
+
+    startCreateRecruitmentCategory(): void {
+        this.editingRecruitmentCategoryId = null;
+        this.recruitmentCategoryForm = {
+            name: '',
+            sortOrder: 0,
+            active: true
+        };
+        this.errorMessage = '';
+        this.recruitmentCategoryNotice = '';
+    }
+
+    editRecruitmentCategory(category: ResearchCategory): void {
+        this.editingRecruitmentCategoryId = category.id;
+        this.recruitmentCategoryForm = {
+            name: category.name,
+            sortOrder: category.sortOrder,
+            active: category.active
+        };
+        this.errorMessage = '';
+        this.recruitmentCategoryNotice = '';
+    }
+
+    saveRecruitmentCategory(): void {
+        const payload = {
+            name: this.recruitmentCategoryForm.name.trim(),
+            sortOrder: Number(this.recruitmentCategoryForm.sortOrder),
+            active: this.recruitmentCategoryForm.active
+        };
+
+        if (!payload.name) {
+            this.errorMessage = 'Vui lòng nhập tên danh mục tuyển dụng.';
+            return;
+        }
+        if (!Number.isFinite(payload.sortOrder) || payload.sortOrder < 0) {
+            this.errorMessage = 'Thứ tự hiển thị phải là số không âm.';
+            return;
+        }
+
+        this.errorMessage = '';
+        this.recruitmentCategoryNotice = '';
+        this.isSavingRecruitmentCategory = true;
+
+        const request$ = this.editingRecruitmentCategoryId
+            ? this.adminRecruitmentCategoryService.update(this.editingRecruitmentCategoryId, payload)
+            : this.adminRecruitmentCategoryService.create(payload);
+
+        request$.pipe(
+            finalize(() => {
+                this.isSavingRecruitmentCategory = false;
+            })
+        ).subscribe((saved) => {
+            if (!saved) {
+                this.errorMessage = this.editingRecruitmentCategoryId
+                    ? 'Không thể cập nhật danh mục tuyển dụng.'
+                    : 'Không thể tạo danh mục tuyển dụng.';
+                return;
+            }
+
+            const notice = this.editingRecruitmentCategoryId
+                ? 'Đã cập nhật danh mục tuyển dụng.'
+                : 'Đã thêm danh mục tuyển dụng mới.';
+            this.startCreateRecruitmentCategory();
+            this.recruitmentCategoryNotice = notice;
+            this.loadRecruitmentCategories();
+        });
+    }
+
+    deleteRecruitmentCategory(categoryId: string): void {
+        if (!confirm('Bạn có chắc muốn xóa danh mục tuyển dụng này?')) {
+            return;
+        }
+
+        this.errorMessage = '';
+        this.recruitmentCategoryNotice = '';
+
+        this.adminRecruitmentCategoryService.delete(categoryId).subscribe((ok) => {
+            if (!ok) {
+                this.errorMessage = 'Không thể xóa danh mục tuyển dụng đã chọn.';
+                return;
+            }
+            if (this.editingRecruitmentCategoryId === categoryId) {
+                this.startCreateRecruitmentCategory();
+            }
+            this.recruitmentCategoryNotice = 'Đã xóa danh mục tuyển dụng.';
+            this.loadRecruitmentCategories();
         });
     }
 
@@ -1669,16 +2192,23 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         });
     }
 
-    deactivatePaperCategory(categoryId: string): void {
+    deletePaperCategory(categoryId: string): void {
+        if (!confirm('Bạn có chắc muốn xóa phân loại bài viết này?')) {
+            return;
+        }
+
         this.errorMessage = '';
         this.paperCategoryNotice = '';
 
-        this.adminResearchCategoryService.deactivate(categoryId).subscribe((ok) => {
+        this.adminResearchCategoryService.delete(categoryId).subscribe((ok) => {
             if (!ok) {
-                this.errorMessage = 'Không thể ẩn phân loại bài nghiên cứu đã chọn.';
+                this.errorMessage = 'Không thể xóa phân loại bài viết đã chọn.';
                 return;
             }
-            this.paperCategoryNotice = 'Đã ẩn phân loại bài nghiên cứu.';
+            if (this.editingPaperCategoryId === categoryId) {
+                this.startCreatePaperCategory();
+            }
+            this.paperCategoryNotice = 'Đã xóa phân loại bài viết.';
             this.loadResearchCategories();
         });
     }
@@ -2036,6 +2566,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         return this.currentTabConfig?.permission ?? '';
     }
 
+    private syncTabQueryParam(tab: AdminTabKey): void {
+        const currentTabParam = (this.route.snapshot.queryParamMap.get('tab') ?? '').trim().toUpperCase();
+        if (currentTabParam === tab) {
+            return;
+        }
+
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { tab },
+            queryParamsHandling: 'merge',
+            replaceUrl: true
+        });
+    }
+
     private loadPendingModeration(): void {
         // Allow VIEW if user has either VIEW or ACTION permission
         const canViewPosts = this.can('MODERATION_POSTS_VIEW') || this.can('MODERATION_POSTS_ACTION');
@@ -2134,6 +2678,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
         this.adminSpecializationService.getAll().subscribe((items) => {
             this.specializations = items;
+        });
+    }
+
+    private loadRecruitmentCategories(): void {
+        if (!this.can('RESEARCH_CATEGORY_MANAGE')) {
+            this.recruitmentCategories = [];
+            return;
+        }
+
+        this.adminRecruitmentCategoryService.getAll().subscribe((items) => {
+            this.recruitmentCategories = items;
         });
     }
 

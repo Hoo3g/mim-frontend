@@ -1,5 +1,6 @@
-import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Post } from '../../core/models/post.model';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router, RouterModule } from '@angular/router';
@@ -7,6 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { PostService } from '../../core/services/post.service';
 import { authSignal } from '../../core/signals/auth.signal';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Role } from '../../core/enums/role.enum';
 
 @Component({
     selector: 'app-post-detail',
@@ -87,8 +89,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 
           <div *ngIf="showActions" class="hidden md:flex w-full mt-6 md:mt-auto pt-5 border-t border-gray-200 gap-3 justify-center">
             <button (click)="handlePrimaryAction()"
-                    class="inline-flex items-center justify-center min-h-[38px] px-4 sm:px-5 bg-gray-900 text-white text-[8px] font-black uppercase tracking-[0.08em] leading-tight hover:bg-hus-blue transition-all duration-300 transform active:scale-95 shadow-md shadow-gray-900/10">
-              {{ post.postType.includes('COMPANY') ? (isAuth() ? 'Ứng tuyển ngay' : 'Đăng nhập để ứng tuyển') : 'Liên hệ' }}
+                    [disabled]="isPrimaryActionDisabled()"
+                    [ngClass]="primaryActionButtonClasses()">
+              {{ primaryActionLabel() }}
             </button>
             <button class="inline-flex items-center justify-center min-h-[38px] px-4 sm:px-5 bg-white border border-gray-200 text-gray-500 text-[8px] font-black uppercase tracking-[0.08em] leading-tight hover:border-hus-blue hover:text-hus-blue transition-all duration-300">
               Lưu tin
@@ -266,8 +269,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 
           <div *ngIf="showActions" class="md:hidden p-4 border-t border-gray-100 bg-gray-50/70 flex flex-wrap justify-center gap-3">
             <button (click)="handlePrimaryAction()"
-                    class="inline-flex items-center justify-center min-h-[38px] px-4 bg-gray-900 text-white text-[8px] font-black uppercase tracking-[0.08em] leading-tight hover:bg-hus-blue transition-all duration-300 transform active:scale-95 shadow-md shadow-gray-900/10">
-              {{ post.postType.includes('COMPANY') ? (isAuth() ? 'Ứng tuyển ngay' : 'Đăng nhập để ứng tuyển') : 'Liên hệ' }}
+                    [disabled]="isPrimaryActionDisabled()"
+                    [ngClass]="primaryActionButtonClasses()">
+              {{ primaryActionLabel() }}
             </button>
             <button class="inline-flex items-center justify-center min-h-[38px] px-4 bg-white border border-gray-200 text-gray-500 text-[8px] font-black uppercase tracking-[0.08em] leading-tight hover:border-hus-blue hover:text-hus-blue transition-all duration-300">
               Lưu tin
@@ -327,10 +331,11 @@ import { HttpErrorResponse } from '@angular/common/http';
     }
   `]
 })
-export class PostDetailComponent {
+export class PostDetailComponent implements OnChanges {
     private sanitizer = inject(DomSanitizer);
     private router = inject(Router);
     private postService = inject(PostService);
+    private destroyRef = inject(DestroyRef);
 
     @Input({ required: true }) post!: Post;
     @Input() showActions = true;
@@ -343,6 +348,23 @@ export class PostDetailComponent {
     applyFeedback = '';
     applyError = false;
     missingDefaultCv = false;
+    hasApplied = false;
+    isLoadingApplicationState = false;
+    isProcessingApplication = false;
+    private applicationStateToken = 0;
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['post']) {
+            this.applyMessage = '';
+            this.applyFeedback = '';
+            this.applyError = false;
+            this.missingDefaultCv = false;
+        }
+
+        if (changes['post'] || changes['showActions']) {
+            this.refreshApplicationState();
+        }
+    }
 
     studentInfoValue(key: string): string {
         const fromDisplayInfo = this.readDisplayInfo(key);
@@ -397,12 +419,68 @@ export class PostDetailComponent {
             return;
         }
 
+        if (!this.isStudentViewer() || this.isLoadingApplicationState || this.isProcessingApplication) {
+            return;
+        }
+
         this.applyFeedback = '';
         this.applyError = false;
         this.missingDefaultCv = false;
 
-        this.postService.applyToPost(this.post.id, { message: this.applyMessage }).subscribe({
+        if (this.hasApplied) {
+            this.cancelApplication();
+            return;
+        }
+
+        this.applyToPost();
+    }
+
+    primaryActionLabel(): string {
+        if (!this.post.postType.includes('COMPANY')) {
+            return 'Liên hệ';
+        }
+        if (!this.isAuth()) {
+            return 'Đăng nhập để ứng tuyển';
+        }
+        if (!this.isStudentViewer()) {
+            return 'Chỉ sinh viên được ứng tuyển';
+        }
+        if (this.isLoadingApplicationState) {
+            return 'Đang tải...';
+        }
+        if (this.isProcessingApplication) {
+            return this.hasApplied ? 'Đang hủy...' : 'Đang ứng tuyển...';
+        }
+        return this.hasApplied ? 'Hủy ứng tuyển' : 'Ứng tuyển ngay';
+    }
+
+    isPrimaryActionDisabled(): boolean {
+        return this.post.postType.includes('COMPANY')
+            && this.isAuth()
+            && (!this.isStudentViewer() || this.isLoadingApplicationState || this.isProcessingApplication);
+    }
+
+    primaryActionButtonClasses(): string {
+        const baseClasses = 'inline-flex items-center justify-center min-h-[38px] px-4 sm:px-5 text-[8px] font-black uppercase tracking-[0.08em] leading-tight transition-all duration-300';
+
+        if (this.isPrimaryActionDisabled()) {
+            return `${baseClasses} bg-gray-300 text-white cursor-not-allowed`;
+        }
+
+        if (this.hasApplied) {
+            return `${baseClasses} bg-emerald-600 text-white hover:bg-emerald-700 transform active:scale-95 shadow-md shadow-emerald-900/10`;
+        }
+
+        return `${baseClasses} bg-gray-900 text-white hover:bg-hus-blue transform active:scale-95 shadow-md shadow-gray-900/10`;
+    }
+
+    private applyToPost(): void {
+        this.isProcessingApplication = true;
+        this.postService.applyToPost(this.post.id, { message: this.applyMessage })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
             next: () => {
+                this.hasApplied = true;
                 this.applyFeedback = 'Ứng tuyển thành công';
                 this.applyMessage = '';
                 this.applyError = false;
@@ -410,11 +488,78 @@ export class PostDetailComponent {
             },
             error: (error: HttpErrorResponse) => {
                 const message = error.error?.message || 'Ứng tuyển thất bại';
-                this.applyFeedback = String(message);
+                const normalizedMessage = String(message);
+                this.isProcessingApplication = false;
+                if (normalizedMessage.toLowerCase().includes('already applied')) {
+                    this.hasApplied = true;
+                    this.applyFeedback = 'Bạn đã ứng tuyển bài này';
+                    this.applyError = false;
+                    this.missingDefaultCv = false;
+                    return;
+                }
+                this.applyFeedback = normalizedMessage;
                 this.applyError = true;
-                this.missingDefaultCv = String(message).toLowerCase().includes('default cv');
+                this.missingDefaultCv = normalizedMessage.toLowerCase().includes('default cv');
+            },
+            complete: () => {
+                this.isProcessingApplication = false;
             }
         });
+    }
+
+    private cancelApplication(): void {
+        this.isProcessingApplication = true;
+        this.postService.cancelApplication(this.post.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((success) => {
+                this.isProcessingApplication = false;
+                if (!success) {
+                    this.applyFeedback = 'Hủy ứng tuyển thất bại';
+                    this.applyError = true;
+                    this.missingDefaultCv = false;
+                    return;
+                }
+
+                this.hasApplied = false;
+                this.applyMessage = '';
+                this.applyFeedback = 'Đã hủy ứng tuyển';
+                this.applyError = false;
+                this.missingDefaultCv = false;
+            });
+    }
+
+    private refreshApplicationState(): void {
+        const requestToken = ++this.applicationStateToken;
+
+        if (!this.shouldLoadApplicationState()) {
+            this.hasApplied = false;
+            this.isLoadingApplicationState = false;
+            this.isProcessingApplication = false;
+            return;
+        }
+
+        this.isLoadingApplicationState = true;
+        this.postService.getMyPendingApplications()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((applications) => {
+                if (requestToken !== this.applicationStateToken) {
+                    return;
+                }
+                this.hasApplied = applications.some((application) => application.postId === this.post.id);
+                this.isLoadingApplicationState = false;
+            });
+    }
+
+    private shouldLoadApplicationState(): boolean {
+        return this.showActions
+            && !!this.post?.id
+            && this.post.postType.includes('COMPANY')
+            && this.isAuth()
+            && this.isStudentViewer();
+    }
+
+    private isStudentViewer(): boolean {
+        return authSignal.user()?.role === Role.STUDENT;
     }
 
     private readDisplayInfo(key: string): string {

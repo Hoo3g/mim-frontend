@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { of, Subscription, timer } from 'rxjs';
@@ -61,64 +61,102 @@ import { authSignal } from '../../core/signals/auth.signal';
 
           <div *ngIf="displayedPapers.length > 0" class="divide-y divide-gray-100 border border-gray-100">
             <article *ngFor="let paper of displayedPapers"
-                     class="p-6 md:p-8 group hover:bg-gray-50 transition-colors">
-              <div class="flex flex-wrap items-center gap-3 mb-3 text-[10px] font-bold uppercase tracking-widest">
-                <span class="text-hus-blue">{{ paper.researchArea }}</span>
-                <span class="text-gray-300">|</span>
-                <span class="text-gray-400 tabular-nums">{{ paper.publicationYear }}</span>
-                <span class="text-gray-300">|</span>
-                <span class="text-gray-400">{{ paper.category === 'LECTURER' ? 'Giảng viên' : 'Sinh viên' }}</span>
-                <span class="text-gray-300">|</span>
-                <span [ngClass]="statusClass(paper.approvalStatus)">
-                  {{ statusLabel(paper.approvalStatus) }}
-                </span>
-              </div>
+                     class="p-6 md:p-8 transition-colors">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-3 mb-3 text-[10px] font-bold uppercase tracking-widest">
+                    <span class="text-hus-blue">{{ paper.researchArea }}</span>
+                    <span class="text-gray-300">|</span>
+                    <span class="text-gray-400 tabular-nums">{{ paper.publicationYear }}</span>
+                    <span class="text-gray-300">|</span>
+                    <span class="text-gray-400">{{ paper.category === 'LECTURER' ? 'Giảng viên' : 'Sinh viên' }}</span>
+                    <span class="text-gray-300">|</span>
+                    <span [ngClass]="statusClass(paper.approvalStatus)">
+                      {{ statusLabel(paper.approvalStatus) }}
+                    </span>
+                  </div>
 
-              <h3 class="text-xl font-bold text-gray-900 leading-tight group-hover:text-hus-blue transition-colors">
-                {{ paper.title }}
-              </h3>
+                  <h3 (click)="openPaperDetail(paper.id, $event)"
+                      class="cursor-pointer text-xl font-bold text-gray-900 leading-tight transition-colors hover:text-hus-blue">
+                    {{ paper.title }}
+                  </h3>
 
-              <p class="mt-3 text-[12px] text-gray-500 leading-relaxed line-clamp-2">
-                {{ toPlainText(paper.abstract) }}
-              </p>
+                  <p class="mt-3 text-[12px] text-gray-500 leading-relaxed line-clamp-2">
+                    {{ toPlainText(paper.abstract) }}
+                  </p>
 
-              <p *ngIf="paper.approvalStatus === 'REJECTED' && paper.moderationComment"
-                 class="mt-3 text-[10px] font-bold uppercase tracking-widest text-red-500">
-                Lý do từ chối: {{ paper.moderationComment }}
-              </p>
+                  <p *ngIf="paper.approvalStatus === 'REJECTED' && paper.moderationComment"
+                     class="mt-3 text-[10px] font-bold uppercase tracking-widest text-red-500">
+                    Lý do từ chối: {{ paper.moderationComment }}
+                  </p>
 
-              <div class="mt-4 flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
-                <span class="text-gray-400">Tác giả chính: {{ paper.authors[0]?.name || 'N/A' }}</span>
-                <button *ngIf="canCreateContent()"
-                        type="button"
-                        (click)="editPaper(paper.id, $event)"
-                        title="Chỉnh sửa"
-                        aria-label="Chỉnh sửa"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-hus-blue text-hus-blue hover:bg-hus-blue hover:text-white transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
-                  </svg>
-                </button>
-                <a *ngIf="!canCreateContent()"
-                   [routerLink]="ROUTES.PROFILE"
-                   (click)="$event.stopPropagation()"
-                   class="px-4 py-2 border border-amber-300 text-amber-800 text-[10px] font-black uppercase tracking-widest hover:bg-amber-50 transition-colors">
-                  Xác thực email để sửa
-                </a>
-                <button type="button"
-                        (click)="deletePaper(paper, $event)"
-                        [disabled]="deletingPaperIds.has(paper.id)"
-                        title="Xóa bài nghiên cứu"
-                        aria-label="Xóa bài nghiên cứu"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-red-200 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                  <svg *ngIf="!deletingPaperIds.has(paper.id)" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.347 9m-4.786 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21.75H8.084A2.25 2.25 0 0 1 5.84 19.673L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0V4.875A2.25 2.25 0 0 0 13.5 2.625h-3a2.25 2.25 0 0 0-2.25 2.25V5.79m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                  </svg>
-                  <svg *ngIf="deletingPaperIds.has(paper.id)" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                    <circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"></circle>
-                    <path class="opacity-90" fill="currentColor" d="M12 3a9 9 0 0 1 9 9h-2a7 7 0 0 0-7-7V3Z"></path>
-                  </svg>
-                </button>
+                  <div class="mt-4 flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
+                    <span class="text-gray-400">Tác giả chính: {{ paper.authors[0]?.name || 'N/A' }}</span>
+                  </div>
+                </div>
+
+                <div class="relative shrink-0" data-paper-actions>
+                  <button type="button"
+                          (click)="toggleActionMenu(paper.id, $event)"
+                          [attr.aria-expanded]="openedActionPaperId === paper.id"
+                          aria-haspopup="menu"
+                          title="Tùy chọn"
+                          aria-label="Tùy chọn"
+                          class="relative inline-flex h-11 w-11 items-center justify-center text-gray-500 transition-colors hover:text-hus-blue">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <circle cx="12" cy="5" r="1.75" />
+                      <circle cx="12" cy="12" r="1.75" />
+                      <circle cx="12" cy="19" r="1.75" />
+                    </svg>
+                  </button>
+
+                  <div *ngIf="openedActionPaperId === paper.id"
+                       role="menu"
+                       class="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[220px] overflow-hidden border border-gray-200 bg-white shadow-lg">
+                    <button *ngIf="canCreateContent(); else verifyEditMenuItem"
+                            type="button"
+                            role="menuitem"
+                            (click)="editPaper(paper.id, $event)"
+                            class="flex w-full items-center justify-between px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-gray-700 transition-colors hover:bg-gray-50">
+                      <span class="inline-flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                        </svg>
+                        <span>Chỉnh sửa</span>
+                      </span>
+                    </button>
+                    <ng-template #verifyEditMenuItem>
+                      <a [routerLink]="ROUTES.PROFILE"
+                         role="menuitem"
+                         (click)="closeActionMenu()"
+                         class="flex w-full items-center justify-between px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-gray-700 transition-colors hover:bg-gray-50">
+                        <span class="inline-flex items-center gap-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 0h10.5A2.25 2.25 0 0 1 19.5 12.75v6A2.25 2.25 0 0 1 17.25 21h-10.5A2.25 2.25 0 0 1 4.5 18.75v-6A2.25 2.25 0 0 1 6.75 10.5Z" />
+                          </svg>
+                          <span>Xác thực email để sửa</span>
+                        </span>
+                      </a>
+                    </ng-template>
+
+                    <button type="button"
+                            role="menuitem"
+                            (click)="deletePaper(paper, $event)"
+                            [disabled]="deletingPaperIds.has(paper.id)"
+                            class="flex w-full items-center justify-between border-t border-gray-100 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60">
+                      <span class="inline-flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.347 9m-4.786 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21.75H8.084A2.25 2.25 0 0 1 5.84 19.673L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0V4.875A2.25 2.25 0 0 0 13.5 2.625h-3a2.25 2.25 0 0 0-2.25 2.25V5.79m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
+                        <span>{{ deletingPaperIds.has(paper.id) ? 'Đang xóa...' : 'Xóa bài viết' }}</span>
+                      </span>
+                      <svg *ngIf="deletingPaperIds.has(paper.id)" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"></circle>
+                        <path class="opacity-90" fill="currentColor" d="M12 3a9 9 0 0 1 9 9h-2a7 7 0 0 0-7-7V3Z"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
             </article>
           </div>
@@ -139,6 +177,7 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
   noticeMessage = '';
   errorMessage = '';
   deletingPaperIds = new Set<string>();
+  openedActionPaperId: string | null = null;
   private pollSubscription?: Subscription;
 
   ngOnInit(): void {
@@ -157,6 +196,20 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopPolling();
+    this.closeActionMenu();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('[data-paper-actions]')) {
+      this.closeActionMenu();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onDocumentEscape(): void {
+    this.closeActionMenu();
   }
 
   private startPolling(): void {
@@ -186,11 +239,18 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
 
   editPaper(id: string, event: Event): void {
     event.stopPropagation();
+    this.closeActionMenu();
     this.openEditor(id);
+  }
+
+  openPaperDetail(id: string, event?: Event): void {
+    event?.stopPropagation();
+    this.router.navigateByUrl(ROUTES.RESEARCH_DETAIL(id));
   }
 
   deletePaper(paper: ResearchPaper, event: Event): void {
     event.stopPropagation();
+    this.closeActionMenu();
 
     if (this.deletingPaperIds.has(paper.id)) {
       return;
@@ -230,6 +290,15 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  toggleActionMenu(paperId: string, event: Event): void {
+    event.stopPropagation();
+    this.openedActionPaperId = this.openedActionPaperId === paperId ? null : paperId;
+  }
+
+  closeActionMenu(): void {
+    this.openedActionPaperId = null;
   }
 
   openEditor(id: string): void {
