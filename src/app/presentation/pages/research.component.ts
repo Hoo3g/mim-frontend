@@ -97,7 +97,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                 Không tìm thấy dữ liệu.
               </div>
               
-              <div class="divide-y divide-gray-100">
+              <div class="divide-y divide-hus-blue/30">
                 <div *ngFor="let paper of papers"
                      class="py-6 md:py-8 first:pt-4 group cursor-pointer"
                      (click)="navigateToDetail(paper.id)">

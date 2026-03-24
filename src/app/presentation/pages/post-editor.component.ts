@@ -36,7 +36,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
 
       <div class="mx-auto w-full px-1 sm:max-w-5xl sm:px-6 lg:px-8 py-5 sm:py-8 md:py-10">
           <section class="min-w-0">
-            <div class="bg-white border-0 sm:border sm:border-gray-100 p-2.5 sm:p-6 md:p-8">
+            <div class="bg-white border border-hus-blue shadow-[0_18px_40px_-28px_rgba(30,102,170,0.4)] p-2.5 sm:p-6 md:p-8">
               <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
                 {{ isEditMode ? 'Chỉnh sửa bài tuyển dụng' : 'Soạn bài tuyển dụng mới' }}
               </h1>

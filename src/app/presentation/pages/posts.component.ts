@@ -66,19 +66,19 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                          [ngModel]="searchTerm"
                          (ngModelChange)="onSearchChange($event)"
                          placeholder="Tên công việc, vị trí..."
-		                         class="w-full bg-gray-50 border border-gray-200 px-3 py-2 text-xs focus:ring-1 focus:ring-hus-blue focus:border-hus-blue outline-none transition-all font-medium">
+		                         class="w-full bg-gray-50 border border-hus-blue/30 px-3 py-2 text-xs focus:ring-1 focus:ring-hus-blue/30 focus:border-hus-blue outline-none transition-all font-medium">
 		                </div>
 		              </section>
 
-		              <div class="overflow-hidden border border-gray-100 bg-white lg:overflow-visible lg:border-0 lg:bg-transparent lg:space-y-4">
-		                <section class="bg-white border-t border-gray-100 first:border-t-0 lg:border lg:border-gray-100">
+		              <div class="overflow-hidden border border-hus-blue/20 bg-white shadow-[0_16px_32px_-28px_rgba(30,102,170,0.35)] lg:overflow-visible lg:border-0 lg:bg-transparent lg:shadow-none lg:space-y-4">
+		                <section class="bg-white border-t border-hus-blue/20 first:border-t-0 lg:border lg:border-hus-blue/30 lg:shadow-[0_16px_32px_-28px_rgba(30,102,170,0.35)]">
 		                  <button
 		                    type="button"
 		                    (click)="toggleMobileSection('roles')"
-		                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue/10 border-b border-hus-blue/20">
-		                    <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">Bài đăng</h3>
+		                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue border-b border-hus-blue">
+		                    <h3 class="text-[10px] font-bold text-white uppercase tracking-widest">Bài đăng</h3>
 		                    <span *ngIf="isMobileViewport"
-		                          class="text-sm font-black text-hus-blue/70 leading-none min-w-[1rem] text-right">
+		                          class="text-sm font-black text-white/80 leading-none min-w-[1rem] text-right">
 		                      {{ isMobileSectionOpen('roles') ? '-' : '+' }}
 		                    </span>
 		                  </button>
@@ -131,14 +131,14 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 		                  </div>
 		                </section>
 
-		                <section class="bg-white border-t border-gray-100 first:border-t-0 lg:border lg:border-gray-100">
+		                <section class="bg-white border-t border-hus-blue/20 first:border-t-0 lg:border lg:border-hus-blue/30 lg:shadow-[0_16px_32px_-28px_rgba(30,102,170,0.35)]">
 		                  <button
 		                    type="button"
 		                    (click)="toggleMobileSection('categories')"
-		                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue/10 border-b border-hus-blue/20">
-		                    <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">Danh mục</h3>
+		                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue border-b border-hus-blue">
+		                    <h3 class="text-[10px] font-bold text-white uppercase tracking-widest">Danh mục</h3>
 		                    <span *ngIf="isMobileViewport"
-		                          class="text-sm font-black text-hus-blue/70 leading-none min-w-[1rem] text-right">
+		                          class="text-sm font-black text-white/80 leading-none min-w-[1rem] text-right">
 		                      {{ isMobileSectionOpen('categories') ? '-' : '+' }}
 		                    </span>
 		                  </button>
@@ -180,12 +180,12 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 		                </section>
 		              </div>
 
-		              <section *ngIf="shouldShowFilterActions" class="pt-4 border-t border-gray-100">
+		              <section *ngIf="shouldShowFilterActions" class="pt-4 border-t border-hus-blue/20">
 		                <div class="flex justify-center">
 		                  <button
 		                    type="button"
 		                    (click)="clearFilters()"
-		                    class="px-4 py-2 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors">
+		                    class="px-4 py-2 border border-hus-blue/30 text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-blue-50/40 transition-colors">
 		                    Xóa bộ lọc
 		                  </button>
 		                </div>

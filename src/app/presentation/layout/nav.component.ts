@@ -246,7 +246,7 @@ interface HeaderNotificationItem {
               </div>
 
               <!-- Dropdown -->
-              <div *ngIf="showProfileMenu" class="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-100 shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div *ngIf="showProfileMenu" class="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-300 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div class="px-4 py-3 border-b border-gray-50">
                   <p class="text-[9px] font-black text-hus-blue uppercase tracking-widest mb-0.5">Xin chào,</p>
                   <p class="text-[11px] font-bold text-gray-900 uppercase tracking-tight">{{ currentUser()?.fullName }}</p>

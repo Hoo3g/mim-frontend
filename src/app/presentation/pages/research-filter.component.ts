@@ -44,19 +44,19 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                     (ngModelChange)="onSearchKeywordChange($event)"
                     type="text"
                     placeholder="Tên bài viết, tác giả..."
-                    class="w-full bg-gray-50 border border-gray-200 px-3 py-2 text-xs focus:ring-1 focus:ring-hus-blue focus:border-hus-blue outline-none transition-all font-medium">
+                    class="w-full bg-gray-50 border border-hus-blue/30 px-3 py-2 text-xs focus:ring-1 focus:ring-hus-blue/30 focus:border-hus-blue outline-none transition-all font-medium">
                 </div>
               </section>
 
-              <div class="overflow-hidden border border-gray-100 bg-white lg:overflow-visible lg:border-0 lg:bg-transparent lg:space-y-4">
-                <section class="bg-white border-t border-gray-100 first:border-t-0 lg:border lg:border-gray-100">
+              <div class="overflow-hidden border border-hus-blue/20 bg-white shadow-[0_16px_32px_-28px_rgba(30,102,170,0.35)] lg:overflow-visible lg:border-0 lg:bg-transparent lg:shadow-none lg:space-y-4">
+                <section class="bg-white border-t border-hus-blue/20 first:border-t-0 lg:border lg:border-hus-blue/30 lg:shadow-[0_16px_32px_-28px_rgba(30,102,170,0.35)]">
                   <button
                     type="button"
                     (click)="toggleMobileSection('specializations')"
-                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue/10 border-b border-hus-blue/20">
-                    <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">Phân loại</h3>
+                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue border-b border-hus-blue">
+                    <h3 class="text-[10px] font-bold text-white uppercase tracking-widest">Phân loại</h3>
                     <span *ngIf="isMobileViewport"
-                          class="text-sm font-black text-hus-blue/70 leading-none min-w-[1rem] text-right">
+                          class="text-sm font-black text-white/80 leading-none min-w-[1rem] text-right">
                       {{ isMobileSectionOpen('specializations') ? '-' : '+' }}
                     </span>
                   </button>
@@ -74,8 +74,8 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                       [class.bg-blue-50]="isSpecializationSelected(category.name)"
                       class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
                       <span
-                        class="w-3.5 h-3.5 border transition-colors flex items-center justify-center"
-                        [ngClass]="isSpecializationSelected(category.name) ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+                        class="w-4 h-4 border-2 transition-colors flex items-center justify-center"
+                        [ngClass]="isSpecializationSelected(category.name) ? 'border-hus-blue bg-hus-blue' : 'border-gray-400 bg-white'">
                         <svg
                           *ngIf="isSpecializationSelected(category.name)"
                           viewBox="0 0 12 12"
@@ -97,14 +97,14 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                   </div>
                 </section>
 
-                <section class="bg-white border-t border-gray-100 first:border-t-0 lg:border lg:border-gray-100">
+                <section class="bg-white border-t border-hus-blue/20 first:border-t-0 lg:border lg:border-hus-blue/30 lg:shadow-[0_16px_32px_-28px_rgba(30,102,170,0.35)]">
                   <button
                     type="button"
                     (click)="toggleMobileSection('metrics')"
-                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue/10 border-b border-hus-blue/20">
-                    <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">Mức độ quan tâm</h3>
+                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue border-b border-hus-blue">
+                    <h3 class="text-[10px] font-bold text-white uppercase tracking-widest">Mức độ quan tâm</h3>
                     <span *ngIf="isMobileViewport"
-                          class="text-sm font-black text-hus-blue/70 leading-none min-w-[1rem] text-right">
+                          class="text-sm font-black text-white/80 leading-none min-w-[1rem] text-right">
                       {{ isMobileSectionOpen('metrics') ? '-' : '+' }}
                     </span>
                   </button>
@@ -117,8 +117,8 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                       [class.bg-blue-50]="metricSort === 'views'"
                       class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
                       <span
-                        class="w-3.5 h-3.5 shrink-0 rounded-full border transition-colors flex items-center justify-center"
-                        [ngClass]="metricSort === 'views' ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+                        class="w-4 h-4 shrink-0 rounded-full border-2 transition-colors flex items-center justify-center"
+                        [ngClass]="metricSort === 'views' ? 'border-hus-blue bg-hus-blue' : 'border-gray-400 bg-white'">
                         <svg
                           *ngIf="metricSort === 'views'"
                           viewBox="0 0 12 12"
@@ -139,8 +139,8 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                       [class.bg-blue-50]="metricSort === 'downloads'"
                       class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
                       <span
-                        class="w-3.5 h-3.5 shrink-0 rounded-full border transition-colors flex items-center justify-center"
-                        [ngClass]="metricSort === 'downloads' ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+                        class="w-4 h-4 shrink-0 rounded-full border-2 transition-colors flex items-center justify-center"
+                        [ngClass]="metricSort === 'downloads' ? 'border-hus-blue bg-hus-blue' : 'border-gray-400 bg-white'">
                         <svg
                           *ngIf="metricSort === 'downloads'"
                           viewBox="0 0 12 12"
@@ -161,8 +161,8 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                       [class.bg-blue-50]="metricSort === 'bookmarks'"
                       class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
                       <span
-                        class="w-3.5 h-3.5 shrink-0 rounded-full border transition-colors flex items-center justify-center"
-                        [ngClass]="metricSort === 'bookmarks' ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+                        class="w-4 h-4 shrink-0 rounded-full border-2 transition-colors flex items-center justify-center"
+                        [ngClass]="metricSort === 'bookmarks' ? 'border-hus-blue bg-hus-blue' : 'border-gray-400 bg-white'">
                         <svg
                           *ngIf="metricSort === 'bookmarks'"
                           viewBox="0 0 12 12"
@@ -179,14 +179,14 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                   </div>
                 </section>
 
-                <section class="bg-white border-t border-gray-100 first:border-t-0 lg:border lg:border-gray-100">
+                <section class="bg-white border-t border-hus-blue/20 first:border-t-0 lg:border lg:border-hus-blue/30 lg:shadow-[0_16px_32px_-28px_rgba(30,102,170,0.35)]">
                   <button
                     type="button"
                     (click)="toggleMobileSection('roles')"
-                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue/10 border-b border-hus-blue/20">
-                    <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">Đối tượng</h3>
+                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue border-b border-hus-blue">
+                    <h3 class="text-[10px] font-bold text-white uppercase tracking-widest">Đối tượng</h3>
                     <span *ngIf="isMobileViewport"
-                          class="text-sm font-black text-hus-blue/70 leading-none min-w-[1rem] text-right">
+                          class="text-sm font-black text-white/80 leading-none min-w-[1rem] text-right">
                       {{ isMobileSectionOpen('roles') ? '-' : '+' }}
                     </span>
                   </button>
@@ -199,8 +199,8 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                       [class.bg-blue-50]="roleFilter === 'LECTURER'"
                       class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
                       <span
-                        class="w-3.5 h-3.5 shrink-0 rounded-full border transition-colors flex items-center justify-center"
-                        [ngClass]="roleFilter === 'LECTURER' ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+                        class="w-4 h-4 shrink-0 rounded-full border-2 transition-colors flex items-center justify-center"
+                        [ngClass]="roleFilter === 'LECTURER' ? 'border-hus-blue bg-hus-blue' : 'border-gray-400 bg-white'">
                         <svg
                           *ngIf="roleFilter === 'LECTURER'"
                           viewBox="0 0 12 12"
@@ -221,8 +221,8 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                       [class.bg-blue-50]="roleFilter === 'STUDENT'"
                       class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
                       <span
-                        class="w-3.5 h-3.5 shrink-0 rounded-full border transition-colors flex items-center justify-center"
-                        [ngClass]="roleFilter === 'STUDENT' ? 'border-hus-blue bg-hus-blue' : 'border-gray-300 bg-white'">
+                        class="w-4 h-4 shrink-0 rounded-full border-2 transition-colors flex items-center justify-center"
+                        [ngClass]="roleFilter === 'STUDENT' ? 'border-hus-blue bg-hus-blue' : 'border-gray-400 bg-white'">
                         <svg
                           *ngIf="roleFilter === 'STUDENT'"
                           viewBox="0 0 12 12"
@@ -240,12 +240,12 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                 </section>
               </div>
 
-              <section *ngIf="shouldShowFilterActions" class="pt-4 border-t border-gray-100">
+              <section *ngIf="shouldShowFilterActions" class="pt-4 border-t border-hus-blue/20">
                 <div class="flex justify-center">
                   <button
                     type="button"
                     (click)="clearFilters()"
-                    class="px-4 py-2 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors">
+                    class="px-4 py-2 border border-hus-blue/30 text-hus-blue text-[10px] font-black uppercase tracking-widest hover:bg-blue-50/40 transition-colors">
                     Xóa bộ lọc
                   </button>
                 </div>
@@ -274,17 +274,18 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
               Không tìm thấy thông tin phù hợp.
             </div>
 
-            <div *ngIf="allPapers.length > 0" class="border border-gray-100 bg-white">
-              <button
-                type="button"
+            <div *ngIf="allPapers.length > 0" class="border border-black/15 bg-white">
+              <div
                 *ngFor="let paper of allPapers"
-                (click)="openPaperDetail(paper.id)"
-                class="w-full px-5 py-5 sm:px-6 sm:py-6 border-b border-gray-100 last:border-b-0 text-left hover:bg-blue-50/40 transition-colors group">
+                class="px-5 py-5 sm:px-6 sm:py-6 border-b border-black/15 last:border-b-0 text-left">
                 <div class="flex items-start gap-4">
                   <div class="min-w-0 flex-1">
-                    <h3 class="text-base sm:text-lg font-bold text-gray-900 leading-7 group-hover:text-hus-blue transition-colors">
+                    <button
+                      type="button"
+                      (click)="openPaperDetail(paper.id)"
+                      class="text-left text-base sm:text-lg font-bold text-gray-900 leading-7 hover:text-hus-blue transition-colors">
                       {{ paper.title }}
-                    </h3>
+                    </button>
 
                     <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-400">
                       <span>{{ getMainAuthorName(paper) }}</span>
@@ -321,7 +322,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
 
                   
                 </div>
-              </button>
+              </div>
             </div>
 
             <div *ngIf="hasMorePapers" class="mt-4 border-t border-gray-200 pt-4 flex justify-center">
