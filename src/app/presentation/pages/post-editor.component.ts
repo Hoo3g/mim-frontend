@@ -37,8 +37,13 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
       <div class="mx-auto w-full px-1 sm:max-w-5xl sm:px-6 lg:px-8 py-5 sm:py-8 md:py-10">
           <section class="min-w-0">
             <div class="bg-white border border-hus-blue shadow-[0_18px_40px_-28px_rgba(30,102,170,0.4)] p-2.5 sm:p-6 md:p-8">
-              <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
-                {{ isEditMode ? 'Chỉnh sửa bài tuyển dụng' : 'Soạn bài tuyển dụng mới' }}
+              <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight tracking-tight">
+                <ng-container *ngIf="isEditMode; else createPostHeading">
+                  Chỉnh sửa bài <span class="text-hus-blue">tuyển dụng</span>
+                </ng-container>
+                <ng-template #createPostHeading>
+                  Soạn bài <span class="text-hus-blue">tuyển dụng mới</span>
+                </ng-template>
               </h1>
               <p class="mt-3 text-[11px] sm:text-sm text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
                 {{ isCompanyRole
@@ -67,10 +72,10 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
 
               <form *ngIf="!roleBlocked && !loading" class="mt-6 sm:mt-8 space-y-4 sm:space-y-5" (ngSubmit)="save()">
                 <article class="border border-gray-100 p-3 sm:p-5 space-y-4">
-                  <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-900">Thông tin chính</h2>
+                  <h2 class="text-xs sm:text-[13px] font-black uppercase tracking-widest text-hus-blue">Thông tin chính</h2>
 
                   <div>
-                    <label for="title" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                    <label for="title" class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                       Tiêu đề bài đăng
                     </label>
                     <textarea id="title"
@@ -81,31 +86,31 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                               required
                               data-title-field="true"
                               (input)="onTitleInput($event)"
-                              class="w-full min-h-[76px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
+                              class="w-full min-h-[76px] border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
                               placeholder="Ví dụ: Tuyển thực tập sinh Data Analyst"></textarea>
                   </div>
 
                   <div class="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      <label class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                         Loại bài đăng
                       </label>
                       <select [(ngModel)]="postingMode"
                               name="postingMode"
                               (ngModelChange)="onPostingModeChange()"
-                              class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
+                              class="w-full border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
                         <option value="JOB">Việc làm</option>
                         <option value="INTERNSHIP">Thực tập</option>
                       </select>
                     </div>
 
                     <div>
-                      <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      <label class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                         Hình thức làm việc
                       </label>
                       <select [(ngModel)]="form.jobType"
                               name="jobType"
-                              class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
+                              class="w-full border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
                         <option [ngValue]="JOB_TYPES.FULL_TIME">Toàn thời gian</option>
                         <option [ngValue]="JOB_TYPES.PART_TIME">Bán thời gian</option>
                         <option [ngValue]="JOB_TYPES.CONTRACT">Hợp đồng</option>
@@ -115,24 +120,24 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                   </div>
 
                   <div *ngIf="!isCompanyRole">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                    <label class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                       Giới thiệu
                     </label>
                     <textarea [(ngModel)]="form.description"
                               name="description"
                               rows="6"
                               required
-                              class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
+                              class="w-full border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
                               placeholder="Giới thiệu bản thân, kinh nghiệm, định hướng..."
                     ></textarea>
                   </div>
                 </article>
 
                 <article class="border border-gray-100 p-3 sm:p-5 space-y-4">
-                  <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-900">Nội dung theo vai trò</h2>
+                  <h2 class="text-xs sm:text-[13px] font-black uppercase tracking-widest text-hus-blue">Nội dung theo vai trò</h2>
 
                   <div *ngIf="isCompanyRole">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                    <label class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                       Mô tả công việc
                     </label>
                     <textarea [(ngModel)]="form.description"
@@ -145,12 +150,12 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                               (paste)="onCompanyContentPaste('description', $event)"
                               (input)="onCompanyContentInput('description', $event)"
                               (keydown.enter)="onCompanyContentEnter('description', $event)"
-                              class="w-full min-h-[132px] sm:min-h-[120px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
+                              class="w-full min-h-[132px] sm:min-h-[120px] border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
                               placeholder="Mô tả công việc, mục tiêu hoặc thông tin bạn muốn chia sẻ..."></textarea>
                   </div>
 
                   <div *ngIf="isCompanyRole">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                    <label class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                       Yêu cầu ứng viên
                     </label>
                     <textarea [(ngModel)]="form.requirements"
@@ -162,12 +167,12 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                               (paste)="onCompanyContentPaste('requirements', $event)"
                               (input)="onCompanyContentInput('requirements', $event)"
                               (keydown.enter)="onCompanyContentEnter('requirements', $event)"
-                              class="w-full min-h-[132px] sm:min-h-[120px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
+                              class="w-full min-h-[132px] sm:min-h-[120px] border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
                               placeholder="Yêu cầu kỹ năng, kinh nghiệm, công nghệ..."></textarea>
                   </div>
 
                   <div *ngIf="isCompanyRole">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                    <label class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                       Quyền lợi
                     </label>
                     <textarea [(ngModel)]="form.benefits"
@@ -179,13 +184,13 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                               (paste)="onCompanyContentPaste('benefits', $event)"
                               (input)="onCompanyContentInput('benefits', $event)"
                               (keydown.enter)="onCompanyContentEnter('benefits', $event)"
-                              class="w-full min-h-[132px] sm:min-h-[120px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
+                              class="w-full min-h-[132px] sm:min-h-[120px] border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
                               placeholder="Lương thưởng, môi trường, phúc lợi..."></textarea>
                   </div>
 
                   <div *ngIf="!isCompanyRole">
                     <div class="mb-2 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                      <label class="block text-[11px] font-black text-black uppercase tracking-widest">
                         Hồ sơ sinh viên hiển thị trên thẻ tuyển dụng
                       </label>
                       <button type="button"
@@ -196,78 +201,78 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       </button>
                     </div>
                     <div class="grid sm:grid-cols-2 gap-4">
-                      <label class="text-xs font-semibold text-gray-500">
+                      <label class="text-[13px] font-bold text-black">
                         Trường
                         <input [(ngModel)]="studentCardForm.university"
                                name="studentUniversity"
-                               class="mt-1 w-full border border-gray-200 px-3 py-2 text-sm text-gray-900" />
+                               class="mt-1 w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900" />
                       </label>
-                      <label class="text-xs font-semibold text-gray-500">
+                      <label class="text-[13px] font-bold text-black">
                         Chuyên ngành
                         <input [(ngModel)]="studentCardForm.major"
                                name="studentMajor"
-                               class="mt-1 w-full border border-gray-200 px-3 py-2 text-sm text-gray-900" />
+                               class="mt-1 w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900" />
                       </label>
-                      <label class="text-xs font-semibold text-gray-500">
+                      <label class="text-[13px] font-bold text-black">
                         Loại sinh viên
                         <input [(ngModel)]="studentCardForm.studentType"
                                name="studentType"
-                               class="mt-1 w-full border border-gray-200 px-3 py-2 text-sm text-gray-900" />
+                               class="mt-1 w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900" />
                       </label>
-                      <label class="text-xs font-semibold text-gray-500">
+                      <label class="text-[13px] font-bold text-black">
                         Vị trí mong muốn
                         <input [(ngModel)]="studentCardForm.desiredPosition"
                                name="studentDesiredPosition"
-                               class="mt-1 w-full border border-gray-200 px-3 py-2 text-sm text-gray-900" />
+                               class="mt-1 w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900" />
                       </label>
                     </div>
-                    <label class="block text-xs font-semibold text-gray-500">
+                    <label class="block text-[13px] font-bold text-black">
                       Thành tích
                       <textarea [(ngModel)]="form.achievements"
                                 name="achievements"
                                 rows="3"
-                                class="mt-1 w-full border border-gray-200 px-3 py-2 text-sm text-gray-900"
+                                class="mt-1 w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900"
                                 placeholder="Ví dụ: GPA, dự án, chứng chỉ, giải thưởng..."></textarea>
                     </label>
-                    <label class="block text-xs font-semibold text-gray-500">
+                    <label class="block text-[13px] font-bold text-black">
                       Mong muốn nghề nghiệp
                       <textarea [(ngModel)]="studentCardForm.careerGoal"
                                 name="studentCareerGoal"
                                 rows="3"
-                                class="mt-1 w-full border border-gray-200 px-3 py-2 text-sm text-gray-900"></textarea>
+                                class="mt-1 w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900"></textarea>
                     </label>
                   </div>
 
                   <div class="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      <label class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                         {{ isCompanyRole ? 'Địa điểm làm việc' : 'Khu vực mong muốn' }}
                       </label>
                       <input [(ngModel)]="form.location"
                              name="location"
                              type="text"
-                             class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
+                             class="w-full border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
                              [placeholder]="isCompanyRole ? 'Hà Nội, Hybrid hoặc Remote' : 'Ví dụ: Hà Nội hoặc Remote'">
                     </div>
 
                     <div *ngIf="isCompanyRole">
-                      <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      <label class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                         Khoảng lương
                       </label>
                       <input [(ngModel)]="form.salaryRange"
                              name="salaryRange"
                              type="text"
-                             class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
+                             class="w-full border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
                              placeholder="Ví dụ: 12M - 18M">
                     </div>
                   </div>
                 </article>
 
                 <article *ngIf="!isCompanyRole" class="border border-gray-100 p-3 sm:p-5 space-y-4">
-                  <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-900">Đính kèm hồ sơ và nghiên cứu</h2>
+                  <h2 class="text-xs sm:text-[13px] font-black uppercase tracking-widest text-hus-blue">Đính kèm hồ sơ và nghiên cứu</h2>
 
                   <div class="border border-gray-100 bg-gray-50/50 p-4 space-y-3">
-                    <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">CV PDF cho bài đăng</p>
+                    <p class="text-[11px] font-black uppercase tracking-widest text-black">CV PDF cho bài đăng</p>
 
                     <label *ngIf="defaultProfileCvUrl"
                            class="flex items-start gap-2 text-xs font-semibold text-gray-600">
@@ -317,7 +322,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
 
                   <div class="border border-gray-100 bg-gray-50/50 p-4 space-y-3">
                     <div class="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                      <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Bài nghiên cứu gắn kèm</p>
+                      <p class="text-[11px] font-black uppercase tracking-widest text-black">Bài nghiên cứu gắn kèm</p>
                       <span class="text-[10px] font-black uppercase tracking-widest text-hus-blue">
                         {{ selectedResearchPaperIds.size }} đã chọn
                       </span>
@@ -353,35 +358,35 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                 </article>
 
                 <article class="border border-gray-100 p-3 sm:p-5 space-y-4">
-                  <h2 class="text-[11px] font-black uppercase tracking-widest text-gray-900">Liên hệ và trạng thái</h2>
+                  <h2 class="text-xs sm:text-[13px] font-black uppercase tracking-widest text-hus-blue">Liên hệ và trạng thái</h2>
 
                   <div class="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      <label class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                         Email liên hệ
                       </label>
                       <input [(ngModel)]="form.contactEmail"
                              name="contactEmail"
                              type="email"
-                             class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
+                             class="w-full border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
                              placeholder="contact@company.com">
                     </div>
 
                     <div>
-                      <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      <label class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                         Số điện thoại
                       </label>
                       <input [(ngModel)]="form.contactPhone"
                              name="contactPhone"
                              type="text"
-                             class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
+                             class="w-full border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
                              placeholder="0987xxxxxx">
                     </div>
                   </div>
 
                   <div class="space-y-3">
                     <div class="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                      <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                      <label class="block text-[11px] font-black text-black uppercase tracking-widest">
                         Danh mục tuyển dụng
                       </label>
                       <span class="text-[10px] font-black uppercase tracking-widest text-hus-blue">
@@ -414,12 +419,12 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
 
                   <div class="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      <label class="block text-[11px] font-black text-black uppercase tracking-widest mb-2">
                         Trạng thái bài đăng
                       </label>
                       <select [(ngModel)]="form.status"
                               name="status"
-                              class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
+                              class="w-full border-2 border-gray-300 rounded-md px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
                         <option value="OPEN">Đang mở</option>
                         <option value="CLOSED">Đã đóng</option>
                         <option value="DRAFT">Nháp</option>
@@ -436,14 +441,14 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                   <div class="flex items-center justify-between gap-2 lg:justify-end lg:gap-3">
                     <button type="button"
                             (click)="cancel()"
-                            class="inline-flex h-8 sm:h-9 lg:h-10 shrink-0 items-center justify-center px-2.5 sm:px-3 border border-gray-200 text-gray-500 text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
+                            class="inline-flex h-8 sm:h-9 lg:h-10 shrink-0 items-center justify-center px-2.5 sm:px-3 border border-gray-200 rounded-md text-gray-600 text-[9px] sm:text-[10px] font-semibold hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
                       Hủy
                     </button>
 
                     <div class="ml-auto flex items-center gap-2">
                       <button type="button"
                               (click)="openPreviewModal()"
-                              class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center gap-1 px-2.5 sm:px-3 border border-hus-blue/30 bg-blue-50/40 text-hus-blue text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:bg-hus-blue hover:text-white hover:border-hus-blue transition-colors">
+                              class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center gap-1 px-2.5 sm:px-3 border border-hus-blue/30 rounded-md bg-blue-50/40 text-hus-blue text-[9px] sm:text-[10px] font-semibold hover:bg-hus-blue hover:text-white hover:border-hus-blue transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="hidden sm:block h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -454,7 +459,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
 
                       <button type="submit"
                               [disabled]="saving || cvUploading"
-                              class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center gap-1 px-2.5 sm:px-3 lg:px-4 bg-hus-blue text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:bg-hus-dark transition-colors shadow-[0_10px_24px_-16px_rgba(30,102,170,0.9)] disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none">
+                              class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center gap-1 px-2.5 sm:px-3 lg:px-4 rounded-md bg-hus-blue text-white text-[9px] sm:text-[10px] font-semibold hover:bg-hus-dark transition-colors shadow-[0_10px_24px_-16px_rgba(30,102,170,0.9)] disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none">
                         <svg xmlns="http://www.w3.org/2000/svg" class="hidden sm:block h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>

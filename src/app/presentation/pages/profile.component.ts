@@ -318,18 +318,18 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
           </div>
 
           <div *ngIf="isCompany()" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <article class="xl:col-span-2 bg-white border border-gray-100 p-4 sm:p-6 space-y-4">
+            <article class="xl:col-span-2 bg-white border border-gray-100 rounded-md p-4 sm:p-6 space-y-4">
               <div class="flex items-center justify-between gap-2">
                 <h3 class="text-base sm:text-lg font-black uppercase tracking-tight text-gray-900">Hồ sơ doanh nghiệp</h3>
                 <div class="flex flex-wrap items-center gap-2">
                   <button *ngIf="canEditProfile() && !editingCompany"
                           (click)="beginEditCompany()"
-                          class="px-3 sm:px-4 py-1.5 sm:py-2 border border-hus-blue text-hus-blue text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
+                          class="px-3 sm:px-4 py-1.5 sm:py-2 border border-hus-blue rounded-md text-hus-blue text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue hover:text-white transition-colors">
                     Chỉnh sửa
                   </button>
                   <button *ngIf="canEditProfile() && editingCompany"
                           (click)="cancelEditCompany()"
-                          class="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-200 text-gray-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:border-gray-300 hover:text-gray-700 transition-colors">
+                          class="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-200 rounded-md text-gray-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:border-gray-300 hover:text-gray-700 transition-colors">
                     Hủy
                   </button>
                   <p *ngIf="!canEditProfile()" class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-amber-700">
@@ -339,7 +339,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
               </div>
 
               <div *ngIf="!editingCompany" class="space-y-4 text-sm">
-                <div class="bg-gray-50 border border-gray-100 p-5">
+                <div class="bg-gray-50 border border-gray-100 rounded-md p-5">
                   <p class="text-[10px] font-black uppercase tracking-widest text-hus-blue mb-1">Doanh nghiệp</p>
                   <p class="text-lg font-bold text-gray-900">{{ showValue(me.company?.name) }}</p>
                   <p class="text-xs text-gray-500 font-semibold mt-1">{{ showValue(me.company?.industry) }}</p>
@@ -395,14 +395,14 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                 </a>
 
                 <div class="flex justify-end">
-                  <button (click)="saveCompanyProfile()" class="px-5 py-2.5 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">
+                  <button (click)="saveCompanyProfile()" class="px-5 py-2.5 rounded-md bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">
                     Lưu hồ sơ
                   </button>
                 </div>
               </div>
             </article>
 
-            <article class="bg-white border border-gray-100 p-4 sm:p-6">
+            <article class="bg-white border border-gray-100 rounded-md p-4 sm:p-6">
               <div class="flex items-center justify-between gap-2 mb-4">
                 <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Tin tuyển dụng đã đăng</h3>
                 <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
@@ -413,7 +413,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
               <div *ngIf="myRecruitmentPosts.length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
                 Chưa có bài đăng.
               </div>
-              <div *ngFor="let post of myRecruitmentPosts" class="border border-gray-100 bg-gray-50 px-4 py-3 mb-3">
+              <div *ngFor="let post of myRecruitmentPosts" class="border border-gray-100 rounded-md bg-gray-50 px-4 py-3 mb-3">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div class="min-w-0">
                     <a [routerLink]="ROUTES.RECRUITMENT_EDITOR_EDIT(post.id)"
@@ -432,12 +432,12 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
             </article>
           </div>
 
-          <article *ngIf="isCompany()" class="bg-white border border-gray-100 p-4 sm:p-6">
+          <article *ngIf="isCompany()" class="bg-white border border-gray-100 rounded-md p-4 sm:p-6">
             <h3 class="text-sm font-black uppercase tracking-widest text-gray-900 mb-4">Ứng viên đang chờ xử lý</h3>
             <div *ngIf="pendingApplicants().length === 0" class="text-xs text-gray-400 font-semibold uppercase tracking-widest py-8 text-center">
               Không có ứng viên pending.
             </div>
-            <div *ngFor="let applicant of pendingApplicants()" class="border border-gray-100 bg-gray-50 px-4 py-3 mb-3">
+            <div *ngFor="let applicant of pendingApplicants()" class="border border-gray-100 rounded-md bg-gray-50 px-4 py-3 mb-3">
               <p class="text-sm font-bold text-gray-900">{{ applicant.applicantName }}</p>
               <p class="mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">{{ applicant.postTitle }}</p>
               <p *ngIf="applicant.message" class="mt-2 text-xs text-gray-600">{{ applicant.message }}</p>

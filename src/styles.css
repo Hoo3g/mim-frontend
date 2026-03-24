@@ -15,12 +15,33 @@ body {
     @apply bg-gray-50 text-gray-900;
 }
 
-/* Global focus on sharp edges */
-.btn,
-.card,
-.input,
-.tag {
-    @apply rounded-none;
+/* Global soft corners across student/admin/lecturer/company interfaces */
+@layer components {
+    .btn,
+    .card,
+    .input,
+    .tag {
+        @apply rounded-md;
+    }
+
+    button,
+    a.inline-flex {
+        @apply rounded-md;
+    }
+
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea {
+        @apply rounded-md;
+    }
+
+    article[class*='border'],
+    section[class*='border'],
+    div[class*='border'][class*='bg-white'],
+    div[class*='border'][class*='bg-gray-50'],
+    div[class*='border'][class*='bg-blue-50'] {
+        @apply rounded-md;
+    }
 }
 
 .research-quill {

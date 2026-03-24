@@ -16,7 +16,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="bg-white min-h-screen">
-      <div class="border-b border-gray-100 bg-blue-50/10 py-5 md:py-8">
+      <div class="border-b border-gray-100 bg-blue-10 py-5 md:py-8">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>

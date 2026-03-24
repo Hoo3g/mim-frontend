@@ -49,18 +49,18 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
 
           <a *ngIf="canCreateRecruitmentPost(); else createRecruitmentBlockedCta"
              [routerLink]="ROUTES.RECRUITMENT_EDITOR"
-             class="inline-flex items-center justify-center px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors">
+             class="inline-flex items-center justify-center rounded-md px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors">
             Tạo bài đăng mới
           </a>
           <ng-template #createRecruitmentBlockedCta>
             <a *ngIf="!canCreateContent(); else studentLimitCta"
                [routerLink]="ROUTES.PROFILE"
-               class="inline-flex items-center justify-center px-5 py-2.5 border border-amber-300 text-[10px] font-black uppercase tracking-widest text-amber-800 hover:bg-amber-50 transition-colors">
+               class="inline-flex items-center justify-center rounded-md px-5 py-2.5 border border-amber-300 text-[10px] font-black uppercase tracking-widest text-amber-800 hover:bg-amber-50 transition-colors">
               Xác thực email để đăng bài
             </a>
             <ng-template #studentLimitCta>
               <span *ngIf="!loading && isStudentViewer() && studentCreateLimitReached"
-                    class="inline-flex items-center justify-center border border-gray-200 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                    class="inline-flex items-center justify-center rounded-md border border-gray-200 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-400">
                 Sinh viên đã có bài tuyển dụng
               </span>
             </ng-template>
@@ -77,7 +77,7 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
           Bạn chưa có bài đăng tuyển dụng nào.
         </div>
 
-        <div *ngIf="!loading && posts.length > 0" class="divide-y divide-gray-100 border border-gray-100">
+        <div *ngIf="!loading && posts.length > 0" class="divide-y divide-gray-100 border border-gray-100 rounded-md overflow-hidden">
           <article *ngFor="let post of posts"
                    class="p-6 md:p-8 group hover:bg-gray-50 transition-colors">
             <div class="flex items-start justify-between gap-3">
@@ -115,7 +115,7 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
                         aria-haspopup="menu"
                         title="Tùy chọn"
                         aria-label="Tùy chọn"
-                        class="relative inline-flex h-11 w-11 items-center justify-center text-gray-500 transition-colors hover:text-hus-blue">
+                        class="relative inline-flex h-11 w-11 items-center justify-center text-hus-blue/80 transition-colors hover:text-hus-blue">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <circle cx="12" cy="5" r="1.75" />
                     <circle cx="12" cy="12" r="1.75" />
@@ -129,13 +129,13 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
 
                 <div *ngIf="openedActionPostId === post.id"
                      role="menu"
-                     class="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[220px] overflow-hidden border border-gray-200 bg-white shadow-lg">
+                     class="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[220px] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
                   <button type="button"
                           role="menuitem"
                           (click)="openPreview(post)"
                           class="flex w-full items-center justify-between px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-gray-700 transition-colors hover:bg-gray-50">
                     <span class="inline-flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.008 9.963 7.178.07.207.07.437 0 .644C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.008-9.964-7.178Z" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                       </svg>
@@ -149,7 +149,7 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
                           (click)="openStatistics(post, $event)"
                           class="flex w-full items-center justify-between border-t border-gray-100 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-gray-700 transition-colors hover:bg-gray-50">
                     <span class="inline-flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.5h4.5V21H3v-7.5Zm6.75-4.5h4.5V21h-4.5V9Zm6.75-6h4.5V21h-4.5V3Z" />
                       </svg>
                       <span>Thống kê ứng viên</span>
@@ -166,7 +166,7 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
                           (click)="editPost(post, $event)"
                           class="flex w-full items-center justify-between border-t border-gray-100 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-gray-700 transition-colors hover:bg-gray-50">
                     <span class="inline-flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
                       </svg>
                       <span>Chỉnh sửa</span>
@@ -178,7 +178,7 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
                        (click)="closeActionMenu()"
                        class="flex w-full items-center justify-between border-t border-gray-100 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-gray-700 transition-colors hover:bg-gray-50">
                       <span class="inline-flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 0h10.5A2.25 2.25 0 0 1 19.5 12.75v6A2.25 2.25 0 0 1 17.25 21h-10.5A2.25 2.25 0 0 1 4.5 18.75v-6A2.25 2.25 0 0 1 6.75 10.5Z" />
                         </svg>
                         <span>Xác thực email để sửa</span>
@@ -192,7 +192,7 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
                           [disabled]="deletingPostIds.has(post.id)"
                           class="flex w-full items-center justify-between border-t border-gray-100 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60">
                     <span class="inline-flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.347 9m-4.786 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21.75H8.084A2.25 2.25 0 0 1 5.84 19.673L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0V4.875A2.25 2.25 0 0 0 13.5 2.625h-3a2.25 2.25 0 0 0-2.25 2.25V5.79m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                       </svg>
                       <span>{{ deletingPostIds.has(post.id) ? 'Đang xóa...' : 'Xóa bài đăng' }}</span>

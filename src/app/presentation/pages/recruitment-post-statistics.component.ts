@@ -43,7 +43,7 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
         </div>
 
         <ng-container *ngIf="!loading && post">
-          <header class="mt-6 border border-gray-100 bg-white px-4 py-5 sm:px-8 sm:py-8">
+          <header class="mt-6 border border-gray-100 rounded-md bg-white px-4 py-5 sm:px-8 sm:py-8">
             <div class="min-w-0">
               <p class="text-[10px] font-black uppercase tracking-[0.25em] text-hus-blue">Thống kê ứng viên</p>
               <h1 class="mt-3 max-w-4xl text-xl font-black leading-tight text-gray-900 sm:text-3xl">
@@ -58,22 +58,22 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
             </div>
 
             <div class="mt-5 grid gap-3 sm:mt-6 sm:gap-4 md:grid-cols-3">
-              <div class="border border-gray-100 bg-gray-50 px-4 py-4">
+              <div class="border border-gray-100 rounded-md bg-gray-50 px-4 py-4">
                 <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Địa điểm</p>
                 <p class="mt-2 text-sm font-bold text-gray-900">{{ post.location || 'Chưa cập nhật' }}</p>
               </div>
-              <div class="border border-gray-100 bg-gray-50 px-4 py-4">
+              <div class="border border-gray-100 rounded-md bg-gray-50 px-4 py-4">
                 <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Trạng thái duyệt</p>
                 <p class="mt-2 text-sm font-bold" [ngClass]="approvalClass(post.approvalStatus)">{{ approvalLabel(post.approvalStatus) }}</p>
               </div>
-              <div class="border border-gray-100 bg-gray-50 px-4 py-4">
+              <div class="border border-gray-100 rounded-md bg-gray-50 px-4 py-4">
                 <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Cập nhật gần nhất</p>
                 <p class="mt-2 text-sm font-bold text-gray-900">{{ post.updatedAt | date:'dd.MM.yyyy HH:mm' }}</p>
               </div>
             </div>
           </header>
 
-          <section class="mt-6 border border-gray-100 bg-white">
+          <section class="mt-6 border border-gray-100 rounded-md bg-white">
             <div class="flex flex-col gap-2 border-b border-gray-100 px-4 py-4 sm:px-8 sm:py-5">
               <h2 class="text-lg font-black text-gray-900">Danh sách sinh viên ứng tuyển</h2>
               
@@ -82,7 +82,7 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
                   <button type="button"
                           (click)="setApplicantFilter('PENDING')"
                           [ngClass]="activeFilter === 'PENDING' ? 'border-hus-blue bg-blue-50 text-hus-blue' : 'border-gray-200 text-gray-500 hover:border-hus-blue/40 hover:text-hus-blue'"
-                          class="inline-flex w-full items-center justify-between gap-2 border px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors sm:w-auto sm:justify-center">
+                          class="inline-flex w-full items-center justify-between gap-2 border rounded-md px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors sm:w-auto sm:justify-center">
                     <span>Chờ xử lý</span>
                     <span class="rounded-full bg-white px-2 py-0.5 text-[9px] leading-none text-gray-500">
                       {{ pendingApplicants.length }}
@@ -91,7 +91,7 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
                   <button type="button"
                           (click)="setApplicantFilter('REVIEWED')"
                           [ngClass]="activeFilter === 'REVIEWED' ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-gray-200 text-gray-500 hover:border-emerald-300 hover:text-emerald-600'"
-                          class="inline-flex w-full items-center justify-between gap-2 border px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors sm:w-auto sm:justify-center">
+                          class="inline-flex w-full items-center justify-between gap-2 border rounded-md px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors sm:w-auto sm:justify-center">
                     <span>Đã được đánh dấu</span>
                     <span class="rounded-full bg-white px-2 py-0.5 text-[9px] leading-none text-gray-500">
                       {{ reviewedApplicants.length }}
@@ -100,7 +100,7 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
                 </div>
                 <div class="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
                   <label *ngIf="visibleApplicants().length > 0 && hasAnyVisibleSelected()"
-                         class="inline-flex h-9 items-center gap-2 border border-gray-200 px-3 text-[10px] font-black uppercase tracking-widest text-gray-500 sm:px-4">
+                         class="inline-flex h-9 items-center gap-2 border border-gray-200 rounded-md px-3 text-[10px] font-black uppercase tracking-widest text-gray-500 sm:px-4">
                     <input type="checkbox"
                            class="h-4 w-4 border-gray-300 text-hus-blue focus:ring-hus-blue"
                            [checked]="isAllVisibleSelected()"
@@ -114,7 +114,7 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
                           [disabled]="isBulkDeleting"
                           title="Xóa tất cả đã chọn"
                           aria-label="Xóa tất cả đã chọn"
-                          class="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-red-200 text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
+                          class="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-red-200 rounded-md text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M6 7.5h12m-9.75 0V6a1.5 1.5 0 0 1 1.5-1.5h4.5A1.5 1.5 0 0 1 15.75 6v1.5m-8.25 0v10.125A1.875 1.875 0 0 0 9.375 19.5h5.25a1.875 1.875 0 0 0 1.875-1.875V7.5M10.5 10.5v6m3-6v6" />
                     </svg>
@@ -173,7 +173,7 @@ type ApplicantFilter = 'PENDING' | 'REVIEWED';
                     <button type="button"
                             [disabled]="!hasApplicantEmail(applicant)"
                             (click)="contactApplicant(applicant, $event)"
-                            class="inline-flex w-full items-center justify-center border border-gray-200 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest transition-colors sm:w-auto"
+                            class="inline-flex w-full items-center justify-center border border-gray-200 rounded-md px-4 py-2.5 text-[10px] font-black uppercase tracking-widest transition-colors sm:w-auto"
                             [ngClass]="hasApplicantEmail(applicant)
                               ? 'text-gray-600 hover:border-hus-blue hover:text-hus-blue'
                               : 'cursor-not-allowed text-gray-300'">
