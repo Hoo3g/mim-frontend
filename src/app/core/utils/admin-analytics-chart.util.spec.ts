@@ -1,4 +1,4 @@
-import { buildLinePoints, maxMetricValue } from './admin-analytics-chart.util';
+import { buildLinePoints, buildMetricCoordinates, maxMetricValue } from './admin-analytics-chart.util';
 import { AdminMonthlyTrafficPoint } from '../models/admin-analytics.model';
 
 describe('admin-analytics-chart.util', () => {
@@ -25,5 +25,15 @@ describe('admin-analytics-chart.util', () => {
 
     it('returns empty string for empty data', () => {
         expect(buildLinePoints([], 'views')).toBe('');
+    });
+
+    it('returns centered coordinate when dataset has only one point', () => {
+        const coordinates = buildMetricCoordinates([
+            { monthKey: '2026-03', monthLabel: '03/2026', views: 191, uniqueVisitors: 120 }
+        ], 'views');
+
+        expect(coordinates.length).toBe(1);
+        expect(coordinates[0].x).toBeCloseTo(325, 0);
+        expect(coordinates[0].y).toBeCloseTo(10, 0);
     });
 });

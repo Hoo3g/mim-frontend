@@ -29,11 +29,12 @@ import { ApprovalStatus } from '../../../core/enums/post-status.enum';
 import { authSignal } from '../../../core/signals/auth.signal';
 import { Post } from '../../../core/models/post.model';
 import { AdminAnalyticsOverview, AdminMonthlyTrafficPoint } from '../../../core/models/admin-analytics.model';
-import { buildLinePoints, maxMetricValue } from '../../../core/utils/admin-analytics-chart.util';
+import { buildLinePoints, buildMetricCoordinates, maxMetricValue } from '../../../core/utils/admin-analytics-chart.util';
 import { PdfCanvasViewerComponent } from '../../../shared/ui/pdf-canvas-viewer/pdf-canvas-viewer.component';
 import { PostDetailComponent } from '../post-detail.component';
 
 type AdminTabKey = 'POSTS' | 'PAPERS' | 'ANALYTICS' | 'HERO' | 'NEWS' | 'RBAC' | 'SPECIALIZATIONS' | 'RECRUITMENT_CATEGORIES' | 'PAPER_CATEGORIES';
+type AnalyticsChartGranularity = 'MONTH' | 'YEAR';
 
 interface AdminTabConfig {
     key: AdminTabKey;
@@ -46,6 +47,12 @@ interface ModerationDisplayInfoEntry {
     label: string;
     value: string;
     wide?: boolean;
+}
+
+interface AnalyticsXAxisLabel {
+    key: string;
+    label: string;
+    leftPercent: number;
 }
 
 const MODERATION_POST_TYPE_LABELS: Record<string, string> = {
@@ -888,20 +895,44 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
 	            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
               <section class="border border-gray-100 bg-white p-5 sm:p-6">
                 <div class="flex flex-wrap items-center justify-between gap-3">
-                  <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Lượt truy cập theo tháng</h3>
-                  <div class="flex flex-wrap items-center gap-4 text-[10px] font-black uppercase tracking-widest">
-                    <span class="inline-flex items-center gap-2 text-hus-blue">
-                      <span class="h-2.5 w-2.5 rounded-full bg-hus-blue"></span>
-                      Tổng lượt truy cập
-                    </span>
-                    <span class="inline-flex items-center gap-2 text-emerald-600">
-                      <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                      Lượt truy cập không trùng
-                    </span>
+                  <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">
+                    Lượt truy cập theo {{ analyticsChartGranularity === 'MONTH' ? 'tháng' : 'năm' }}
+                  </h3>
+                  <div class="flex flex-wrap items-center gap-3">
+                    <div class="inline-flex border border-hus-blue/20 bg-white text-[9px] font-black uppercase tracking-widest">
+                      <button
+                        type="button"
+                        (click)="setAnalyticsChartGranularity('MONTH')"
+                        [class.bg-hus-blue]="analyticsChartGranularity === 'MONTH'"
+                        [class.text-white]="analyticsChartGranularity === 'MONTH'"
+                        [class.text-hus-blue]="analyticsChartGranularity !== 'MONTH'"
+                        class="px-3 py-1.5 transition-colors">
+                        Theo tháng
+                      </button>
+                      <button
+                        type="button"
+                        (click)="setAnalyticsChartGranularity('YEAR')"
+                        [class.bg-hus-blue]="analyticsChartGranularity === 'YEAR'"
+                        [class.text-white]="analyticsChartGranularity === 'YEAR'"
+                        [class.text-hus-blue]="analyticsChartGranularity !== 'YEAR'"
+                        class="px-3 py-1.5 transition-colors">
+                        Theo năm
+                      </button>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4 text-[10px] font-black uppercase tracking-widest">
+                      <span class="inline-flex items-center gap-2 text-hus-blue">
+                        <span class="h-2.5 w-2.5 rounded-full bg-hus-blue"></span>
+                        Tổng lượt truy cập
+                      </span>
+                      <span class="inline-flex items-center gap-2 text-emerald-600">
+                        <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                        Lượt truy cập không trùng
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <p class="mt-2 text-[10px] font-semibold text-gray-500">
-                  Tổng lượt truy cập: tính mọi lần mở trang. Lượt truy cập không trùng: mỗi người chỉ tính 1 lần trong tháng.
+                  Tổng lượt truy cập: tính mọi lần mở trang. Lượt truy cập không trùng: mỗi người chỉ tính 1 lần trong kỳ.
                 </p>
 
                 <div class="mt-5 border border-gray-100 bg-gray-50/50 px-3 py-4">
@@ -928,17 +959,34 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                               stroke-width="2.5"
                               stroke-linecap="round"
                               stroke-linejoin="round"></polyline>
+                    <ng-container *ngFor="let point of analyticsMetricCoordinates('views')">
+                      <circle [attr.cx]="point.x"
+                              [attr.cy]="point.y"
+                              r="3"
+                              fill="#2f80ed" />
+                    </ng-container>
                     <polyline [attr.points]="analyticsLinePoints('uniqueVisitors')"
                               fill="none"
                               stroke="#10b981"
                               stroke-width="2.5"
                               stroke-linecap="round"
                               stroke-linejoin="round"></polyline>
+                    <ng-container *ngFor="let point of analyticsMetricCoordinates('uniqueVisitors')">
+                      <circle [attr.cx]="point.x"
+                              [attr.cy]="point.y"
+                              r="3"
+                              fill="#10b981" />
+                    </ng-container>
                   </svg>
                 </div>
 
-	                <div class="mt-3 flex justify-between gap-2 text-[9px] font-bold uppercase tracking-widest text-gray-400">
-	                  <span *ngFor="let item of analyticsChartMonths()">{{ item.monthLabel }}</span>
+	                <div class="mt-3 relative h-5 text-[9px] font-bold uppercase tracking-widest text-gray-400">
+	                  <span *ngFor="let label of analyticsXAxisLabels()"
+                          class="absolute whitespace-nowrap"
+                          [style.left.%]="label.leftPercent"
+                          [style.transform]="analyticsXAxisLabelTransform(label.leftPercent)">
+	                    {{ label.label }}
+	                  </span>
 	                </div>
 
                 <div class="mt-4 grid gap-3 sm:grid-cols-2">
@@ -1396,6 +1444,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     analyticsOverview: AdminAnalyticsOverview | null = null;
     analyticsLoading = false;
     analyticsError = '';
+    analyticsChartGranularity: AnalyticsChartGranularity = 'MONTH';
 
     heroNotice = '';
     rbacNotice = '';
@@ -1404,6 +1453,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private pollSubscription?: Subscription;
     private analyticsPollSubscription?: Subscription;
     private routeQuerySubscription?: Subscription;
+    private readonly analyticsHistoryMonths = 120;
+    private readonly analyticsOnlineWindowMinutes = 2;
 
     // Notification signal bindings
     readonly notifications = adminNotificationSignal.notifications;
@@ -1530,24 +1581,62 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         return null;
     }
 
-    analyticsChartMonths(): AdminMonthlyTrafficPoint[] {
-        const months = [...(this.analyticsOverview?.monthlyTraffic ?? [])];
-        if (months.length === 0) {
-            return [];
+    setAnalyticsChartGranularity(granularity: AnalyticsChartGranularity): void {
+        this.analyticsChartGranularity = granularity;
+    }
+
+    analyticsChartPoints(): AdminMonthlyTrafficPoint[] {
+        const monthlyTraffic = this.analyticsNormalizedMonthlyTraffic();
+        if (this.analyticsChartGranularity === 'YEAR') {
+            return this.aggregateTrafficByYear(monthlyTraffic);
         }
-
-        const now = new Date();
-        const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const currentMonthIndex = months.findIndex((item) => item.monthKey === currentMonthKey);
-        const monthsFromCurrent = currentMonthIndex >= 0 ? months.slice(currentMonthIndex) : months.slice(-1);
-
-        return monthsFromCurrent.filter((item, index) =>
-            index === 0 || item.views > 0 || item.uniqueVisitors > 0
-        );
+        return monthlyTraffic;
     }
 
     analyticsLinePoints(metric: 'views' | 'uniqueVisitors'): string {
-        return buildLinePoints(this.analyticsChartMonths(), metric);
+        return buildLinePoints(this.analyticsChartPoints(), metric);
+    }
+
+    analyticsMetricCoordinates(metric: 'views' | 'uniqueVisitors'): Array<{ x: number; y: number }> {
+        return buildMetricCoordinates(this.analyticsChartPoints(), metric);
+    }
+
+    analyticsXAxisLabels(): AnalyticsXAxisLabel[] {
+        const points = this.analyticsChartPoints();
+        if (points.length === 0) {
+            return [];
+        }
+
+        if (points.length === 1) {
+            const point = points[0];
+            return [{
+                key: `${point.monthKey || point.monthLabel || 'point'}-0`,
+                label: point.monthLabel || point.monthKey || '-',
+                leftPercent: 0
+            }];
+        }
+
+        const maxTicks = this.analyticsChartGranularity === 'MONTH' ? 8 : 6;
+        const step = Math.max(1, Math.ceil((points.length - 1) / Math.max(maxTicks - 1, 1)));
+
+        return points
+            .map((point, index) => ({ point, index }))
+            .filter(({ index }) => index === 0 || index === points.length - 1 || index % step === 0)
+            .map(({ point, index }) => ({
+                key: `${point.monthKey || point.monthLabel || 'point'}-${index}`,
+                label: point.monthLabel || point.monthKey || '-',
+                leftPercent: (index * 100) / (points.length - 1)
+            }));
+    }
+
+    analyticsXAxisLabelTransform(leftPercent: number): string {
+        if (leftPercent <= 0) {
+            return 'translateX(0)';
+        }
+        if (leftPercent >= 100) {
+            return 'translateX(-100%)';
+        }
+        return 'translateX(-50%)';
     }
 
     analyticsGridLines(): number[] {
@@ -1561,6 +1650,62 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         const paddingBottom = 24;
         const ratio = step / 3;
         return paddingTop + (1 - ratio) * (height - paddingTop - paddingBottom);
+    }
+
+    private analyticsNormalizedMonthlyTraffic(): AdminMonthlyTrafficPoint[] {
+        const source = this.analyticsOverview?.monthlyTraffic ?? [];
+        if (!Array.isArray(source) || source.length === 0) {
+            return [];
+        }
+
+        return [...source]
+            .map((item) => ({
+                monthKey: (item.monthKey ?? '').trim(),
+                monthLabel: (item.monthLabel ?? '').trim() || (item.monthKey ?? '').trim(),
+                views: Number(item.views ?? 0),
+                uniqueVisitors: Number(item.uniqueVisitors ?? 0)
+            }))
+            .filter((item) => !!item.monthKey || !!item.monthLabel);
+    }
+
+    private aggregateTrafficByYear(points: AdminMonthlyTrafficPoint[]): AdminMonthlyTrafficPoint[] {
+        const grouped = new Map<string, AdminMonthlyTrafficPoint>();
+
+        points.forEach((point) => {
+            const yearKey = this.analyticsYearKey(point);
+            const existing = grouped.get(yearKey);
+            if (existing) {
+                existing.views += point.views;
+                existing.uniqueVisitors += point.uniqueVisitors;
+                return;
+            }
+
+            grouped.set(yearKey, {
+                monthKey: yearKey,
+                monthLabel: yearKey,
+                views: point.views,
+                uniqueVisitors: point.uniqueVisitors
+            });
+        });
+
+        return Array.from(grouped.values())
+            .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+    }
+
+    private analyticsYearKey(point: AdminMonthlyTrafficPoint): string {
+        const monthKey = (point.monthKey ?? '').trim();
+        const keyMatch = monthKey.match(/^(\d{4})-\d{2}$/);
+        if (keyMatch) {
+            return keyMatch[1];
+        }
+
+        const monthLabel = (point.monthLabel ?? '').trim();
+        const labelMatch = monthLabel.match(/(\d{4})$/);
+        if (labelMatch) {
+            return labelMatch[1];
+        }
+
+        return monthKey || monthLabel || 'N/A';
     }
 
     analyticsRouteShare(views: number): number {
@@ -1618,7 +1763,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     private analyticsMaxMetricValue(): number {
-        return maxMetricValue(this.analyticsChartMonths());
+        return maxMetricValue(this.analyticsChartPoints());
     }
 
     private tryLoadAnalyticsOverview(): void {
@@ -1635,7 +1780,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
         this.analyticsError = '';
 
-        this.adminAnalyticsService.getOverview(12, 2).pipe(
+        this.adminAnalyticsService.getOverview(this.analyticsHistoryMonths, this.analyticsOnlineWindowMinutes).pipe(
             finalize(() => {
                 this.analyticsLoading = false;
             })

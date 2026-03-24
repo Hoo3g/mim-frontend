@@ -263,7 +263,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
               <div>
                 <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Kết quả lọc</p>
                 <h2 class="text font-black text-gray-900 uppercase tracking-tight">
-                  {{ totalPaperCount }} bài nghiên cứu phù hợp
+                  {{ totalPaperCount }} bài <span class="text-hus-blue">nghiên cứu</span> phù hợp
                 </h2>
               </div>
             </div>
@@ -276,8 +276,12 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
 
             <div *ngIf="allPapers.length > 0" class="border border-black/15 bg-white">
               <div
-                *ngFor="let paper of allPapers"
-                class="px-5 py-5 sm:px-6 sm:py-6 border-b border-black/15 last:border-b-0 text-left">
+                *ngFor="let paper of allPapers; let index = index"
+                class="relative px-5 py-5 sm:px-6 sm:py-6 border-b border-black/15 last:border-b-0 text-left">
+                <span
+                  *ngIf="index % 2 === 0"
+                  aria-hidden="true"
+                  class="absolute left-0 top-0 bottom-0 w-1 bg-hus-blue"></span>
                 <div class="flex items-start gap-4">
                   <div class="min-w-0 flex-1">
                     <button
