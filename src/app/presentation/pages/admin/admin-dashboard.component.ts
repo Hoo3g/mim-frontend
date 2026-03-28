@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, inject, effect, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize, forkJoin, Subscription, timer } from 'rxjs';
@@ -117,11 +118,11 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
               </div>
               <div class="border border-gray-100 bg-gray-50 px-4 py-3">
                 <p class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Tuyển dụng</p>
-                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ pendingPosts().length }}</p>
+                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ pendingPostsTotal }}</p>
               </div>
               <div class="border border-gray-100 bg-gray-50 px-4 py-3">
                 <p class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Nghiên cứu</p>
-                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ pendingPapers().length }}</p>
+                <p class="mt-2 text-2xl font-black text-gray-900 tabular-nums">{{ pendingPapersTotal }}</p>
               </div>
               <div class="border border-gray-100 bg-gray-50 px-4 py-3">
                 <p class="text-[9px] font-black uppercase tracking-[0.22em] text-gray-400">Module mở</p>
@@ -177,6 +178,26 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
             </div>
  
             <div *ngIf="currentTab === 'POSTS' && can('MODERATION_POSTS_VIEW')" class="space-y-4">
+              <div class="bg-white border border-gray-100 px-4 py-3 space-y-3">
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Tìm kiếm nhanh bài tuyển dụng</p>
+                <div class="flex flex-col gap-3 sm:flex-row">
+                  <input
+                    [(ngModel)]="postSearchQuery"
+                    [ngModelOptions]="{ standalone: true }"
+                    (keyup.enter)="applyPostSearch()"
+                    type="text"
+                    placeholder="Nhập tiêu đề hoặc mô tả..."
+                    class="flex-1 border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue">
+                  <div class="flex gap-2">
+                    <button type="button" (click)="applyPostSearch()" class="px-4 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">Tìm</button>
+                    <button type="button" (click)="clearPostSearch()" class="px-4 py-2 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-colors">Xóa lọc</button>
+                  </div>
+                </div>
+                <p class="text-[10px] text-gray-400">
+                  Hiển thị {{ pendingPosts().length }}/{{ pendingPostsTotal }} bài chờ duyệt và {{ approvedPosts().length }}/{{ approvedPostsTotal }} bài đã duyệt.
+                </p>
+              </div>
+
               <div *ngIf="pendingPosts().length > 0 && can('MODERATION_POSTS_ACTION')"
                    class="bg-white border border-gray-100 px-4 py-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <label class="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-600">
@@ -228,6 +249,7 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                   <div class="flex flex-wrap gap-3 flex-shrink-0" *ngIf="can('MODERATION_POSTS_ACTION')">
                     <button type="button" (click)="approvePost(post.id)" class="px-6 py-2 bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest hover:bg-hus-dark transition-all">Duyệt</button>
                     <button type="button" (click)="rejectPost(post.id)" class="px-6 py-2 bg-white border border-red-200 text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-50 transition-all">Từ chối</button>
+                    <button type="button" (click)="deletePost(post.id)" class="px-6 py-2 bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-red-600 transition-all">Xóa</button>
                   </div>
                 </div>
                 <textarea
@@ -242,9 +264,71 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
               <div *ngIf="pendingPosts().length === 0" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-200">
                 Không có bài đăng nào đang chờ duyệt.
               </div>
+
+              <div class="bg-white border border-gray-100 px-4 py-3">
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Bài đã duyệt / đã đăng</p>
+                <p class="mt-1 text-[10px] text-gray-400">Admin vẫn có thể xóa vĩnh viễn nếu nội dung không còn phù hợp.</p>
+              </div>
+
+              <div *ngFor="let post of approvedPosts()" class="bg-white border border-gray-100 p-6 space-y-4 transition-all">
+                <div class="flex flex-col md:flex-row justify-between items-start gap-6">
+                  <div class="min-w-0 flex-grow">
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                      <span class="text-[9px] font-black bg-gray-100 px-2 py-0.5 uppercase tracking-widest">{{ post.authorName }}</span>
+                      <span *ngIf="post.jobType" class="text-[9px] font-black bg-blue-50 text-hus-blue px-2 py-0.5 uppercase tracking-widest">{{ post.jobType }}</span>
+                      <span class="text-[9px] font-black bg-emerald-50 text-emerald-600 px-2 py-0.5 uppercase tracking-widest">ĐÃ DUYỆT</span>
+                      <span class="text-[9px] text-gray-400 uppercase tabular-nums">{{ (post.updatedAt || post.createdAt) | date:'dd.MM.yyyy' }}</span>
+                    </div>
+                    <h3 (click)="openPostPreview(post)"
+                        class="inline-block cursor-pointer text-lg font-bold text-gray-900 transition-colors hover:text-hus-blue">
+                      {{ post.title }}
+                    </h3>
+                    <p class="text-[11px] text-gray-500 line-clamp-2 mt-1">{{ post.summary }}</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      <span *ngIf="post.location" class="text-[9px] font-bold uppercase tracking-widest text-gray-400">{{ post.location }}</span>
+                      <span *ngIf="post.salaryRange" class="text-[9px] font-bold uppercase tracking-widest text-gray-400">{{ post.salaryRange }}</span>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-3 flex-shrink-0" *ngIf="can('MODERATION_POSTS_ACTION')">
+                    <button type="button" (click)="deletePost(post.id)" class="px-6 py-2 bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-red-600 transition-all">Xóa</button>
+                  </div>
+                </div>
+                <textarea
+                  *ngIf="can('MODERATION_POSTS_ACTION')"
+                  [(ngModel)]="postRejectComments[post.id]"
+                  [ngModelOptions]="{ standalone: true }"
+                  rows="2"
+                  class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue"
+                  placeholder="Ghi chú xóa (tùy chọn)">
+                </textarea>
+              </div>
+
+              <div *ngIf="approvedPosts().length === 0" class="py-10 text-center text-gray-400 text-xs uppercase tracking-widest border border-dashed border-gray-200">
+                Chưa có bài đăng nào ở trạng thái đã duyệt.
+              </div>
             </div>
  
             <div *ngIf="currentTab === 'PAPERS' && can('MODERATION_PAPERS_VIEW')" class="space-y-4">
+              <div class="bg-white border border-gray-100 px-4 py-3 space-y-3">
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Tìm kiếm nhanh bài nghiên cứu</p>
+                <div class="flex flex-col gap-3 sm:flex-row">
+                  <input
+                    [(ngModel)]="paperSearchQuery"
+                    [ngModelOptions]="{ standalone: true }"
+                    (keyup.enter)="applyPaperSearch()"
+                    type="text"
+                    placeholder="Nhập tiêu đề hoặc tóm tắt..."
+                    class="flex-1 border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue">
+                  <div class="flex gap-2">
+                    <button type="button" (click)="applyPaperSearch()" class="px-4 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">Tìm</button>
+                    <button type="button" (click)="clearPaperSearch()" class="px-4 py-2 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-colors">Xóa lọc</button>
+                  </div>
+                </div>
+                <p class="text-[10px] text-gray-400">
+                  Hiển thị {{ pendingPapers().length }}/{{ pendingPapersTotal }} bài chờ duyệt và {{ approvedPapers().length }}/{{ approvedPapersTotal }} bài đã duyệt.
+                </p>
+              </div>
+
               <div *ngIf="pendingPapers().length > 0 && can('MODERATION_PAPERS_ACTION')"
                    class="bg-white border border-gray-100 px-4 py-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <label class="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-600">
@@ -292,6 +376,7 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                   <div class="flex flex-wrap gap-3 flex-shrink-0" *ngIf="can('MODERATION_PAPERS_ACTION')">
                     <button type="button" (click)="approvePaper(paper.id)" class="px-6 py-2 bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest hover:bg-hus-dark transition-all">Duyệt</button>
                     <button type="button" (click)="rejectPaper(paper.id)" class="px-6 py-2 bg-white border border-red-200 text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-50 transition-all">Từ chối</button>
+                    <button type="button" (click)="deletePaper(paper.id)" class="px-6 py-2 bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-red-600 transition-all">Xóa</button>
                   </div>
                 </div>
                 <textarea
@@ -305,6 +390,44 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
               </div>
               <div *ngIf="pendingPapers().length === 0" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-200">
                 Không có bài nghiên cứu nào đang chờ duyệt.
+              </div>
+
+              <div class="bg-white border border-gray-100 px-4 py-3">
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Bài nghiên cứu đã duyệt / đã đăng</p>
+                <p class="mt-1 text-[10px] text-gray-400">Admin vẫn có thể xóa vĩnh viễn nếu nội dung vi phạm chuẩn.</p>
+              </div>
+
+              <div *ngFor="let paper of approvedPapers()" class="bg-white border border-gray-100 p-6 space-y-4 transition-all">
+                <div class="flex flex-col md:flex-row justify-between items-start gap-6">
+                  <div class="min-w-0 flex-grow">
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                      <span class="text-[9px] font-black bg-blue-50 text-hus-blue px-2 py-0.5 uppercase tracking-widest">{{ paper.authorName }}</span>
+                      <span class="text-[9px] text-gray-400 uppercase tabular-nums">{{ paper.category }}</span>
+                      <span class="text-[9px] font-black bg-emerald-50 text-emerald-600 px-2 py-0.5 uppercase tracking-widest">ĐÃ DUYỆT</span>
+                      <span *ngIf="paper.publicationYear" class="text-[9px] text-gray-400 uppercase tabular-nums">{{ paper.publicationYear }}</span>
+                    </div>
+                    <h3 (click)="openPaperPreview(paper)"
+                        class="inline-block cursor-pointer text-lg font-bold text-gray-900 transition-colors hover:text-hus-blue">
+                      {{ paper.title }}
+                    </h3>
+                    <p *ngIf="paper.paperAbstract" class="text-[11px] text-gray-500 line-clamp-2 mt-1" [innerHTML]="paper.paperAbstract"></p>
+                  </div>
+                  <div class="flex flex-wrap gap-3 flex-shrink-0" *ngIf="can('MODERATION_PAPERS_ACTION')">
+                    <button type="button" (click)="deletePaper(paper.id)" class="px-6 py-2 bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-red-600 transition-all">Xóa</button>
+                  </div>
+                </div>
+                <textarea
+                  *ngIf="can('MODERATION_PAPERS_ACTION')"
+                  [(ngModel)]="paperRejectComments[paper.id]"
+                  [ngModelOptions]="{ standalone: true }"
+                  rows="2"
+                  class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue"
+                  placeholder="Ghi chú xóa (tùy chọn)">
+                </textarea>
+              </div>
+
+              <div *ngIf="approvedPapers().length === 0" class="py-10 text-center text-gray-400 text-xs uppercase tracking-widest border border-dashed border-gray-200">
+                Chưa có bài nghiên cứu nào ở trạng thái đã duyệt.
               </div>
             </div>
 
@@ -366,6 +489,10 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                 class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue file:mr-3 file:border-0 file:bg-hus-blue file:px-3 file:py-2 file:text-[10px] file:font-black file:text-white file:uppercase file:tracking-widest hover:file:bg-hus-dark">
             </div>
 
+            <div *ngIf="isUploadingHeroImage" class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">
+              Đang tải ảnh hero...
+            </div>
+
             <div *ngIf="heroForm.imageUrl" class="pt-2">
               <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Xem trước ảnh</p>
               <img [src]="heroForm.imageUrl" alt="Research hero preview" class="w-full max-w-3xl h-64 object-cover border border-gray-200">
@@ -375,9 +502,9 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
           <div>
             <button
               (click)="saveHeroContent()"
-              [disabled]="isSavingHero"
+              [disabled]="isSavingHero || isUploadingHeroImage"
               class="px-6 py-3 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors disabled:opacity-60">
-              {{ isSavingHero ? 'Đang lưu...' : 'Lưu cấu hình trang nghiên cứu' }}
+              {{ isSavingHero ? 'Đang lưu...' : (isUploadingHeroImage ? 'Đang tải ảnh...' : 'Lưu cấu hình trang nghiên cứu') }}
             </button>
           </div>
         </div>
@@ -1308,13 +1435,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         {
             key: 'POSTS',
             label: 'Tin tuyển dụng',
-            helper: 'Duyệt nội dung tuyển dụng',
+            helper: 'Duyệt và xóa nội dung tuyển dụng',
             permission: 'MODERATION_POSTS_VIEW'
         },
         {
             key: 'PAPERS',
             label: 'Bài báo khoa học',
-            helper: 'Duyệt bài nghiên cứu',
+            helper: 'Duyệt và xóa bài nghiên cứu',
             permission: 'MODERATION_PAPERS_VIEW'
         },
         {
@@ -1363,6 +1490,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     pendingPosts: WritableSignal<ModerationPostItem[]> = signal([]);
     pendingPapers: WritableSignal<ModerationPaperItem[]> = signal([]);
+    approvedPosts: WritableSignal<ModerationPostItem[]> = signal([]);
+    approvedPapers: WritableSignal<ModerationPaperItem[]> = signal([]);
+    pendingPostsTotal = 0;
+    pendingPapersTotal = 0;
+    approvedPostsTotal = 0;
+    approvedPapersTotal = 0;
+    postSearchQuery = '';
+    paperSearchQuery = '';
+    private readonly moderationPageSize = 20;
     selectedPostIds: WritableSignal<string[]> = signal([]);
     selectedPaperIds: WritableSignal<string[]> = signal([]);
     previewPost: WritableSignal<ModerationPostItem | null> = signal(null);
@@ -1381,6 +1517,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         imageUrl: ''
     };
     isSavingHero = false;
+    isUploadingHeroImage = false;
     newsItems: NewsItem[] = [];
     newsForm: {
         title: string;
@@ -1525,7 +1662,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     get totalPendingCount(): number {
-        return this.pendingPosts().length + this.pendingPapers().length;
+        return this.pendingPostsTotal + this.pendingPapersTotal;
     }
 
     get visibleTabs(): AdminTabConfig[] {
@@ -1573,10 +1710,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     tabBadge(tab: AdminTabKey): number | null {
         if (tab === 'POSTS') {
-            return this.pendingPosts().length;
+            return this.pendingPostsTotal;
         }
         if (tab === 'PAPERS') {
-            return this.pendingPapers().length;
+            return this.pendingPapersTotal;
         }
         return null;
     }
@@ -1822,6 +1959,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.selectedPaperIds.set(checked ? this.pendingPapers().map((paper) => paper.id) : []);
     }
 
+    applyPostSearch(): void {
+        this.loadPostsModeration();
+    }
+
+    clearPostSearch(): void {
+        this.postSearchQuery = '';
+        this.loadPostsModeration();
+    }
+
+    applyPaperSearch(): void {
+        this.loadPapersModeration();
+    }
+
+    clearPaperSearch(): void {
+        this.paperSearchQuery = '';
+        this.loadPapersModeration();
+    }
+
     openPostPreview(post: ModerationPostItem): void {
         this.previewPaper.set(null);
         this.previewPost.set(post);
@@ -1926,6 +2081,25 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         });
     }
 
+    deletePost(id: string): void {
+        if (!confirm('Bạn có chắc muốn xóa vĩnh viễn bài tuyển dụng này?')) {
+            return;
+        }
+
+        this.errorMessage = '';
+        this.moderationNotice = '';
+        const comment = this.postRejectComments[id] ?? '';
+        this.moderationService.deletePost(id, comment).subscribe((ok) => {
+            if (!ok) {
+                this.errorMessage = 'Không thể xóa bài tuyển dụng đã chọn.';
+                this.loadPendingModeration();
+                return;
+            }
+            this.removePostsFromQueue([id]);
+            this.moderationNotice = 'Đã xóa bài tuyển dụng khỏi hệ thống.';
+        });
+    }
+
     approvePaper(id: string): void {
         this.errorMessage = '';
         this.moderationNotice = '';
@@ -1955,6 +2129,25 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         });
     }
 
+    deletePaper(id: string): void {
+        if (!confirm('Bạn có chắc muốn xóa vĩnh viễn bài nghiên cứu này?')) {
+            return;
+        }
+
+        this.errorMessage = '';
+        this.moderationNotice = '';
+        const comment = this.paperRejectComments[id] ?? '';
+        this.moderationService.deletePaper(id, comment).subscribe((ok) => {
+            if (!ok) {
+                this.errorMessage = 'Không thể xóa bài nghiên cứu đã chọn.';
+                this.loadPendingModeration();
+                return;
+            }
+            this.removePapersFromQueue([id]);
+            this.moderationNotice = 'Đã xóa bài nghiên cứu khỏi hệ thống.';
+        });
+    }
+
     onHeroImageSelected(event: Event): void {
         this.errorMessage = '';
         this.heroNotice = '';
@@ -1965,18 +2158,40 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             return;
         }
 
-        this.adminContentService.uploadResearchHeroImage(file).subscribe({
+        this.isUploadingHeroImage = true;
+
+        this.adminContentService.uploadResearchHeroImage(file).pipe(
+            finalize(() => {
+                this.isUploadingHeroImage = false;
+                input.value = '';
+            })
+        ).subscribe({
             next: (imageUrl) => {
                 this.heroForm.imageUrl = imageUrl;
                 this.heroNotice = 'Đã tải ảnh hero lên thành công.';
             },
-            error: () => {
-                this.errorMessage = 'Không thể tải ảnh hero lên.';
+            error: (error: unknown) => {
+                if (error instanceof HttpErrorResponse) {
+                    if (error.status === 413) {
+                        this.errorMessage = 'Ảnh tải lên quá lớn. Vui lòng chọn file nhỏ hơn giới hạn cho phép.';
+                        return;
+                    }
+                    if (error.status === 401 || error.status === 403) {
+                        this.errorMessage = 'Phiên đăng nhập đã hết hạn hoặc không đủ quyền. Vui lòng đăng nhập lại.';
+                        return;
+                    }
+                }
+                this.errorMessage = 'Không thể tải ảnh hero lên. Vui lòng thử lại.';
             }
         });
     }
 
     saveHeroContent(): void {
+        if (this.isUploadingHeroImage) {
+            this.errorMessage = 'Ảnh hero đang được tải lên, vui lòng chờ hoàn tất rồi lưu.';
+            return;
+        }
+
         const payload = {
             titlePrefix: this.heroForm.titlePrefix.trim(),
             titleHighlight: this.heroForm.titleHighlight.trim(),
@@ -1984,8 +2199,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             imageUrl: this.heroForm.imageUrl.trim()
         };
 
-        if (!payload.titlePrefix || !payload.titleHighlight || !payload.subtitle || !payload.imageUrl) {
+        if (!payload.titlePrefix || !payload.titleHighlight || !payload.subtitle) {
             this.errorMessage = 'Vui lòng nhập đầy đủ nội dung hero.';
+            return;
+        }
+        if (!payload.imageUrl) {
+            this.errorMessage = 'Vui lòng nhập URL ảnh hoặc upload ảnh hero.';
             return;
         }
 
@@ -2485,11 +2704,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             case 'MODERATION_PAPERS_VIEW':
                 return 'Xem danh sách bài nghiên cứu chờ duyệt';
             case 'MODERATION_PAPERS_ACTION':
-                return 'Duyệt hoặc từ chối bài nghiên cứu';
+                return 'Duyệt, từ chối hoặc xóa bài nghiên cứu';
             case 'MODERATION_POSTS_VIEW':
                 return 'Xem danh sách tin tuyển dụng chờ duyệt';
             case 'MODERATION_POSTS_ACTION':
-                return 'Duyệt hoặc từ chối tin tuyển dụng';
+                return 'Duyệt, từ chối hoặc xóa tin tuyển dụng';
             case 'RESEARCH_HERO_EDIT':
                 return 'Chỉnh nội dung hero trang nghiên cứu';
             case 'RESEARCH_CATEGORY_MANAGE':
@@ -2738,46 +2957,90 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     private loadPendingModeration(): void {
-        // Allow VIEW if user has either VIEW or ACTION permission
-        const canViewPosts = this.can('MODERATION_POSTS_VIEW') || this.can('MODERATION_POSTS_ACTION');
-        const canViewPapers = this.can('MODERATION_PAPERS_VIEW') || this.can('MODERATION_PAPERS_ACTION');
+        this.loadPostsModeration();
+        this.loadPapersModeration();
+    }
 
-        if (canViewPosts) {
-            this.moderationService.getPosts(ApprovalStatus.PENDING).pipe(take(1)).subscribe((posts) => {
-                this.pendingPosts.set(posts);
-                this.selectedPostIds.update((selected) => selected.filter((id) => posts.some((post) => post.id === id)));
-                const activePreview = this.previewPost();
-                if (activePreview) {
-                    const refreshed = posts.find((post) => post.id === activePreview.id) ?? null;
-                    this.previewPost.set(refreshed);
-                }
-            });
-        } else {
+    private loadPostsModeration(): void {
+        const canViewPosts = this.can('MODERATION_POSTS_VIEW') || this.can('MODERATION_POSTS_ACTION');
+        if (!canViewPosts) {
             this.pendingPosts.set([]);
+            this.approvedPosts.set([]);
+            this.pendingPostsTotal = 0;
+            this.approvedPostsTotal = 0;
             this.selectedPostIds.set([]);
             this.previewPost.set(null);
+            return;
         }
 
-        if (canViewPapers) {
-            this.moderationService.getPapers(ApprovalStatus.PENDING).pipe(take(1)).subscribe((papers) => {
-                this.pendingPapers.set(papers);
-                this.selectedPaperIds.update((selected) => selected.filter((id) => papers.some((paper) => paper.id === id)));
-                const activePreview = this.previewPaper();
-                if (activePreview) {
-                    const refreshed = papers.find((paper) => paper.id === activePreview.id) ?? null;
-                    this.previewPaper.set(refreshed);
-                }
-            });
-        } else {
+        const keyword = this.postSearchQuery.trim();
+        forkJoin({
+            pending: this.moderationService
+                .getPostsPaged(ApprovalStatus.PENDING, keyword, 0, this.moderationPageSize)
+                .pipe(take(1)),
+            approved: this.moderationService
+                .getPostsPaged(ApprovalStatus.APPROVED, keyword, 0, this.moderationPageSize)
+                .pipe(take(1))
+        }).subscribe(({ pending, approved }) => {
+            const pendingContent = pending.content ?? [];
+            const approvedContent = approved.content ?? [];
+            this.pendingPosts.set(pendingContent);
+            this.approvedPosts.set(approvedContent);
+            this.pendingPostsTotal = pending.pageInfo?.totalElements ?? pendingContent.length;
+            this.approvedPostsTotal = approved.pageInfo?.totalElements ?? approvedContent.length;
+            this.selectedPostIds.update((selected) => selected.filter((id) => pendingContent.some((post) => post.id === id)));
+            const activePreview = this.previewPost();
+            if (activePreview) {
+                const refreshed = [...pendingContent, ...approvedContent].find((post) => post.id === activePreview.id) ?? null;
+                this.previewPost.set(refreshed);
+            }
+        });
+    }
+
+    private loadPapersModeration(): void {
+        const canViewPapers = this.can('MODERATION_PAPERS_VIEW') || this.can('MODERATION_PAPERS_ACTION');
+        if (!canViewPapers) {
             this.pendingPapers.set([]);
+            this.approvedPapers.set([]);
+            this.pendingPapersTotal = 0;
+            this.approvedPapersTotal = 0;
             this.selectedPaperIds.set([]);
             this.previewPaper.set(null);
+            return;
         }
+
+        const keyword = this.paperSearchQuery.trim();
+        forkJoin({
+            pending: this.moderationService
+                .getPapersPaged(ApprovalStatus.PENDING, keyword, 0, this.moderationPageSize)
+                .pipe(take(1)),
+            approved: this.moderationService
+                .getPapersPaged(ApprovalStatus.APPROVED, keyword, 0, this.moderationPageSize)
+                .pipe(take(1))
+        }).subscribe(({ pending, approved }) => {
+            const pendingContent = pending.content ?? [];
+            const approvedContent = approved.content ?? [];
+            this.pendingPapers.set(pendingContent);
+            this.approvedPapers.set(approvedContent);
+            this.pendingPapersTotal = pending.pageInfo?.totalElements ?? pendingContent.length;
+            this.approvedPapersTotal = approved.pageInfo?.totalElements ?? approvedContent.length;
+            this.selectedPaperIds.update((selected) => selected.filter((id) => pendingContent.some((paper) => paper.id === id)));
+            const activePreview = this.previewPaper();
+            if (activePreview) {
+                const refreshed = [...pendingContent, ...approvedContent].find((paper) => paper.id === activePreview.id) ?? null;
+                this.previewPaper.set(refreshed);
+            }
+        });
     }
 
     private removePostsFromQueue(ids: string[]): void {
         const removedIds = new Set(ids);
+        const pendingRemoved = this.pendingPosts().filter((item) => removedIds.has(item.id)).length;
+        const approvedRemoved = this.approvedPosts().filter((item) => removedIds.has(item.id)).length;
         this.pendingPosts.update((prev) => prev.filter((item) => !removedIds.has(item.id)));
+        this.approvedPosts.update((prev) => prev.filter((item) => !removedIds.has(item.id)));
+        this.pendingPostsTotal = Math.max(0, this.pendingPostsTotal - pendingRemoved);
+        this.approvedPostsTotal = Math.max(0, this.approvedPostsTotal - approvedRemoved);
         this.selectedPostIds.update((prev) => prev.filter((id) => !removedIds.has(id)));
         for (const id of ids) {
             delete this.postRejectComments[id];
@@ -2790,7 +3053,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     private removePapersFromQueue(ids: string[]): void {
         const removedIds = new Set(ids);
+        const pendingRemoved = this.pendingPapers().filter((item) => removedIds.has(item.id)).length;
+        const approvedRemoved = this.approvedPapers().filter((item) => removedIds.has(item.id)).length;
         this.pendingPapers.update((prev) => prev.filter((item) => !removedIds.has(item.id)));
+        this.approvedPapers.update((prev) => prev.filter((item) => !removedIds.has(item.id)));
+        this.pendingPapersTotal = Math.max(0, this.pendingPapersTotal - pendingRemoved);
+        this.approvedPapersTotal = Math.max(0, this.approvedPapersTotal - approvedRemoved);
         this.selectedPaperIds.update((prev) => prev.filter((id) => !removedIds.has(id)));
         for (const id of ids) {
             delete this.paperRejectComments[id];

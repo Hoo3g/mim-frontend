@@ -17,7 +17,6 @@ import { firstValueFrom } from 'rxjs';
 import {
   GlobalWorkerOptions,
   getDocument,
-  version as pdfjsVersion,
   type PDFDocumentLoadingTask,
   type PDFDocumentProxy,
   type PDFPageProxy,
@@ -140,6 +139,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   private renderToken = 0;
   private isDestroyed = false;
   private resizeTimer: ReturnType<typeof setTimeout> | null = null;
+  private workerFallbackPromise: Promise<void> | null = null;
 
   constructor() {
     effect(() => {
@@ -274,6 +274,22 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
       if (this.loadingTask) {
         await this.loadingTask.destroy();
         this.loadingTask = null;
+      }
+
+      if (this.isWorkerBootstrapError(primaryError)) {
+        try {
+          await this.ensureMainThreadWorkerFallback();
+          this.loadingTask = getDocument({
+            url: source,
+            withCredentials: true
+          });
+          return await this.loadingTask.promise;
+        } catch {
+          if (this.loadingTask) {
+            await this.loadingTask.destroy();
+            this.loadingTask = null;
+          }
+        }
       }
 
       try {
@@ -556,7 +572,52 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
     if (typeof window === 'undefined' || GlobalWorkerOptions.workerSrc) {
       return;
     }
-    GlobalWorkerOptions.workerSrc = `/assets/pdfjs/pdf.worker.min.mjs?v=${encodeURIComponent(pdfjsVersion)}`;
+    GlobalWorkerOptions.workerSrc = '/assets/pdfjs/pdf.worker.min.mjs';
+  }
+
+  private isWorkerBootstrapError(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+      return false;
+    }
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('setting up fake worker failed') ||
+      message.includes('failed to fetch dynamically imported module')
+    );
+  }
+
+  private async ensureMainThreadWorkerFallback(): Promise<void> {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const globalScope = globalThis as typeof globalThis & {
+      pdfjsWorker?: {
+        WorkerMessageHandler?: unknown;
+      };
+    };
+
+    if (globalScope.pdfjsWorker?.WorkerMessageHandler) {
+      return;
+    }
+
+    if (!this.workerFallbackPromise) {
+      this.workerFallbackPromise = import('pdfjs-dist/legacy/build/pdf.worker.min.mjs')
+        .then((workerModule: { WorkerMessageHandler?: unknown }) => {
+          if (!workerModule.WorkerMessageHandler) {
+            throw new Error('PDF worker module is missing WorkerMessageHandler.');
+          }
+          globalScope.pdfjsWorker = {
+            ...(globalScope.pdfjsWorker ?? {}),
+            WorkerMessageHandler: workerModule.WorkerMessageHandler
+          };
+        })
+        .finally(() => {
+          this.workerFallbackPromise = null;
+        });
+    }
+
+    await this.workerFallbackPromise;
   }
 
   private resolveLoadErrorMessage(error: unknown): string {
