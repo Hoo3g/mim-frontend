@@ -8,10 +8,8 @@ import { ApiResponse } from '../models/api-response.model';
 import {
     AuthApiUser,
     AuthResponse,
-    GoogleLoginRequest,
     LoginRequest,
     RegisterRequest,
-    UserType
 } from '../../features/auth/models/auth.model';
 import { authSignal } from '../signals/auth.signal';
 import { Role } from '../enums/role.enum';
@@ -34,13 +32,6 @@ export class AuthService {
     register(request: RegisterRequest): Observable<AuthApiUser> {
         return this.http.post<ApiResponse<AuthApiUser>>(API_ENDPOINTS.AUTH.REGISTER, request, { withCredentials: true }).pipe(
             map((response) => unwrap(response))
-        );
-    }
-
-    loginWithGoogle(payload: GoogleLoginRequest): Observable<AuthResponse> {
-        return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, payload, { withCredentials: true }).pipe(
-            map((response) => unwrap(response)),
-            map((auth) => this.persistAuth(auth))
         );
     }
 

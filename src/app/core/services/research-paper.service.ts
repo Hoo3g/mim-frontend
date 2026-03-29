@@ -18,13 +18,16 @@ export interface ResearchEditorPayload {
     title: string;
     abstract: string;
     researchArea: string;
+    paperType: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS';
     pdfUrl?: string;
 }
 
 export interface ResearchPaperListQuery {
     q?: string;
     type?: 'LECTURER' | 'STUDENT' | 'ALL' | null;
+    paperType?: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS' | 'ALL' | null;
     specialization?: string[] | null;
+    year?: number | null;
     metric?: 'views' | 'downloads' | 'bookmarks' | null;
 }
 
@@ -46,6 +49,7 @@ interface ResearchPaperApiModel {
     title: string;
     abstract?: string;
     pdfUrl?: string;
+    paperType?: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS' | string;
     publicationYear?: number;
     journalConference?: string;
     researchArea?: string;
@@ -65,6 +69,7 @@ interface ResearchBookmarkApiModel {
     title?: string;
     researchArea?: string;
     category?: Role.LECTURER | Role.STUDENT | string;
+    paperType?: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS' | string;
     publicationYear?: number | null;
     savedAt?: string | Date | null;
 }
@@ -189,7 +194,8 @@ export class ResearchPaperService {
         const title = payload.title.trim();
         const abstract = normalizeRichTextHtml(payload.abstract).trim();
         const researchArea = payload.researchArea?.trim();
-        if (!title || !abstract || !researchArea) {
+        const paperType = payload.paperType;
+        if (!title || !abstract || !researchArea || !paperType) {
             return of(null);
         }
 
@@ -197,6 +203,7 @@ export class ResearchPaperService {
             title,
             abstract,
             researchArea,
+            paperType,
             pdfUrl: payload.pdfUrl
         };
 
@@ -337,6 +344,8 @@ export class ResearchPaperService {
         let params = new HttpParams();
         const keyword = (query.q ?? '').trim();
         const type = query.type && query.type !== 'ALL' ? query.type : '';
+        const paperType = query.paperType && query.paperType !== 'ALL' ? query.paperType : '';
+        const year = typeof query.year === 'number' && query.year > 0 ? query.year : null;
         const metric = (query.metric ?? '').trim();
         const specializations = (query.specialization ?? [])
             .map((item) => (item ?? '').trim())
@@ -347,6 +356,12 @@ export class ResearchPaperService {
         }
         if (type) {
             params = params.set('type', type);
+        }
+        if (paperType) {
+            params = params.set('paperType', paperType);
+        }
+        if (year != null) {
+            params = params.set('year', String(year));
         }
         if (metric) {
             params = params.set('metric', metric);
@@ -361,13 +376,15 @@ export class ResearchPaperService {
     private buildListCacheKey(query: ResearchPaperListQuery): string {
         const keyword = (query.q ?? '').trim().toLowerCase();
         const type = query.type && query.type !== 'ALL' ? query.type : '';
+        const paperType = query.paperType && query.paperType !== 'ALL' ? query.paperType : '';
+        const year = typeof query.year === 'number' && query.year > 0 ? String(query.year) : '';
         const metric = (query.metric ?? '').trim().toLowerCase();
         const specializations = (query.specialization ?? [])
             .map((item) => (item ?? '').trim().toLowerCase())
             .filter((item) => !!item)
             .sort()
             .join('|');
-        return `q=${keyword};type=${type};metric=${metric};specialization=${specializations}`;
+        return `q=${keyword};type=${type};paperType=${paperType};year=${year};metric=${metric};specialization=${specializations}`;
     }
 
 
@@ -394,6 +411,7 @@ export class ResearchPaperService {
             title: apiPaper.title ?? UI_LABELS.UNTITLED,
             abstract: normalizeRichTextHtml(apiPaper.abstract ?? ''),
             pdfUrl: apiPaper.pdfUrl ?? '',
+            paperType: apiPaper.paperType === 'GRADUATION_THESIS' ? 'GRADUATION_THESIS' : 'SCIENTIFIC_RESEARCH',
             publicationYear: apiPaper.publicationYear ?? new Date().getFullYear(),
             journalConference: apiPaper.journalConference ?? UI_LABELS.DEFAULT_JOURNAL,
             researchArea: apiPaper.researchArea ?? UI_LABELS.UNCLASSIFIED,
@@ -415,6 +433,7 @@ export class ResearchPaperService {
             title: item.title?.trim() || UI_LABELS.UNTITLED,
             researchArea: item.researchArea?.trim() || UI_LABELS.UNCLASSIFIED,
             category: item.category === Role.LECTURER ? Role.LECTURER : Role.STUDENT,
+            paperType: item.paperType === 'GRADUATION_THESIS' ? 'GRADUATION_THESIS' : 'SCIENTIFIC_RESEARCH',
             publicationYear: item.publicationYear ?? null,
             savedAt: item.savedAt ? parseDate(item.savedAt) : null
         };

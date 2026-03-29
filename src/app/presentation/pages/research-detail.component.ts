@@ -58,6 +58,7 @@ interface PaperDetailState {
           <header class="mb-8 sm:mb-12 border-b-2 border-hus-blue pb-8 sm:pb-12">
             <div class="flex items-center gap-3 mb-6 text-[11px] font-bold uppercase tracking-tighter">
               <span class="bg-hus-blue text-white px-3 py-1">{{ paper.category === 'LECTURER' ? 'GIẢNG VIÊN' : 'SINH VIÊN' }}</span>
+              <span class="border border-hus-blue/20 bg-blue-50 px-3 py-1 text-hus-blue">{{ paper.paperType === 'GRADUATION_THESIS' ? 'KHÓA LUẬN TỐT NGHIỆP' : 'NGHIÊN CỨU KHOA HỌC' }}</span>
               <span class="text-gray-300">|</span>
               <span class="text-hus-blue">{{ paper.publicationYear }}</span>
               <button *ngIf="isAuth()"
@@ -209,7 +210,7 @@ export class ResearchDetailComponent {
         this.trackedPaperId = paperId;
       }
 
-      const trackView$ = shouldTrackView
+      const trackView$ = shouldTrackView && this.isAuth()
         ? this.paperService.trackView(paperId).pipe(catchError(() => of(void 0)))
         : of(void 0);
 
@@ -250,7 +251,11 @@ export class ResearchDetailComponent {
     }
 
     this.isDownloadingPdf = true;
-    this.paperService.trackDownload(paper.id).pipe(
+    const trackDownload$ = this.isAuth()
+      ? this.paperService.trackDownload(paper.id).pipe(catchError(() => of(void 0)))
+      : of(void 0);
+
+    trackDownload$.pipe(
       catchError(() => of(void 0)),
       switchMap(() => this.http.get(resolved, { observe: 'response', responseType: 'blob' })),
       finalize(() => {

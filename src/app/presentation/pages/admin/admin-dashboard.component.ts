@@ -11,6 +11,7 @@ import { AdminModerationService } from '../../../core/services/admin-moderation.
 import { AdminContentService } from '../../../core/services/admin-content.service';
 import { ContentService } from '../../../core/services/content.service';
 import { AdminRbacService } from '../../../core/services/admin-rbac.service';
+import { AdminUserManagementService } from '../../../core/services/admin-user-management.service';
 import { AdminResearchCategoryService } from '../../../core/services/admin-research-category.service';
 import { AdminSpecializationService } from '../../../core/services/admin-specialization.service';
 import { AdminRecruitmentCategoryService } from '../../../core/services/admin-recruitment-category.service';
@@ -1182,9 +1183,101 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
 	        </div>
 
         <div *ngIf="currentTab === 'RBAC' && can('RBAC_MANAGE')" class="bg-white border border-gray-100 p-6 md:p-8 space-y-6">
-          <div>
-            <h2 class="text-lg font-black text-gray-900 uppercase tracking-widest">Phân quyền tài khoản thấp hơn</h2>
-            <p class="mt-2 text-[11px] text-gray-500">Mặc định user sẽ theo vai trò gốc (không tự có quyền admin). Chỉ khi bạn cấp thêm thì user mới có quyền nâng cao.</p>
+
+          <div class="border border-gray-100 bg-gray-50 p-4 sm:p-5 space-y-4">
+            <div>
+              <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Tạo tài khoản</h3>
+              <p class="mt-2 text-[11px] text-gray-500">Dùng để tạo nhanh tài khoản sinh viên hoặc doanh nghiệp. Tài khoản được tạo từ đây sẽ ở trạng thái dùng được ngay.</p>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                (click)="adminCreatedUserType = 'STUDENT'"
+                [class.border-hus-blue]="adminCreatedUserType === 'STUDENT'"
+                [class.bg-blue-50]="adminCreatedUserType === 'STUDENT'"
+                class="border border-gray-200 px-4 py-3 text-left transition-colors">
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-900">Sinh viên</p>
+                <p class="mt-1 text-[11px] text-gray-500">Tạo tài khoản kèm mã sinh viên.</p>
+              </button>
+
+              <button
+                type="button"
+                (click)="adminCreatedUserType = 'COMPANY'"
+                [class.border-hus-blue]="adminCreatedUserType === 'COMPANY'"
+                [class.bg-blue-50]="adminCreatedUserType === 'COMPANY'"
+                class="border border-gray-200 px-4 py-3 text-left transition-colors">
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-900">Doanh nghiệp</p>
+                <p class="mt-1 text-[11px] text-gray-500">Tạo tài khoản công ty để đăng tuyển dụng.</p>
+              </button>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Họ và tên</label>
+                <input
+                  [(ngModel)]="adminCreatedUserForm.fullName"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="text"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue"
+                  placeholder="Nguyễn Văn A">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Email</label>
+                <input
+                  [(ngModel)]="adminCreatedUserForm.email"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="email"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue"
+                  placeholder="user@example.com">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Mật khẩu</label>
+                <input
+                  [(ngModel)]="adminCreatedUserForm.password"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="password"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue"
+                  placeholder="********">
+              </div>
+
+              <div *ngIf="adminCreatedUserType === 'STUDENT'">
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Mã sinh viên</label>
+                <input
+                  [(ngModel)]="adminCreatedUserForm.studentId"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="text"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue"
+                  placeholder="21001234">
+              </div>
+
+              <div *ngIf="adminCreatedUserType === 'COMPANY'">
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Tên công ty</label>
+                <input
+                  [(ngModel)]="adminCreatedUserForm.companyName"
+                  [ngModelOptions]="{ standalone: true }"
+                  type="text"
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue"
+                  placeholder="Công ty ABC">
+              </div>
+            </div>
+
+            <div *ngIf="adminCreatedUserNotice"
+                 class="border border-emerald-200 bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-widest px-4 py-3">
+              {{ adminCreatedUserNotice }}
+            </div>
+
+            <div class="flex justify-end">
+              <button
+                type="button"
+                (click)="createUserByAdmin()"
+                [disabled]="creatingAdminManagedUser"
+                class="px-5 py-2 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-blue transition-colors disabled:opacity-50">
+                {{ creatingAdminManagedUser ? 'Đang tạo...' : 'Tạo tài khoản' }}
+              </button>
+            </div>
           </div>
 
           <div *ngIf="rbacNotice" class="border border-hus-blue/20 bg-blue-50 text-hus-blue text-[10px] font-bold uppercase tracking-widest px-4 py-3">
@@ -1425,6 +1518,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private readonly adminContentService = inject(AdminContentService);
     private readonly adminNewsService = inject(AdminNewsService);
     private readonly adminRbacService = inject(AdminRbacService);
+    private readonly adminUserManagementService = inject(AdminUserManagementService);
     private readonly adminResearchCategoryService = inject(AdminResearchCategoryService);
     private readonly adminSpecializationService = inject(AdminSpecializationService);
     private readonly adminRecruitmentCategoryService = inject(AdminRecruitmentCategoryService);
@@ -1482,7 +1576,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         },
         {
             key: 'RBAC',
-            label: 'Phân quyền',
+            label: 'tạo tài khoản',
             helper: 'Cấp quyền thao tác nâng cao',
             permission: 'RBAC_MANAGE'
         }
@@ -1547,6 +1641,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     rbacUserSearch = '';
     selectedRbacUserId: string | null = null;
     permissionToAdd = '';
+    adminCreatedUserType: 'STUDENT' | 'COMPANY' = 'STUDENT';
+    adminCreatedUserForm = {
+        fullName: '',
+        email: '',
+        password: '',
+        studentId: '',
+        companyName: ''
+    };
+    creatingAdminManagedUser = false;
+    adminCreatedUserNotice = '';
 
     specializations: ResearchCategory[] = [];
     specializationForm = {
@@ -2695,6 +2799,94 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             return;
         }
         this.setDraftEffect(this.selectedRbacUserId, permissionName, 'INHERIT');
+    }
+
+    createUserByAdmin(): void {
+        const validationError = this.validateAdminManagedUserForm();
+        if (validationError) {
+            this.errorMessage = validationError;
+            this.adminCreatedUserNotice = '';
+            return;
+        }
+
+        const payload = this.buildAdminManagedUserPayload();
+        if (!payload) {
+            return;
+        }
+
+        this.creatingAdminManagedUser = true;
+        this.errorMessage = '';
+        this.adminCreatedUserNotice = '';
+
+        this.adminUserManagementService.createUser(payload)
+            .pipe(finalize(() => {
+                this.creatingAdminManagedUser = false;
+            }))
+            .subscribe((createdUser) => {
+                if (!createdUser) {
+                    this.errorMessage = 'Không thể tạo tài khoản theo yêu cầu.';
+                    return;
+                }
+
+                this.adminCreatedUserNotice = `Đã tạo tài khoản ${createdUser.email}.`;
+                this.resetAdminManagedUserForm();
+                this.loadRbacData();
+            });
+    }
+
+    private buildAdminManagedUserPayload(): { email: string; password: string; fullName: string; userType: 'STUDENT' | 'COMPANY'; studentId?: string; companyName?: string } | null {
+        const payload = {
+            email: this.adminCreatedUserForm.email.trim(),
+            password: this.adminCreatedUserForm.password,
+            fullName: this.adminCreatedUserForm.fullName.trim(),
+            userType: this.adminCreatedUserType
+        } as { email: string; password: string; fullName: string; userType: 'STUDENT' | 'COMPANY'; studentId?: string; companyName?: string };
+
+        if (this.adminCreatedUserType === 'STUDENT') {
+            payload.studentId = this.adminCreatedUserForm.studentId.trim().toUpperCase();
+        } else {
+            payload.companyName = this.adminCreatedUserForm.companyName.trim();
+        }
+
+        return payload;
+    }
+
+    private validateAdminManagedUserForm(): string | null {
+        const fullName = this.adminCreatedUserForm.fullName.trim();
+        const email = this.adminCreatedUserForm.email.trim();
+        const password = this.adminCreatedUserForm.password;
+
+        if (!fullName || !email || !password) {
+            return 'Vui lòng nhập đầy đủ họ tên, email và mật khẩu.';
+        }
+
+        if (!email.includes('@')) {
+            return 'Email tài khoản không hợp lệ.';
+        }
+
+        if (password.length < 6) {
+            return 'Mật khẩu phải có ít nhất 6 ký tự.';
+        }
+
+        if (this.adminCreatedUserType === 'STUDENT' && !this.adminCreatedUserForm.studentId.trim()) {
+            return 'Vui lòng nhập mã sinh viên.';
+        }
+
+        if (this.adminCreatedUserType === 'COMPANY' && !this.adminCreatedUserForm.companyName.trim()) {
+            return 'Vui lòng nhập tên công ty.';
+        }
+
+        return null;
+    }
+
+    private resetAdminManagedUserForm(): void {
+        this.adminCreatedUserForm = {
+            fullName: '',
+            email: '',
+            password: '',
+            studentId: '',
+            companyName: ''
+        };
     }
 
     permissionLabel(permissionName: string): string {

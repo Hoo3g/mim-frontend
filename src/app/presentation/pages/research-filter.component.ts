@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -87,13 +87,109 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                           <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
                         </svg>
                       </span>
-                      <span class="break-words">{{ category.name }}</span>
+                      <span class="min-w-0 flex-1 break-words">{{ category.name }}</span>
+                      <span class="shrink-0 text-[10px] font-black tabular-nums text-gray-400"
+                            [class.text-hus-blue]="isSpecializationSelected(category.name)">
+                        ({{ getSpecializationCount(category.name) }})
+                      </span>
                     </button>
                     <div
                       *ngIf="specializations.length === 0"
                       class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-300 border border-dashed border-gray-100">
                       Chưa có phân loại
                     </div>
+                  </div>
+                </section>
+
+                <section class="bg-white border-t border-hus-blue/20 first:border-t-0 lg:border lg:border-hus-blue/30 lg:shadow-[0_16px_32px_-28px_rgba(30,102,170,0.35)]">
+                  <button
+                    type="button"
+                    (click)="toggleMobileSection('year')"
+                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue border-b border-hus-blue">
+                    <h3 class="text-[10px] font-bold text-white uppercase tracking-widest">Năm công bố</h3>
+                    <span *ngIf="isMobileViewport"
+                          class="text-sm font-black text-white/80 leading-none min-w-[1rem] text-right">
+                      {{ isMobileSectionOpen('year') ? '-' : '+' }}
+                    </span>
+                  </button>
+
+                  <div *ngIf="shouldShowSection('year')" class="space-y-2 px-3 py-3 sm:px-4 sm:py-4">
+                    <select
+                      [(ngModel)]="yearFilterValue"
+                      [ngModelOptions]="{ standalone: true }"
+                      (ngModelChange)="onYearFilterChange($event)"
+                      class="w-full border border-gray-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-tight text-gray-700 focus:outline-none focus:border-hus-blue">
+                      <option value="">Tất cả năm</option>
+                      <option *ngFor="let year of availablePublicationYears" [value]="year">{{ year }}</option>
+                    </select>
+                  </div>
+                </section>
+
+                <section class="bg-white border-t border-hus-blue/20 first:border-t-0 lg:border lg:border-hus-blue/30 lg:shadow-[0_16px_32px_-28px_rgba(30,102,170,0.35)]">
+                  <button
+                    type="button"
+                    (click)="toggleMobileSection('paperTypes')"
+                    class="w-full flex items-center justify-between gap-3 text-left px-3 py-3 sm:px-4 bg-hus-blue border-b border-hus-blue">
+                    <h3 class="text-[10px] font-bold text-white uppercase tracking-widest">Loại bài</h3>
+                    <span *ngIf="isMobileViewport"
+                          class="text-sm font-black text-white/80 leading-none min-w-[1rem] text-right">
+                      {{ isMobileSectionOpen('paperTypes') ? '-' : '+' }}
+                    </span>
+                  </button>
+
+                  <div *ngIf="shouldShowSection('paperTypes')" class="space-y-2 px-3 py-3 sm:px-4 sm:py-4">
+                    <button
+                      type="button"
+                      (click)="setPaperTypeFilter('SCIENTIFIC_RESEARCH')"
+                      [class.text-hus-blue]="paperTypeFilter === 'SCIENTIFIC_RESEARCH'"
+                      [class.bg-blue-50]="paperTypeFilter === 'SCIENTIFIC_RESEARCH'"
+                      class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
+                      <span
+                        class="w-4 h-4 shrink-0 rounded-full border-2 transition-colors flex items-center justify-center"
+                        [ngClass]="paperTypeFilter === 'SCIENTIFIC_RESEARCH' ? 'border-hus-blue bg-hus-blue' : 'border-gray-400 bg-white'">
+                        <svg
+                          *ngIf="paperTypeFilter === 'SCIENTIFIC_RESEARCH'"
+                          viewBox="0 0 12 12"
+                          class="w-2.5 h-2.5 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true">
+                          <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                      </span>
+                      <span class="min-w-0 flex-1">Nghien cuu khoa hoc</span>
+                      <span class="shrink-0 text-[10px] font-black tabular-nums text-gray-400"
+                            [class.text-hus-blue]="paperTypeFilter === 'SCIENTIFIC_RESEARCH'">
+                        ({{ getPaperTypeCount('SCIENTIFIC_RESEARCH') }})
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      (click)="setPaperTypeFilter('GRADUATION_THESIS')"
+                      [class.text-hus-blue]="paperTypeFilter === 'GRADUATION_THESIS'"
+                      [class.bg-blue-50]="paperTypeFilter === 'GRADUATION_THESIS'"
+                      class="w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-tight hover:bg-gray-50 transition-colors flex items-center gap-3">
+                      <span
+                        class="w-4 h-4 shrink-0 rounded-full border-2 transition-colors flex items-center justify-center"
+                        [ngClass]="paperTypeFilter === 'GRADUATION_THESIS' ? 'border-hus-blue bg-hus-blue' : 'border-gray-400 bg-white'">
+                        <svg
+                          *ngIf="paperTypeFilter === 'GRADUATION_THESIS'"
+                          viewBox="0 0 12 12"
+                          class="w-2.5 h-2.5 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true">
+                          <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                      </span>
+                      <span class="min-w-0 flex-1">Khoa luan tot nghiep</span>
+                      <span class="shrink-0 text-[10px] font-black tabular-nums text-gray-400"
+                            [class.text-hus-blue]="paperTypeFilter === 'GRADUATION_THESIS'">
+                        ({{ getPaperTypeCount('GRADUATION_THESIS') }})
+                      </span>
+                    </button>
                   </div>
                 </section>
 
@@ -212,7 +308,11 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                           <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
                         </svg>
                       </span>
-                      <span>Giảng viên</span>
+                      <span class="min-w-0 flex-1">Giang vien</span>
+                      <span class="shrink-0 text-[10px] font-black tabular-nums text-gray-400"
+                            [class.text-hus-blue]="roleFilter === 'LECTURER'">
+                        ({{ getRoleCount('LECTURER') }})
+                      </span>
                     </button>
                     <button
                       type="button"
@@ -234,7 +334,11 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                           <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
                         </svg>
                       </span>
-                      <span>Sinh viên</span>
+                      <span class="min-w-0 flex-1">Sinh vien</span>
+                      <span class="shrink-0 text-[10px] font-black tabular-nums text-gray-400"
+                            [class.text-hus-blue]="roleFilter === 'STUDENT'">
+                        ({{ getRoleCount('STUDENT') }})
+                      </span>
                     </button>
                   </div>
                 </section>
@@ -298,6 +402,8 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                       <span class="text-gray-300">•</span>
                       <span>{{ paper.researchArea || 'Chưa phân loại' }}</span>
                       <span class="text-gray-300">•</span>
+                      <span>{{ paper.paperType === 'GRADUATION_THESIS' ? 'Khóa luận tốt nghiệp' : 'Nghiên cứu khoa học' }}</span>
+                      <span class="text-gray-300">â€¢</span>
                       <span class="tabular-nums">{{ paper.publicationYear }}</span>
                     </div>
 
@@ -347,6 +453,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
 export class ResearchFilterComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly researchCategoryService = inject(ResearchCategoryService);
@@ -355,7 +462,10 @@ export class ResearchFilterComponent implements OnInit {
   private readonly mobileBreakpoint = 768;
 
   roleFilter: 'LECTURER' | 'STUDENT' | null = null;
+  paperTypeFilter: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS' | null = null;
   metricSort: 'views' | 'downloads' | 'bookmarks' | null = null;
+  yearFilter: number | null = null;
+  yearFilterValue = '';
   selectedSpecializations: string[] = [];
   searchKeyword = '';
   isLoadingSpecializations = true;
@@ -364,9 +474,20 @@ export class ResearchFilterComponent implements OnInit {
   totalPaperCount = 0;
   specializations: ResearchCategory[] = [];
   allPapers: ResearchPaper[] = [];
+  specializationCounts: Record<string, number> = {};
+  paperTypeCounts: Record<'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS', number> = {
+    SCIENTIFIC_RESEARCH: 0,
+    GRADUATION_THESIS: 0
+  };
+  roleCounts: Record<'LECTURER' | 'STUDENT', number> = {
+    LECTURER: 0,
+    STUDENT: 0
+  };
   isMobileViewport = false;
-  mobileSectionsOpen: Record<'specializations' | 'metrics' | 'roles', boolean> = {
+  mobileSectionsOpen: Record<'specializations' | 'paperTypes' | 'year' | 'metrics' | 'roles', boolean> = {
     specializations: false,
+    paperTypes: false,
+    year: false,
     metrics: false,
     roles: false
   };
@@ -383,7 +504,7 @@ export class ResearchFilterComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe(() => {
-        this.syncFiltersToUrl();
+        this.applyFilters();
       });
 
     this.researchCategoryService.getActiveCategories().subscribe((items) => {
@@ -392,20 +513,8 @@ export class ResearchFilterComponent implements OnInit {
       this.cdr.detectChanges();
     });
 
-    this.route.queryParamMap.subscribe((params) => {
-      const type = params.get('type');
-      const keyword = params.get('q');
-      const metric = params.get('metric');
-
-      this.roleFilter = type === 'LECTURER' || type === 'STUDENT' ? type : null;
-      this.metricSort = metric === 'views' || metric === 'downloads' || metric === 'bookmarks' ? metric : null;
-      this.selectedSpecializations = this.parseSpecializationsFromQuery(
-        params.getAll('specialization'),
-        params.get('specialization')
-      );
-      this.searchKeyword = keyword?.trim() ?? '';
-      this.resetAndLoadPapers();
-    });
+    this.hydrateFiltersFromQuery();
+    this.resetAndLoadPapers();
   }
 
   @HostListener('window:resize')
@@ -415,7 +524,9 @@ export class ResearchFilterComponent implements OnInit {
 
   get shouldShowFilterActions(): boolean {
     return this.roleFilter !== null
+      || this.paperTypeFilter !== null
       || this.metricSort !== null
+      || this.yearFilter !== null
       || this.selectedSpecializations.length > 0
       || !!this.searchKeyword.trim();
   }
@@ -426,13 +537,25 @@ export class ResearchFilterComponent implements OnInit {
   }
 
   setRoleFilter(value: 'LECTURER' | 'STUDENT'): void {
-    this.roleFilter = value;
-    this.syncFiltersToUrl();
+    this.roleFilter = this.roleFilter === value ? null : value;
+    this.applyFilters();
+  }
+
+  setPaperTypeFilter(value: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS'): void {
+    this.paperTypeFilter = this.paperTypeFilter === value ? null : value;
+    this.applyFilters();
   }
 
   setMetricSort(value: 'views' | 'downloads' | 'bookmarks'): void {
-    this.metricSort = value;
-    this.syncFiltersToUrl();
+    this.metricSort = this.metricSort === value ? null : value;
+    this.applyFilters();
+  }
+
+  onYearFilterChange(value: string): void {
+    const parsedYear = Number(value);
+    this.yearFilter = Number.isFinite(parsedYear) && parsedYear > 0 ? parsedYear : null;
+    this.yearFilterValue = this.yearFilter ? String(this.yearFilter) : '';
+    this.applyFilters();
   }
 
   toggleSpecializationFilter(value: string): void {
@@ -443,23 +566,23 @@ export class ResearchFilterComponent implements OnInit {
 
     if (this.selectedSpecializations.includes(normalizedValue)) {
       this.selectedSpecializations = this.selectedSpecializations.filter((item) => item !== normalizedValue);
-      this.syncFiltersToUrl();
+      this.applyFilters();
       return;
     }
 
     this.selectedSpecializations = [...this.selectedSpecializations, normalizedValue];
-    this.syncFiltersToUrl();
+    this.applyFilters();
   }
 
   isSpecializationSelected(value: string): boolean {
     return this.selectedSpecializations.includes((value ?? '').trim());
   }
 
-  shouldShowSection(section: 'specializations' | 'metrics' | 'roles'): boolean {
+  shouldShowSection(section: 'specializations' | 'paperTypes' | 'year' | 'metrics' | 'roles'): boolean {
     return !this.isMobileViewport || this.mobileSectionsOpen[section];
   }
 
-  toggleMobileSection(section: 'specializations' | 'metrics' | 'roles'): void {
+  toggleMobileSection(section: 'specializations' | 'paperTypes' | 'year' | 'metrics' | 'roles'): void {
     if (!this.isMobileViewport) {
       return;
     }
@@ -467,16 +590,19 @@ export class ResearchFilterComponent implements OnInit {
     this.mobileSectionsOpen[section] = !this.mobileSectionsOpen[section];
   }
 
-  isMobileSectionOpen(section: 'specializations' | 'metrics' | 'roles'): boolean {
+  isMobileSectionOpen(section: 'specializations' | 'paperTypes' | 'year' | 'metrics' | 'roles'): boolean {
     return this.mobileSectionsOpen[section];
   }
 
   clearFilters(): void {
     this.roleFilter = null;
+    this.paperTypeFilter = null;
     this.metricSort = null;
+    this.yearFilter = null;
+    this.yearFilterValue = '';
     this.selectedSpecializations = [];
     this.searchKeyword = '';
-    this.syncFiltersToUrl();
+    this.applyFilters();
   }
 
   loadMorePapers(): void {
@@ -496,6 +622,18 @@ export class ResearchFilterComponent implements OnInit {
   getMainAuthorName(paper: ResearchPaper): string {
     const mainAuthor = paper.authors.find((author) => author.isMainAuthor) ?? paper.authors[0];
     return mainAuthor?.name ?? 'Unknown';
+  }
+
+  getSpecializationCount(name: string): number {
+    return this.specializationCounts[(name ?? '').trim()] ?? 0;
+  }
+
+  getPaperTypeCount(type: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS'): number {
+    return this.paperTypeCounts[type] ?? 0;
+  }
+
+  getRoleCount(role: 'LECTURER' | 'STUDENT'): number {
+    return this.roleCounts[role] ?? 0;
   }
 
   private parseSpecializationsFromQuery(specializations: string[], fallback: string | null): string[] {
@@ -519,7 +657,9 @@ export class ResearchFilterComponent implements OnInit {
   private loadPapersPage(page: number): void {
     this.researchPaperService.getPapersPage({
       type: this.roleFilter,
+      paperType: this.paperTypeFilter,
       specialization: this.selectedSpecializations,
+      year: this.yearFilter,
       q: this.searchKeyword,
       metric: this.metricSort
     }, page, this.pageSize).subscribe({
@@ -545,27 +685,56 @@ export class ResearchFilterComponent implements OnInit {
     });
   }
 
-  private syncFiltersToUrl(): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: this.buildResearchQueryParams(),
-      queryParamsHandling: '',
-      replaceUrl: true
-    });
+  private applyFilters(): void {
+    this.syncFiltersToUrl();
+    this.resetAndLoadPapers();
   }
 
   private buildResearchQueryParams(): {
     type: 'LECTURER' | 'STUDENT' | null;
+    paperType: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS' | null;
     metric: 'views' | 'downloads' | 'bookmarks' | null;
+    year: number | null;
     specialization: string[] | null;
     q: string | null;
   } {
     return {
       type: this.roleFilter,
+      paperType: this.paperTypeFilter,
       metric: this.metricSort,
+      year: this.yearFilter,
       specialization: this.selectedSpecializations.length > 0 ? this.selectedSpecializations : null,
       q: this.searchKeyword.trim() || null
     };
+  }
+
+  private hydrateFiltersFromQuery(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const type = params.get('type');
+    const paperType = params.get('paperType');
+    const keyword = params.get('q');
+    const metric = params.get('metric');
+    const year = Number(params.get('year'));
+
+    this.roleFilter = type === 'LECTURER' || type === 'STUDENT' ? type : null;
+    this.paperTypeFilter = paperType === 'SCIENTIFIC_RESEARCH' || paperType === 'GRADUATION_THESIS' ? paperType : null;
+    this.metricSort = metric === 'views' || metric === 'downloads' || metric === 'bookmarks' ? metric : null;
+    this.yearFilter = Number.isFinite(year) && year > 0 ? year : null;
+    this.yearFilterValue = this.yearFilter ? String(this.yearFilter) : '';
+    this.selectedSpecializations = this.parseSpecializationsFromQuery(
+      params.getAll('specialization'),
+      params.get('specialization')
+    );
+    this.searchKeyword = keyword?.trim() ?? '';
+  }
+
+  private syncFiltersToUrl(): void {
+    const tree = this.router.createUrlTree([], {
+      relativeTo: this.route,
+      queryParams: this.buildResearchQueryParams(),
+      queryParamsHandling: ''
+    });
+    this.location.replaceState(this.router.serializeUrl(tree));
   }
 
   private resetAndLoadPapers(): void {
@@ -573,6 +742,9 @@ export class ResearchFilterComponent implements OnInit {
     this.totalPaperCount = 0;
     this.allPapers = [];
     this.hasMorePapers = false;
+    this.loadSpecializationCounts();
+    this.loadPaperTypeCounts();
+    this.loadRoleCounts();
     this.loadNextPage(true);
   }
 
@@ -592,4 +764,100 @@ export class ResearchFilterComponent implements OnInit {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < this.mobileBreakpoint;
     this.isMobileViewport = isMobile;
   }
+
+  private loadSpecializationCounts(): void {
+    this.researchPaperService.getPapersPage({
+      type: this.roleFilter,
+      paperType: this.paperTypeFilter,
+      specialization: null,
+      year: this.yearFilter,
+      q: this.searchKeyword,
+      metric: null
+    }, 0, 1000).subscribe({
+      next: (result) => {
+        const counts: Record<string, number> = {};
+        for (const paper of result.content ?? []) {
+          const key = (paper.researchArea ?? '').trim() || 'Chua phan loai';
+          counts[key] = (counts[key] ?? 0) + 1;
+        }
+        this.specializationCounts = counts;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.specializationCounts = {};
+      }
+    });
+  }
+
+  private loadPaperTypeCounts(): void {
+    this.researchPaperService.getPapersPage({
+      type: this.roleFilter,
+      paperType: null,
+      specialization: this.selectedSpecializations,
+      year: this.yearFilter,
+      q: this.searchKeyword,
+      metric: null
+    }, 0, 1000).subscribe({
+      next: (result) => {
+        const counts: Record<'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS', number> = {
+          SCIENTIFIC_RESEARCH: 0,
+          GRADUATION_THESIS: 0
+        };
+        for (const paper of result.content ?? []) {
+          const key = paper.paperType === 'GRADUATION_THESIS' ? 'GRADUATION_THESIS' : 'SCIENTIFIC_RESEARCH';
+          counts[key] += 1;
+        }
+        this.paperTypeCounts = counts;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.paperTypeCounts = {
+          SCIENTIFIC_RESEARCH: 0,
+          GRADUATION_THESIS: 0
+        };
+      }
+    });
+  }
+
+  private loadRoleCounts(): void {
+    this.researchPaperService.getPapersPage({
+      type: null,
+      paperType: this.paperTypeFilter,
+      specialization: this.selectedSpecializations,
+      year: this.yearFilter,
+      q: this.searchKeyword,
+      metric: null
+    }, 0, 1000).subscribe({
+      next: (result) => {
+        const counts: Record<'LECTURER' | 'STUDENT', number> = {
+          LECTURER: 0,
+          STUDENT: 0
+        };
+        for (const paper of result.content ?? []) {
+          const key = paper.category === 'LECTURER' ? 'LECTURER' : 'STUDENT';
+          counts[key] += 1;
+        }
+        this.roleCounts = counts;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.roleCounts = {
+          LECTURER: 0,
+          STUDENT: 0
+        };
+      }
+    });
+  }
+
+  get availablePublicationYears(): number[] {
+    const currentYear = new Date().getFullYear();
+    if (currentYear < 2025) {
+      return [2025];
+    }
+
+    return Array.from({ length: currentYear - 2025 + 1 }, (_, index) => currentYear - index);
+  }
 }
+
+
+
