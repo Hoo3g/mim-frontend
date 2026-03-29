@@ -67,6 +67,8 @@ import { authSignal } from '../../core/signals/auth.signal';
                   <div class="flex flex-wrap items-center gap-3 mb-3 text-[10px] font-bold uppercase tracking-widest">
                     <span class="text-hus-blue">{{ paper.researchArea }}</span>
                     <span class="text-gray-300">|</span>
+                    <span class="text-gray-400">{{ paper.paperType === 'GRADUATION_THESIS' ? 'Khóa luận tốt nghiệp' : 'Nghiên cứu khoa học' }}</span>
+                    <span class="text-gray-300">|</span>
                     <span class="text-gray-400 tabular-nums">{{ paper.publicationYear }}</span>
                     <span class="text-gray-300">|</span>
                     <span class="text-gray-400">{{ paper.category === 'LECTURER' ? 'Giảng viên' : 'Sinh viên' }}</span>

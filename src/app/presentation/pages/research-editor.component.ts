@@ -22,7 +22,7 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
       <div class="border-b border-gray-100 bg-blue-50/50 py-2.5 px-2 sm:py-3 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2 sm:gap-4 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-gray-400">
           <a [routerLink]="ROUTES.RESEARCH_MY_PAPERS" class="text-hus-blue hover:text-hus-dark transition">
-            Bài viết của tôi
+            Bai viet cua toi
           </a>
           <span class="text-gray-300">/</span>
           <span class="text-hus-blue opacity-70">{{ isEditMode ? 'Chỉnh sửa' : 'Soạn thảo' }}</span>
@@ -39,123 +39,134 @@ import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
           </p>
 
           <ng-container *ngIf="!isLoadingPaper; else loadingPaperTpl">
-          <form class="mt-6 sm:mt-8 space-y-5 sm:space-y-6" (ngSubmit)="save()">
-            <div>
-              <label for="title" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                Tên đề tài
-              </label>
-              <textarea id="title"
-                        name="title"
-                        [(ngModel)]="title"
-                        maxlength="255"
-                        rows="2"
+            <form class="mt-6 sm:mt-8 space-y-5 sm:space-y-6" (ngSubmit)="save()">
+              <div>
+                <label for="title" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                  Tên đề tài
+                </label>
+                <textarea id="title"
+                          name="title"
+                          [(ngModel)]="title"
+                          maxlength="255"
+                          rows="2"
+                          required
+                          data-title-field="true"
+                          (input)="onTitleInput($event)"
+                          class="w-full min-h-[76px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
+                          placeholder="Nhập tên đề tài nghiên cứu"></textarea>
+              </div>
+
+              <div>
+                <label for="paperType" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                  Loại bài nghiên cứu
+                </label>
+                <select id="paperType"
+                        name="paperType"
+                        [(ngModel)]="selectedPaperType"
                         required
-                        data-title-field="true"
-                        (input)="onTitleInput($event)"
-                        class="w-full min-h-[76px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
-                        placeholder="Nhập tên đề tài nghiên cứu"></textarea>
-            </div>
+                        class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors mb-5">
+                  <option value="SCIENTIFIC_RESEARCH">Nghiên cứu khoa học</option>
+                  <option value="GRADUATION_THESIS">Khóa luận tốt nghiệp</option>
+                </select>
 
-            <div>
-              <label for="researchArea" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                Phân loại bài viết
-              </label>
-              <select id="researchArea"
-                      name="researchArea"
-                      [(ngModel)]="selectedResearchArea"
-                      required
-                      class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
-                <option value="" disabled>
-                  {{ isLoadingCategories ? 'Đang tải danh mục...' : 'Chọn phân loại' }}
-                </option>
-                <option *ngFor="let category of researchCategories" [value]="category.name">
-                  {{ category.name }}
-                </option>
-                <option *ngIf="selectedResearchArea && !isKnownResearchArea(selectedResearchArea)"
-                        [value]="selectedResearchArea">
-                  {{ selectedResearchArea }} (không còn hoạt động)
-                </option>
-              </select>
-              <p *ngIf="!isLoadingCategories && researchCategories.length === 0"
-                 class="mt-2 text-[10px] font-bold uppercase tracking-widest text-amber-600">
-                Chưa có phân loại bài nghiên cứu. Liên hệ admin để thêm danh mục trước khi đăng bài.
-              </p>
-            </div>
-
-            <div class="w-full sm:max-w-4xl">
-              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                Tóm tắt
-              </label>
-              <div class="w-full border border-gray-200 bg-white overflow-hidden">
-                <ng-container *ngIf="isEditorReady; else editorLoadingTpl">
-                <quill-editor
-                  class="research-quill"
-                  name="abstract"
-                  format="html"
-                  theme="snow"
-                  [modules]="quillModules"
-                  [(ngModel)]="abstract"
-                  (ngModelChange)="onAbstractChange()"
-                  placeholder="Nhập nội dung tóm tắt công trình nghiên cứu...">
-                </quill-editor>
-                </ng-container>
-                <ng-template #editorLoadingTpl>
-                  <div class="min-h-[220px] px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-gray-300">
-                    Đang tải nội dung tóm tắt...
-                  </div>
-                </ng-template>
-              </div>
-              <p *ngIf="isAbstractBlank()" class="mt-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Dùng toolbar để định dạng nội dung dài: tiêu đề, căn lề, danh sách, trích dẫn, liên kết...
-              </p>
-            </div>
-
-            <div>
-              <label for="pdfFile" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                Tệp PDF hiển thị (không bắt buộc)
-              </label>
-              <input id="pdfFile"
-                     type="file"
-                     accept="application/pdf,.pdf"
-                     (change)="onPdfSelected($event)"
-                     class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue transition-colors file:mr-2 sm:file:mr-3 file:border-0 file:bg-hus-blue file:px-2.5 sm:file:px-3 file:py-2 file:text-[9px] sm:file:text-[10px] file:font-black file:text-white file:uppercase file:tracking-widest hover:file:bg-hus-dark">
-
-              <div class="mt-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 space-y-2">
-                <p>
-                  {{ selectedPdfName ? 'Tệp đã chọn: ' + selectedPdfName : (existingPdfUrl ? 'Tệp hiện tại: ' + existingPdfFileName : 'Chưa có file PDF') }}
+                <label for="researchArea" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                  Phân loại bài viết
+                </label>
+                <select id="researchArea"
+                        name="researchArea"
+                        [(ngModel)]="selectedResearchArea"
+                        required
+                        class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
+                  <option value="" disabled>
+                    {{ isLoadingCategories ? 'Dang tai danh muc...' : 'Chon phan loai' }}
+                  </option>
+                  <option *ngFor="let category of researchCategories" [value]="category.name">
+                    {{ category.name }}
+                  </option>
+                  <option *ngIf="selectedResearchArea && !isKnownResearchArea(selectedResearchArea)"
+                          [value]="selectedResearchArea">
+                    {{ selectedResearchArea }} (không còn hoạt động)
+                  </option>
+                </select>
+                <p *ngIf="!isLoadingCategories && researchCategories.length === 0"
+                   class="mt-2 text-[10px] font-bold uppercase tracking-widest text-amber-600">
+                  Chưa có phân loại bài nghiên cứu. Liên hệ admin để thêm danh mục trước khi đăng bài.
                 </p>
-                
-      
-                <a *ngIf="effectivePdfUrl"
-                   [href]="effectivePdfUrl"
-                   target="_blank"
-                   class="inline-block text-hus-blue hover:text-hus-dark transition underline underline-offset-2">
-                  Xem PDF đang dùng
-                </a>
               </div>
-            </div>
 
-            <p *ngIf="errorMessage" class="text-[11px] font-bold text-red-600 uppercase tracking-wider">
-              {{ errorMessage }}
-            </p>
-
-            <div class="pt-3 border-t border-gray-100">
-              <div class="flex items-center justify-end gap-2 lg:gap-3">
-                <button type="button"
-                        (click)="cancel()"
-                        class="inline-flex h-8 sm:h-9 lg:h-10 shrink-0 items-center justify-center px-2.5 sm:px-3 border border-gray-200 text-gray-500 text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
-                  Hủy
-                </button>
-
-                <button type="submit"
-                        [disabled]="isSaving"
-                        class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center px-2.5 sm:px-3 lg:px-4 bg-hus-blue text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:bg-hus-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                  <span class="sm:hidden">{{ isSaving ? 'Lưu...' : (isEditMode ? 'Cập nhật' : 'Lưu') }}</span>
-                  <span class="hidden sm:inline">{{ isSaving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật bài viết' : 'Lưu bài viết') }}</span>
-                </button>
+              <div class="w-full sm:max-w-4xl">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                  Tóm tắt
+                </label>
+                <div class="w-full border border-gray-200 bg-white overflow-hidden">
+                  <ng-container *ngIf="isEditorReady; else editorLoadingTpl">
+                    <quill-editor
+                      class="research-quill"
+                      name="abstract"
+                      format="html"
+                      theme="snow"
+                      [modules]="quillModules"
+                      [(ngModel)]="abstract"
+                      (ngModelChange)="onAbstractChange()"
+                      placeholder="Nhập nội dung tóm tắt công trình nghiên cứu...">
+                    </quill-editor>
+                  </ng-container>
+                  <ng-template #editorLoadingTpl>
+                    <div class="min-h-[220px] px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-gray-300">
+                      Đang tải nội dung tóm tắt...
+                    </div>
+                  </ng-template>
+                </div>
+                <p *ngIf="isAbstractBlank()" class="mt-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  Dung toolbar de dinh dang noi dung dai: tieu de, can le, danh sach, trich dan, lien ket...
+                </p>
               </div>
-            </div>
-          </form>
+
+              <div>
+                <label for="pdfFile" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                  Tệp PDF hiển thị (không bắt buộc)
+                </label>
+                <input id="pdfFile"
+                       type="file"
+                       accept="application/pdf,.pdf"
+                       (change)="onPdfSelected($event)"
+                       class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue transition-colors file:mr-2 sm:file:mr-3 file:border-0 file:bg-hus-blue file:px-2.5 sm:file:px-3 file:py-2 file:text-[9px] sm:file:text-[10px] file:font-black file:text-white file:uppercase file:tracking-widest hover:file:bg-hus-dark">
+
+                <div class="mt-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 space-y-2">
+                  <p>
+                    {{ selectedPdfName ? 'Tệp đã chọn: ' + selectedPdfName : (existingPdfUrl ? 'ệp hiện tại: ' + existingPdfFileName : 'Chưa có file PDF') }}
+                  </p>
+
+                  <a *ngIf="effectivePdfUrl"
+                     [href]="effectivePdfUrl"
+                     target="_blank"
+                     class="inline-block text-hus-blue hover:text-hus-dark transition underline underline-offset-2">
+                    Xem PDF đang dùng
+                  </a>
+                </div>
+              </div>
+
+              <p *ngIf="errorMessage" class="text-[11px] font-bold text-red-600 uppercase tracking-wider">
+                {{ errorMessage }}
+              </p>
+
+              <div class="pt-3 border-t border-gray-100">
+                <div class="flex items-center justify-end gap-2 lg:gap-3">
+                  <button type="button"
+                          (click)="cancel()"
+                          class="inline-flex h-8 sm:h-9 lg:h-10 shrink-0 items-center justify-center px-2.5 sm:px-3 border border-gray-200 text-gray-500 text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
+                    Huy
+                  </button>
+
+                  <button type="submit"
+                          [disabled]="isSaving"
+                          class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center px-2.5 sm:px-3 lg:px-4 bg-hus-blue text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:bg-hus-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                    <span class="sm:hidden">{{ isSaving ? 'Lưu...' : (isEditMode ? 'Cập nhật' : 'Lưu') }}</span>
+                    <span class="hidden sm:inline">{{ isSaving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật bài viết' : 'Lưu bài viết') }}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
           </ng-container>
 
           <ng-template #loadingPaperTpl>
@@ -194,6 +205,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
   researchCategories: ResearchCategory[] = [];
   isLoadingCategories = false;
   selectedResearchArea = '';
+  selectedPaperType: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS' = 'SCIENTIFIC_RESEARCH';
 
   title = '';
   abstract = '';
@@ -221,9 +233,9 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       const segments = withoutQuery.split('/');
       const rawName = segments[segments.length - 1] || '';
       const decoded = decodeURIComponent(rawName);
-      return decoded || 'Tệp PDF';
+      return decoded || 'Tep PDF';
     } catch {
-      return 'Tệp PDF';
+      return 'Tep PDF';
     }
   }
 
@@ -270,6 +282,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       this.abstract = this.normalizeToEditorHtml(normalizeRichTextHtml(paper.abstract));
       this.existingPdfUrl = paper.pdfUrl?.trim() ? paper.pdfUrl.trim() : null;
       this.selectedResearchArea = paper.researchArea ?? '';
+      this.selectedPaperType = paper.paperType ?? 'SCIENTIFIC_RESEARCH';
       this.scheduleTitleTextareaResize();
       this.cdr.detectChanges();
     });
@@ -312,6 +325,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             title: trimmedTitle,
             abstract: abstractHtml,
             researchArea: trimmedResearchArea,
+            paperType: this.selectedPaperType,
             pdfUrl: uploadedPdfUrl ?? this.existingPdfUrl ?? undefined
           };
           return this.paperService.saveFromEditor(payload, currentUser);
@@ -352,7 +366,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     const isPdfMime = file.type === 'application/pdf';
     const hasPdfExtension = file.name.toLowerCase().endsWith('.pdf');
     if (!isPdfMime && !hasPdfExtension) {
-      this.errorMessage = 'Chỉ chấp nhận tệp PDF.';
+      this.errorMessage = 'Chi chap nhan tep PDF.';
       this.selectedPdfFile = null;
       this.selectedPdfName = '';
       this.revokeSelectedPreviewUrl();

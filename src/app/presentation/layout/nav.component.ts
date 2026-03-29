@@ -73,11 +73,6 @@ interface HeaderNotificationItem {
                 class="inline-flex items-center justify-center px-2.5 py-2 text-[8px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors">
                 Đăng nhập
               </a>
-              <a
-                [routerLink]="ROUTES.AUTH.REGISTER"
-                class="inline-flex items-center justify-center px-2.5 py-2 text-[8px] font-black uppercase tracking-widest text-gray-600 border border-gray-200 hover:border-hus-blue hover:text-hus-blue transition-colors">
-                Đăng ký
-              </a>
             </ng-container>
 
             <div *ngIf="isAuth()" class="relative">
@@ -167,9 +162,6 @@ interface HeaderNotificationItem {
             <div *ngIf="!isAuth()" class="ml-4 pl-4 border-l border-gray-100 flex items-center gap-4 h-full">
               <a [routerLink]="ROUTES.AUTH.LOGIN" class="text-white bg-hus-blue hover:bg-hus-dark px-3 py-2 font-black text-[9px] uppercase tracking-widest transition-colors">
                 Đăng nhập
-              </a>
-              <a [routerLink]="ROUTES.AUTH.REGISTER" class="text-gray-600 border border-gray-200 hover:border-hus-blue hover:text-hus-blue px-3 py-2 font-bold text-[9px] uppercase tracking-widest transition-colors">
-                Đăng ký
               </a>
             </div>
             
@@ -460,11 +452,6 @@ interface HeaderNotificationItem {
 	                 class="block px-3 py-2 text-[9px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors text-center">
                 Đăng nhập
               </a>
-	              <a [routerLink]="ROUTES.AUTH.REGISTER"
-	                 (click)="closeMobileMenu()"
-	                 class="block px-3 py-2 text-[9px] font-bold uppercase tracking-widest text-gray-600 border border-gray-200 hover:text-hus-blue hover:border-hus-blue hover:bg-gray-50 transition-colors text-center">
-	                Đăng ký
-	              </a>
 	            </div>
 	          </div>
         </div>
