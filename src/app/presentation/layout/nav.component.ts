@@ -157,9 +157,7 @@ interface HeaderNotificationItem {
             <a routerLink="/recruitment" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
               TUYỂN DỤNG
             </a>
-            <a href="#" class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
-              ĐÀO TẠO
-            </a>
+            
             <a routerLink="/news" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
               TIN TỨC
             </a>
@@ -440,7 +438,7 @@ interface HeaderNotificationItem {
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422A12.083 12.083 0 0118 14.576c0 2.69-2.686 4.924-6 4.924s-6-2.233-6-4.924c0-1.46.311-2.845.84-4.078L12 14z" />
                   </svg>
-                  <span>Đào tạo</span>
+                  
                 </a>
                 <a routerLink="/news"
                    routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
