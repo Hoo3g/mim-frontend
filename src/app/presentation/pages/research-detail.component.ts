@@ -280,7 +280,7 @@ export class ResearchDetailComponent {
     }
 
     if (value.startsWith('http://') || value.startsWith('https://')) {
-      return this.normalizePdfProtocol(
+      return this.rebuildPublicPdfUrl(value) || this.normalizePdfProtocol(
         value.replace('/api/v1/storage/research-pdfs/', '/api/public/storage/research-pdfs/')
       );
     }
@@ -298,6 +298,19 @@ export class ResearchDetailComponent {
     }
 
     return `${API_CONFIG.BASE_URL}/api/public/storage/research-pdfs/${encodeURIComponent(value)}`;
+  }
+
+  private rebuildPublicPdfUrl(rawUrl: string): string {
+    try {
+      const parsed = new URL(rawUrl);
+      const pathname = parsed.pathname.replace('/api/v1/storage/research-pdfs/', '/api/public/storage/research-pdfs/');
+      if (pathname.startsWith('/api/public/storage/research-pdfs/')) {
+        return `${API_CONFIG.BASE_URL}${pathname}${parsed.search}${parsed.hash}`;
+      }
+    } catch {
+      return '';
+    }
+    return '';
   }
 
   private resolveOrigin(url: string): string {

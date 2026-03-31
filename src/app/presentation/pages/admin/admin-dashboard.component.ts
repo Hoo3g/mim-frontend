@@ -3020,6 +3020,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
 
         if (value.startsWith('http://') || value.startsWith('https://')) {
+            try {
+                const parsed = new URL(value);
+                const pathname = parsed.pathname.replace('/api/v1/storage/research-pdfs/', '/api/public/storage/research-pdfs/');
+                if (pathname.startsWith('/api/public/storage/research-pdfs/')) {
+                    return `${API_CONFIG.BASE_URL}${pathname}${parsed.search}${parsed.hash}`;
+                }
+            } catch {
+                return value.replace('/api/v1/storage/research-pdfs/', '/api/public/storage/research-pdfs/');
+            }
             return value.replace('/api/v1/storage/research-pdfs/', '/api/public/storage/research-pdfs/');
         }
 

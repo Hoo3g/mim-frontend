@@ -13,6 +13,7 @@ import {
     UpdateStudentProfileRequest
 } from '../models/profile.model';
 import { unwrap } from '../utils/api-response.util';
+import { resolvePublicAssetUrl } from '../utils/public-asset-url.util';
 
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
@@ -20,13 +21,13 @@ export class ProfileService {
 
     getById(userId: string): Observable<ProfileMeResponse> {
         return this.http.get<ApiResponse<ProfileMeResponse>>(API_ENDPOINTS.PROFILE.DETAIL(userId)).pipe(
-            map((response) => unwrap(response))
+            map((response) => this.normalizeProfileUrls(unwrap(response)))
         );
     }
 
     getMe(): Observable<ProfileMeResponse> {
         return this.http.get<ApiResponse<ProfileMeResponse>>(API_ENDPOINTS.PROFILE.ME).pipe(
-            map((response) => unwrap(response))
+            map((response) => this.normalizeProfileUrls(unwrap(response)))
         );
     }
 
@@ -38,19 +39,19 @@ export class ProfileService {
 
     updateStudentProfile(payload: UpdateStudentProfileRequest): Observable<ProfileMeResponse> {
         return this.http.put<ApiResponse<ProfileMeResponse>>(API_ENDPOINTS.PROFILE.STUDENT, payload).pipe(
-            map((response) => unwrap(response))
+            map((response) => this.normalizeProfileUrls(unwrap(response)))
         );
     }
 
     updateCompanyProfile(payload: UpdateCompanyProfileRequest): Observable<ProfileMeResponse> {
         return this.http.put<ApiResponse<ProfileMeResponse>>(API_ENDPOINTS.PROFILE.COMPANY, payload).pipe(
-            map((response) => unwrap(response))
+            map((response) => this.normalizeProfileUrls(unwrap(response)))
         );
     }
 
     updateLecturerProfile(payload: UpdateLecturerProfileRequest): Observable<ProfileMeResponse> {
         return this.http.put<ApiResponse<ProfileMeResponse>>(API_ENDPOINTS.PROFILE.LECTURER, payload).pipe(
-            map((response) => unwrap(response))
+            map((response) => this.normalizeProfileUrls(unwrap(response)))
         );
     }
 
@@ -59,7 +60,13 @@ export class ProfileService {
         formData.append('file', file);
 
         return this.http.post<ApiResponse<ProfileCvUploadResponse>>(API_ENDPOINTS.STORAGE.PROFILE_CV_UPLOAD, formData).pipe(
-            map((response) => unwrap(response))
+            map((response) => {
+                const data = unwrap(response);
+                return {
+                    ...data,
+                    fileUrl: resolvePublicAssetUrl(data.fileUrl)
+                };
+            })
         );
     }
 
@@ -68,7 +75,32 @@ export class ProfileService {
         formData.append('file', file);
 
         return this.http.post<ApiResponse<ProfileAvatarUploadResponse>>(API_ENDPOINTS.STORAGE.AVATAR_UPLOAD, formData).pipe(
-            map((response) => unwrap(response))
+            map((response) => {
+                const data = unwrap(response);
+                return {
+                    ...data,
+                    fileUrl: resolvePublicAssetUrl(data.fileUrl)
+                };
+            })
         );
+    }
+
+    private normalizeProfileUrls(profile: ProfileMeResponse): ProfileMeResponse {
+        return {
+            ...profile,
+            avatarUrl: resolvePublicAssetUrl(profile.avatarUrl) || null,
+            student: profile.student ? {
+                ...profile.student,
+                cvUrl: resolvePublicAssetUrl(profile.student.cvUrl) || null
+            } : profile.student,
+            company: profile.company ? {
+                ...profile.company,
+                logoUrl: resolvePublicAssetUrl(profile.company.logoUrl) || null
+            } : profile.company,
+            lecturer: profile.lecturer ? {
+                ...profile.lecturer,
+                avatarUrl: resolvePublicAssetUrl(profile.lecturer.avatarUrl) || null
+            } : profile.lecturer
+        };
     }
 }
