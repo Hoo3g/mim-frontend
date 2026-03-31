@@ -572,7 +572,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
     if (typeof window === 'undefined' || GlobalWorkerOptions.workerSrc) {
       return;
     }
-    GlobalWorkerOptions.workerSrc = '/assets/pdfjs/pdf.worker.min.mjs';
+    GlobalWorkerOptions.workerSrc = new URL('assets/pdfjs/pdf.worker.min.mjs', document.baseURI).toString();
   }
 
   private isWorkerBootstrapError(error: unknown): boolean {

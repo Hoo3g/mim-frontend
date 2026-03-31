@@ -16,6 +16,7 @@ import { Role } from '../enums/role.enum';
 import { ROUTES } from '../constants/route.const';
 import { ProfileMeResponse } from '../models/profile.model';
 import { unwrap } from '../utils/api-response.util';
+import { resolvePublicAssetUrl } from '../utils/public-asset-url.util';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -71,7 +72,7 @@ export class AuthService {
                 fullName,
                 role: primaryRole,
                 permissions,
-                avatarUrl: auth.user.avatarUrl ?? undefined,
+                avatarUrl: resolvePublicAssetUrl(auth.user.avatarUrl) || undefined,
                 accountStatus: this.normalizeAccountStatus(auth.user.status)
             },
             auth.accessToken
@@ -110,7 +111,7 @@ export class AuthService {
             map((profile) => {
                 authSignal.updateUserInfo({
                     fullName: this.buildDisplayNameFromProfile(profile),
-                    avatarUrl: profile.avatarUrl ?? undefined,
+                    avatarUrl: resolvePublicAssetUrl(profile.avatarUrl) || undefined,
                     role: profile.role ?? undefined,
                     accountStatus: profile.accountStatus ?? undefined,
                     permissions: this.normalizePermissions(profile.permissions)
