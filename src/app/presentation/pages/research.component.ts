@@ -116,6 +116,8 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                             <span class="h-1 w-1 bg-gray-200 rounded-full"></span>
                             <span class="text-[10px] font-medium text-hus-blue uppercase tracking-tighter truncate max-w-[8rem] sm:max-w-none">{{ paper.researchArea }}</span>
                             <span class="h-1 w-1 bg-gray-200 rounded-full"></span>
+                            <span class="text-[10px] font-medium text-gray-500 uppercase tracking-tighter truncate max-w-[10rem] sm:max-w-none">{{ paper.paperType === 'GRADUATION_THESIS' ? 'Khóa luận tốt nghiệp' : 'Nghiên cứu khoa học' }}</span>
+                            <span class="h-1 w-1 bg-gray-200 rounded-full"></span>
                             <span class="text-[10px] font-medium text-gray-400 uppercase tabular-nums">{{ paper.publicationYear }}</span>
                           </div>
                         </div>
@@ -226,6 +228,7 @@ export class ResearchComponent implements OnInit, OnDestroy {
   hasMorePapers = false;
   currentFilter: 'ALL' | 'LECTURER' | 'STUDENT' = 'ALL';
   selectedSpecializations: string[] = [];
+  selectedYear: number | null = null;
   searchKeyword = '';
   private currentPage = 0;
   private readonly pageSize = 10;
@@ -238,8 +241,10 @@ export class ResearchComponent implements OnInit, OnDestroy {
       this.persistViewState();
       const type = params.get('type');
       const keyword = params.get('q');
+      const year = Number(params.get('year'));
       this.currentFilter = type === 'LECTURER' || type === 'STUDENT' ? type : 'ALL';
       this.selectedSpecializations = this.parseSpecializationsFromParams(params.getAll('specialization'), params.get('specialization'));
+      this.selectedYear = Number.isFinite(year) && year > 0 ? year : null;
       this.searchKeyword = keyword?.trim() ?? '';
       this.currentStateKey = this.buildStateKey();
 
@@ -271,6 +276,7 @@ export class ResearchComponent implements OnInit, OnDestroy {
       queryParams: {
         type: this.currentFilter !== 'ALL' ? this.currentFilter : null,
         specialization: this.selectedSpecializations.length > 0 ? this.selectedSpecializations : null,
+        year: this.selectedYear,
         q: this.searchKeyword || null
       },
       queryParamsHandling: ''
@@ -325,6 +331,7 @@ export class ResearchComponent implements OnInit, OnDestroy {
     this.paperService.getPapersPage({
       type: this.currentFilter === 'ALL' ? null : this.currentFilter,
       specialization: this.selectedSpecializations,
+      year: this.selectedYear,
       q: this.searchKeyword
     }, pageToLoad, this.pageSize).subscribe({
       next: (result) => {
@@ -354,12 +361,13 @@ export class ResearchComponent implements OnInit, OnDestroy {
   private buildStateKey(): string {
     const filter = this.currentFilter.trim().toLowerCase();
     const keyword = this.searchKeyword.trim().toLowerCase();
+    const year = this.selectedYear ? String(this.selectedYear) : '';
     const specializations = [...this.selectedSpecializations]
       .map((item) => item.trim().toLowerCase())
       .filter((item, index, arr) => !!item && arr.indexOf(item) === index)
       .sort()
       .join('|');
-    return `filter=${filter};q=${keyword};specialization=${specializations}`;
+    return `filter=${filter};q=${keyword};year=${year};specialization=${specializations}`;
   }
 
   private persistViewState(): void {

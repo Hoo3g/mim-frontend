@@ -13,6 +13,7 @@ export interface ResearchPaper {
     title: string;
     abstract: string;
     pdfUrl: string;
+    paperType: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS';
     publicationYear: number;
     journalConference?: string;
     researchArea: string;
@@ -33,6 +34,7 @@ export interface BookmarkedResearchPaper {
     title: string;
     researchArea: string;
     category: Role.LECTURER | Role.STUDENT;
+    paperType?: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS';
     publicationYear?: number | null;
     savedAt?: Date | null;
 }
