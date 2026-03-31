@@ -12,7 +12,7 @@ export type RuntimeConfig = {
 
 const DEFAULT_CONFIG: RuntimeConfig = {
   apiBaseUrl: 'http://localhost:8081',
-  googleClientId: '983439776863-h1dbo93cbt93bpcnq5q15940cpk4a22o.apps.googleusercontent.com',
+  googleClientId: '',
 };
 
 function normalizeUrl(value: string | undefined, fallback: string): string {
@@ -27,7 +27,7 @@ function resolveRuntimeConfig(): RuntimeConfig {
 
   return {
     apiBaseUrl: normalizeUrl(injected?.API_BASE_URL, DEFAULT_CONFIG.apiBaseUrl),
-    googleClientId: (injected?.GOOGLE_CLIENT_ID ?? DEFAULT_CONFIG.googleClientId).trim() || DEFAULT_CONFIG.googleClientId,
+    googleClientId: (injected?.GOOGLE_CLIENT_ID ?? DEFAULT_CONFIG.googleClientId).trim(),
   };
 }
 
