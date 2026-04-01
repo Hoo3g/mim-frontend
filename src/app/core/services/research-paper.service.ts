@@ -12,6 +12,7 @@ import { emptyPagedResult, parseDate, unwrap, unwrapList, unwrapPaged } from '..
 import { ApprovalStatus } from '../enums/post-status.enum';
 import { Role } from '../enums/role.enum';
 import { UI_LABELS } from '../constants/ui-labels.const';
+import { resolvePublicAssetUrl } from '../utils/public-asset-url.util';
 
 export interface ResearchEditorPayload {
     id?: string;
@@ -334,7 +335,7 @@ export class ResearchPaperService {
                     if (!response.success || !response.data?.fileUrl) {
                         throw new Error(response.message || 'Failed to upload PDF');
                     }
-                    return response.data.fileUrl;
+                    return resolvePublicAssetUrl(response.data.fileUrl) || response.data.fileUrl;
                 })
             );
     }
@@ -410,7 +411,7 @@ export class ResearchPaperService {
             id: apiPaper.id,
             title: apiPaper.title ?? UI_LABELS.UNTITLED,
             abstract: normalizeRichTextHtml(apiPaper.abstract ?? ''),
-            pdfUrl: apiPaper.pdfUrl ?? '',
+            pdfUrl: resolvePublicAssetUrl(apiPaper.pdfUrl) || '',
             paperType: apiPaper.paperType === 'GRADUATION_THESIS' ? 'GRADUATION_THESIS' : 'SCIENTIFIC_RESEARCH',
             publicationYear: apiPaper.publicationYear ?? new Date().getFullYear(),
             journalConference: apiPaper.journalConference ?? UI_LABELS.DEFAULT_JOURNAL,

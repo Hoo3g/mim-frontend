@@ -12,6 +12,7 @@ import { ResearchEditorPayload, ResearchPaperService } from '../../core/services
 import { ResearchCategoryService } from '../../core/services/research-category.service';
 import { ResearchCategory } from '../../core/models/research-category.model';
 import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
+import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
 
 @Component({
   selector: 'app-research-editor',
@@ -280,7 +281,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
 
       this.title = paper.title;
       this.abstract = this.normalizeToEditorHtml(normalizeRichTextHtml(paper.abstract));
-      this.existingPdfUrl = paper.pdfUrl?.trim() ? paper.pdfUrl.trim() : null;
+      this.existingPdfUrl = paper.pdfUrl?.trim() ? (resolvePublicAssetUrl(paper.pdfUrl.trim()) || paper.pdfUrl.trim()) : null;
       this.selectedResearchArea = paper.researchArea ?? '';
       this.selectedPaperType = paper.paperType ?? 'SCIENTIFIC_RESEARCH';
       this.scheduleTitleTextareaResize();
