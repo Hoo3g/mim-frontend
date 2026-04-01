@@ -36,6 +36,7 @@ export interface ModerationPaperAuthor {
     mainAuthor?: boolean;
     isMainAuthor?: boolean;
     authorOrder?: number;
+    canViewProfile?: boolean;
 }
 
 export interface ModerationPaperItem {

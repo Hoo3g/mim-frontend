@@ -6,6 +6,7 @@ import { finalize, of, switchMap, take } from 'rxjs';
 import { QuillEditorComponent } from 'ngx-quill';
 import { QuillModules } from 'ngx-quill/config';
 
+import { Role } from '../../core/enums/role.enum';
 import { ROUTES } from '../../core/constants/route.const';
 import { authSignal } from '../../core/signals/auth.signal';
 import { ResearchEditorPayload, ResearchPaperService } from '../../core/services/research-paper.service';
@@ -26,24 +27,24 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
             Bai viet cua toi
           </a>
           <span class="text-gray-300">/</span>
-          <span class="text-hus-blue opacity-70">{{ isEditMode ? 'Chỉnh sửa' : 'Soạn thảo' }}</span>
+          <span class="text-hus-blue opacity-70">{{ isEditMode ? 'Chinh sua' : 'Soan thao' }}</span>
         </div>
       </div>
 
       <div class="mx-auto w-full px-1 sm:max-w-7xl sm:px-6 lg:px-8 py-5 sm:py-8 md:py-10">
         <div class="w-full border-0 sm:border-2 sm:border-hus-blue/10 bg-white p-2.5 sm:p-6 md:p-8 lg:p-10">
           <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
-            {{ isEditMode ? 'Chỉnh sửa bài viết nghiên cứu' : 'Soạn thảo bài viết nghiên cứu' }}
+            {{ isEditMode ? 'Chinh sua bai viet nghien cuu' : 'Soan thao bai viet nghien cuu' }}
           </h1>
           <p class="mt-3 text-[11px] sm:text-sm text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
-            Điền thông tin cơ bản cho bài viết: tên đề tài, lĩnh vực nghiên cứu và phần tóm tắt.
+            Dien day du thong tin bai viet, doi tuong tac gia, nam cong bo, the loai va file PDF neu can.
           </p>
 
           <ng-container *ngIf="!isLoadingPaper; else loadingPaperTpl">
             <form class="mt-6 sm:mt-8 space-y-5 sm:space-y-6" (ngSubmit)="save()">
               <div>
                 <label for="title" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Tên đề tài
+                  Ten de tai
                 </label>
                 <textarea id="title"
                           name="title"
@@ -54,24 +55,73 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                           data-title-field="true"
                           (input)="onTitleInput($event)"
                           class="w-full min-h-[76px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
-                          placeholder="Nhập tên đề tài nghiên cứu"></textarea>
+                          placeholder="Nhap ten de tai nghien cuu"></textarea>
+              </div>
+
+              <div class="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label for="paperType" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                    Loai bai nghien cuu
+                  </label>
+                  <select id="paperType"
+                          name="paperType"
+                          [(ngModel)]="selectedPaperType"
+                          required
+                          class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
+                    <option value="SCIENTIFIC_RESEARCH">Nghien cuu khoa hoc</option>
+                    <option value="GRADUATION_THESIS">Khoa luan tot nghiep</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="category" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                    Doi tuong tac gia
+                  </label>
+                  <select id="category"
+                          name="category"
+                          [(ngModel)]="selectedCategory"
+                          [disabled]="!isAdminEditor"
+                          required
+                          class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors disabled:bg-gray-50 disabled:text-gray-400">
+                    <option value="STUDENT">Sinh vien</option>
+                    <option value="LECTURER">Giang vien</option>
+                  </select>
+                  <p *ngIf="!isAdminEditor" class="mt-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Truong nay duoc khoa theo vai tro tai khoan hien tai.
+                  </p>
+                </div>
+
+                <div>
+                  <label for="publicationYear" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                    Nam cong bo
+                  </label>
+                  <select id="publicationYear"
+                          name="publicationYear"
+                          [(ngModel)]="publicationYear"
+                          required
+                          class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
+                    <option *ngFor="let year of publicationYears" [ngValue]="year">
+                      {{ year }}
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="journalConference" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                    Tap chi / hoi nghi
+                  </label>
+                  <input id="journalConference"
+                         name="journalConference"
+                         [(ngModel)]="journalConference"
+                         maxlength="255"
+                         class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
+                         placeholder="Vi du: MIM Draft, Hoi nghi khoa hoc, Tap chi chuyen nganh">
+                </div>
               </div>
 
               <div>
-                <label for="paperType" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Loại bài nghiên cứu
-                </label>
-                <select id="paperType"
-                        name="paperType"
-                        [(ngModel)]="selectedPaperType"
-                        required
-                        class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors mb-5">
-                  <option value="SCIENTIFIC_RESEARCH">Nghiên cứu khoa học</option>
-                  <option value="GRADUATION_THESIS">Khóa luận tốt nghiệp</option>
-                </select>
-
                 <label for="researchArea" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Phân loại bài viết
+                  Phan loai bai viet
                 </label>
                 <select id="researchArea"
                         name="researchArea"
@@ -86,18 +136,18 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                   </option>
                   <option *ngIf="selectedResearchArea && !isKnownResearchArea(selectedResearchArea)"
                           [value]="selectedResearchArea">
-                    {{ selectedResearchArea }} (không còn hoạt động)
+                    {{ selectedResearchArea }} (khong con hoat dong)
                   </option>
                 </select>
                 <p *ngIf="!isLoadingCategories && researchCategories.length === 0"
                    class="mt-2 text-[10px] font-bold uppercase tracking-widest text-amber-600">
-                  Chưa có phân loại bài nghiên cứu. Liên hệ admin để thêm danh mục trước khi đăng bài.
+                  Chua co phan loai bai nghien cuu. Lien he admin de them danh muc truoc khi dang bai.
                 </p>
               </div>
 
               <div class="w-full sm:max-w-4xl">
                 <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Tóm tắt
+                  Tom tat
                 </label>
                 <div class="w-full border border-gray-200 bg-white overflow-hidden">
                   <ng-container *ngIf="isEditorReady; else editorLoadingTpl">
@@ -109,12 +159,12 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                       [modules]="quillModules"
                       [(ngModel)]="abstract"
                       (ngModelChange)="onAbstractChange()"
-                      placeholder="Nhập nội dung tóm tắt công trình nghiên cứu...">
+                      placeholder="Nhap noi dung tom tat cong trinh nghien cuu...">
                     </quill-editor>
                   </ng-container>
                   <ng-template #editorLoadingTpl>
                     <div class="min-h-[220px] px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-gray-300">
-                      Đang tải nội dung tóm tắt...
+                      Dang tai noi dung tom tat...
                     </div>
                   </ng-template>
                 </div>
@@ -125,7 +175,7 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
 
               <div>
                 <label for="pdfFile" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Tệp PDF hiển thị (không bắt buộc)
+                  Tep PDF hien thi (khong bat buoc)
                 </label>
                 <input id="pdfFile"
                        type="file"
@@ -135,20 +185,24 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
 
                 <div class="mt-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 space-y-2">
                   <p>
-                    {{ selectedPdfName ? 'Tệp đã chọn: ' + selectedPdfName : (existingPdfUrl ? 'ệp hiện tại: ' + existingPdfFileName : 'Chưa có file PDF') }}
+                    {{ selectedPdfName ? 'Tep da chon: ' + selectedPdfName : (existingPdfUrl ? 'Tep hien tai: ' + existingPdfFileName : 'Chua co file PDF') }}
                   </p>
 
                   <a *ngIf="effectivePdfUrl"
                      [href]="effectivePdfUrl"
                      target="_blank"
                      class="inline-block text-hus-blue hover:text-hus-dark transition underline underline-offset-2">
-                    Xem PDF đang dùng
+                    Xem PDF dang dung
                   </a>
                 </div>
               </div>
 
               <p *ngIf="errorMessage" class="text-[11px] font-bold text-red-600 uppercase tracking-wider">
                 {{ errorMessage }}
+              </p>
+
+              <p *ngIf="successMessage" class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
+                {{ successMessage }}
               </p>
 
               <div class="pt-3 border-t border-gray-100">
@@ -162,8 +216,8 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                   <button type="submit"
                           [disabled]="isSaving"
                           class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center px-2.5 sm:px-3 lg:px-4 bg-hus-blue text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:bg-hus-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                    <span class="sm:hidden">{{ isSaving ? 'Lưu...' : (isEditMode ? 'Cập nhật' : 'Lưu') }}</span>
-                    <span class="hidden sm:inline">{{ isSaving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật bài viết' : 'Lưu bài viết') }}</span>
+                    <span class="sm:hidden">{{ isSaving ? 'Luu...' : (isEditMode ? 'Cap nhat' : 'Luu') }}</span>
+                    <span class="hidden sm:inline">{{ isSaving ? 'Dang luu...' : (isEditMode ? 'Cap nhat bai viet' : 'Luu bai viet') }}</span>
                   </button>
                 </div>
               </div>
@@ -172,7 +226,7 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
 
           <ng-template #loadingPaperTpl>
             <div class="mt-6 sm:mt-8 border border-dashed border-gray-200 px-4 py-8 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Đang tải dữ liệu bài viết...
+              Dang tai du lieu bai viet...
             </div>
           </ng-template>
         </div>
@@ -200,6 +254,8 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     ]
   };
 
+  readonly publicationYears = this.buildPublicationYears();
+
   isEditMode = false;
   editingPaperId: string | null = null;
 
@@ -207,6 +263,9 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
   isLoadingCategories = false;
   selectedResearchArea = '';
   selectedPaperType: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS' = 'SCIENTIFIC_RESEARCH';
+  selectedCategory: 'LECTURER' | 'STUDENT' = 'STUDENT';
+  publicationYear = new Date().getFullYear();
+  journalConference = 'MIM Draft';
 
   title = '';
   abstract = '';
@@ -215,9 +274,14 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
   selectedPdfName = '';
   existingPdfUrl: string | null = null;
   errorMessage = '';
+  successMessage = '';
   isSaving = false;
   isLoadingPaper = false;
   isEditorReady = false;
+
+  get isAdminEditor(): boolean {
+    return authSignal.user()?.role === Role.ADMIN;
+  }
 
   get effectivePdfUrl(): string | null {
     return this.selectedPdfPreviewUrl ?? this.existingPdfUrl;
@@ -243,15 +307,16 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     const currentUser = authSignal.user();
     if (!currentUser) {
-      this.redirectToMyPapers('Vui lòng đăng nhập để thao tác bài viết.');
+      this.redirectToMyPapers('Vui long dang nhap de thao tac bai viet.');
       return;
     }
 
     if (!authSignal.canCreateContent()) {
-      this.redirectToMyPapers('Tài khoản chưa xác thực email. Bạn chưa thể tạo hoặc cập nhật bài viết.');
+      this.redirectToMyPapers('Tai khoan chua xac thuc email. Ban chua the tao hoac cap nhat bai viet.');
       return;
     }
 
+    this.initializeAuthorCategory(currentUser.role);
     this.loadResearchCategories();
 
     const paperId = this.route.snapshot.paramMap.get('id');
@@ -275,7 +340,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       })
     ).subscribe((paper) => {
       if (!paper) {
-        this.redirectToMyPapers('Bài viết không tồn tại hoặc bạn không có quyền chỉnh sửa.');
+        this.redirectToMyPapers('Bai viet khong ton tai hoac ban khong co quyen chinh sua.');
         return;
       }
 
@@ -284,6 +349,9 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       this.existingPdfUrl = paper.pdfUrl?.trim() ? (resolvePublicAssetUrl(paper.pdfUrl.trim()) || paper.pdfUrl.trim()) : null;
       this.selectedResearchArea = paper.researchArea ?? '';
       this.selectedPaperType = paper.paperType ?? 'SCIENTIFIC_RESEARCH';
+      this.selectedCategory = paper.category === Role.LECTURER ? 'LECTURER' : 'STUDENT';
+      this.publicationYear = paper.publicationYear || new Date().getFullYear();
+      this.journalConference = (paper.journalConference ?? 'MIM Draft').trim() || 'MIM Draft';
       this.scheduleTitleTextareaResize();
       this.cdr.detectChanges();
     });
@@ -292,22 +360,23 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
   save(): void {
     const currentUser = authSignal.user();
     if (!currentUser) {
-      this.redirectToMyPapers('Vui lòng đăng nhập để thao tác bài viết.');
+      this.redirectToMyPapers('Vui long dang nhap de thao tac bai viet.');
       return;
     }
 
     if (!authSignal.canCreateContent()) {
-      this.errorMessage = 'Tài khoản chưa xác thực email. Bạn chưa thể tạo hoặc cập nhật bài viết.';
+      this.errorMessage = 'Tai khoan chua xac thuc email. Ban chua the tao hoac cap nhat bai viet.';
       return;
     }
 
+    this.successMessage = '';
     const trimmedTitle = this.title.trim();
     const abstractHtml = normalizeRichTextHtml((this.abstract ?? '').trim());
     const abstractPlainText = this.toPlainText(abstractHtml);
     const trimmedResearchArea = this.selectedResearchArea.trim();
 
     if (!trimmedTitle || !trimmedResearchArea || !abstractPlainText) {
-      this.errorMessage = 'Vui lòng nhập đầy đủ tên đề tài, lĩnh vực và tóm tắt.';
+      this.errorMessage = 'Vui long nhap day du ten de tai, linh vuc va tom tat.';
       return;
     }
 
@@ -327,6 +396,9 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             abstract: abstractHtml,
             researchArea: trimmedResearchArea,
             paperType: this.selectedPaperType,
+            publicationYear: this.publicationYear,
+            journalConference: this.journalConference.trim(),
+            category: this.selectedCategory,
             pdfUrl: uploadedPdfUrl ?? this.existingPdfUrl ?? undefined
           };
           return this.paperService.saveFromEditor(payload, currentUser);
@@ -337,22 +409,30 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
         next: (savedPaper) => {
           if (!savedPaper) {
             if (this.isEditMode) {
-              this.redirectToMyPapers('Không thể cập nhật bài viết.');
+              this.redirectToMyPapers('Khong the cap nhat bai viet.');
               return;
             }
-            this.errorMessage = 'Không thể lưu bài viết. Vui lòng thử lại.';
+            this.errorMessage = 'Khong the luu bai viet. Vui long thu lai.';
             return;
           }
 
           const notice = this.isEditMode
             ? (savedPaper.approvalStatus === 'PENDING'
-              ? 'Đã cập nhật bài viết nghiên cứu và gửi lại duyệt.'
-              : 'Đã cập nhật bài viết nghiên cứu.')
-            : 'Đã tạo bài viết nghiên cứu mới.';
-          this.router.navigateByUrl(ROUTES.RESEARCH_MY_PAPERS, { state: { notice } });
+              ? 'Da cap nhat bai viet nghien cuu va gui lai duyet.'
+              : 'Da cap nhat bai viet nghien cuu.')
+            : 'Da tao bai viet nghien cuu moi.';
+
+          if (this.isEditMode) {
+            this.successMessage = notice;
+            return;
+          }
+
+          this.resetEditorForm(currentUser.role);
+          this.successMessage = 'Dang bai thanh cong. Ban co the tiep tuc tao bai viet moi.';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         error: (error: { error?: { message?: string } }) => {
-          this.errorMessage = error?.error?.message || 'Lưu bài viết thất bại. Vui lòng thử lại.';
+          this.errorMessage = error?.error?.message || 'Luu bai viet that bai. Vui long thu lai.';
         }
       });
   }
@@ -399,12 +479,16 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     return !this.toPlainText(this.abstract);
   }
 
-  private redirectToMyPapers(notice: string): void {
-    this.router.navigateByUrl(ROUTES.RESEARCH_MY_PAPERS, { state: { notice } });
+  isKnownResearchArea(name: string): boolean {
+    return this.researchCategories.some((category) => category.name === name);
   }
 
   ngOnDestroy(): void {
     this.revokeSelectedPreviewUrl();
+  }
+
+  private redirectToMyPapers(notice: string): void {
+    this.router.navigateByUrl(ROUTES.RESEARCH_MY_PAPERS, { state: { notice } });
   }
 
   private normalizeToEditorHtml(value: string): string {
@@ -474,7 +558,37 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       });
   }
 
-  isKnownResearchArea(name: string): boolean {
-    return this.researchCategories.some((category) => category.name === name);
+  private initializeAuthorCategory(role: Role): void {
+    if (role === Role.LECTURER) {
+      this.selectedCategory = 'LECTURER';
+      return;
+    }
+
+    this.selectedCategory = 'STUDENT';
+  }
+
+  private buildPublicationYears(): number[] {
+    const currentYear = new Date().getFullYear();
+    const years: number[] = [];
+    for (let year = currentYear + 1; year >= 2000; year -= 1) {
+      years.push(year);
+    }
+    return years;
+  }
+
+  private resetEditorForm(role: Role): void {
+    this.title = '';
+    this.abstract = '';
+    this.selectedPaperType = 'SCIENTIFIC_RESEARCH';
+    this.publicationYear = new Date().getFullYear();
+    this.journalConference = 'MIM Draft';
+    this.selectedResearchArea = this.researchCategories[0]?.name ?? '';
+    this.existingPdfUrl = null;
+    this.selectedPdfFile = null;
+    this.selectedPdfName = '';
+    this.revokeSelectedPreviewUrl();
+    this.initializeAuthorCategory(role);
+    this.scheduleTitleTextareaResize();
+    this.cdr.detectChanges();
   }
 }

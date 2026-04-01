@@ -110,12 +110,12 @@ interface PaperDetailState {
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tác giả biên soạn:</span>
                 <div class="flex flex-wrap gap-x-6 gap-y-2">
                   <div *ngFor="let author of paper.authors" class="text-sm font-bold text-gray-900">
-                    <a *ngIf="author.isMainAuthor && author.studentId"
+                    <a *ngIf="author.isMainAuthor && author.studentId && author.canViewProfile !== false"
                        [routerLink]="['/profile', author.studentId]"
                        class="transition-colors hover:text-hus-blue">
                       {{ author.name }}
                     </a>
-                    <span *ngIf="!author.isMainAuthor || !author.studentId">{{ author.name }}</span>
+                    <span *ngIf="!author.isMainAuthor || !author.studentId || author.canViewProfile === false">{{ author.name }}</span>
                     <span *ngIf="author.isMainAuthor" class="ml-1 text-[9px] text-hus-blue uppercase tracking-tighter font-black">(Chủ biên)</span>
                   </div>
                 </div>
@@ -197,6 +197,8 @@ export class ResearchDetailComponent {
   private readonly frontendProtocol = this.resolveProtocol(this.frontendOrigin);
   private readonly backendHost = this.resolveHost(this.backendOrigin);
   private trackedPaperId: string | null = null;
+  private lastSafePdfSource = '';
+  private lastSafePdfUrl: SafeResourceUrl | null = null;
 
   isAuth = authSignal.isAuth;
   isDownloadingPdf = false;
@@ -247,7 +249,20 @@ export class ResearchDetailComponent {
   }
 
   getSafePdfUrl(url: string): SafeResourceUrl {
-    return this.sanitizer.bypassSecurityTrustResourceUrl(this.getDownloadUrl(url));
+    const resolved = this.getDownloadUrl(url);
+    if (!resolved) {
+      this.lastSafePdfSource = '';
+      this.lastSafePdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl('about:blank');
+      return this.lastSafePdfUrl;
+    }
+
+    if (resolved === this.lastSafePdfSource && this.lastSafePdfUrl) {
+      return this.lastSafePdfUrl;
+    }
+
+    this.lastSafePdfSource = resolved;
+    this.lastSafePdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(resolved);
+    return this.lastSafePdfUrl;
   }
 
   downloadPdf(paper: ResearchPaper): void {

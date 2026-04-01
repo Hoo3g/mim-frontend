@@ -311,7 +311,19 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
  
             <div *ngIf="currentTab === 'PAPERS' && can('MODERATION_PAPERS_VIEW')" class="space-y-4">
               <div class="bg-white border border-gray-100 px-4 py-3 space-y-3">
-                <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Tìm kiếm nhanh bài nghiên cứu</p>
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div class="min-w-0">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Tìm kiếm nhanh bài nghiên cứu</p>
+                    <p class="mt-1 text-[10px] text-gray-400">Admin có thể tạo bài nghiên cứu mới ngay từ khu vực này.</p>
+                  </div>
+
+                  <a *ngIf="can('MODERATION_PAPERS_ACTION')"
+                     [routerLink]="['/paper/editor']"
+                     class="inline-flex items-center justify-center px-4 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors whitespace-nowrap">
+                    Tạo bài nghiên cứu
+                  </a>
+                </div>
+
                 <div class="flex flex-col gap-3 sm:flex-row">
                   <input
                     [(ngModel)]="paperSearchQuery"
@@ -1449,12 +1461,12 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tác giả biên soạn:</span>
                         <div class="flex flex-wrap gap-x-6 gap-y-2">
                           <div *ngFor="let author of moderationPaperAuthors(paper)" class="text-sm font-bold text-gray-900">
-                            <a *ngIf="author.authorId"
+                            <a *ngIf="author.authorId && author.canViewProfile !== false"
                                [routerLink]="['/profile', author.authorId]"
                                class="transition-colors hover:text-hus-blue">
                               {{ author.name }}
                             </a>
-                            <span *ngIf="!author.authorId">{{ author.name }}</span>
+                            <span *ngIf="!author.authorId || author.canViewProfile === false">{{ author.name }}</span>
                             <span *ngIf="isMainModerationAuthor(author)" class="ml-1 text-[9px] text-hus-blue uppercase tracking-tighter font-black">(Chủ biên)</span>
                           </div>
                           <div *ngIf="moderationPaperAuthors(paper).length === 0" class="text-sm font-bold text-gray-400">

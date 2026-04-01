@@ -20,6 +20,9 @@ export interface ResearchEditorPayload {
     abstract: string;
     researchArea: string;
     paperType: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS';
+    publicationYear: number;
+    journalConference?: string;
+    category: 'LECTURER' | 'STUDENT';
     pdfUrl?: string;
 }
 
@@ -43,6 +46,7 @@ interface ResearchPaperApiAuthor {
     isMainAuthor?: boolean;
     mainAuthor?: boolean;
     authorOrder?: number;
+    canViewProfile?: boolean;
 }
 
 interface ResearchPaperApiModel {
@@ -205,6 +209,9 @@ export class ResearchPaperService {
             abstract,
             researchArea,
             paperType,
+            publicationYear: payload.publicationYear,
+            journalConference: payload.journalConference?.trim() || undefined,
+            category: payload.category,
             pdfUrl: payload.pdfUrl
         };
 
@@ -404,7 +411,8 @@ export class ResearchPaperService {
             studentId: author.studentId ?? '',
             name: (author.name?.trim() || UI_LABELS.UNKNOWN_AUTHOR),
             isMainAuthor: author.isMainAuthor ?? author.mainAuthor ?? index === 0,
-            authorOrder: author.authorOrder ?? (index + 1)
+            authorOrder: author.authorOrder ?? (index + 1),
+            canViewProfile: author.canViewProfile ?? true
         }));
 
         return {
