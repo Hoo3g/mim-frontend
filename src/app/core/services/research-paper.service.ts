@@ -23,6 +23,7 @@ export interface ResearchEditorPayload {
     publicationYear: number;
     journalConference?: string;
     category: 'LECTURER' | 'STUDENT';
+    authorName?: string;
     pdfUrl?: string;
 }
 
@@ -212,6 +213,7 @@ export class ResearchPaperService {
             publicationYear: payload.publicationYear,
             journalConference: payload.journalConference?.trim() || undefined,
             category: payload.category,
+            authorName: payload.authorName?.trim() || undefined,
             pdfUrl: payload.pdfUrl
         };
 

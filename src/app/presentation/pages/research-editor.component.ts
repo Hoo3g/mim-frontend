@@ -91,6 +91,18 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                   </p>
                 </div>
 
+                <div *ngIf="isAdminEditor">
+                  <label for="authorName" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                    Ten tac gia hien thi
+                  </label>
+                  <input id="authorName"
+                         name="authorName"
+                         [(ngModel)]="authorName"
+                         maxlength="255"
+                         class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
+                         placeholder="Nhap ten tac gia hien thi cho bai viet nay">
+                </div>
+
                 <div>
                   <label for="publicationYear" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
                     Nam cong bo
@@ -264,6 +276,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
   selectedResearchArea = '';
   selectedPaperType: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS' = 'SCIENTIFIC_RESEARCH';
   selectedCategory: 'LECTURER' | 'STUDENT' = 'STUDENT';
+  authorName = '';
   publicationYear = new Date().getFullYear();
   journalConference = 'MIM Draft';
 
@@ -350,6 +363,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       this.selectedResearchArea = paper.researchArea ?? '';
       this.selectedPaperType = paper.paperType ?? 'SCIENTIFIC_RESEARCH';
       this.selectedCategory = paper.category === Role.LECTURER ? 'LECTURER' : 'STUDENT';
+      this.authorName = paper.authors.find((author) => author.isMainAuthor)?.name ?? '';
       this.publicationYear = paper.publicationYear || new Date().getFullYear();
       this.journalConference = (paper.journalConference ?? 'MIM Draft').trim() || 'MIM Draft';
       this.scheduleTitleTextareaResize();
@@ -399,6 +413,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             publicationYear: this.publicationYear,
             journalConference: this.journalConference.trim(),
             category: this.selectedCategory,
+            authorName: this.isAdminEditor ? this.authorName.trim() : undefined,
             pdfUrl: uploadedPdfUrl ?? this.existingPdfUrl ?? undefined
           };
           return this.paperService.saveFromEditor(payload, currentUser);
@@ -582,6 +597,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     this.selectedPaperType = 'SCIENTIFIC_RESEARCH';
     this.publicationYear = new Date().getFullYear();
     this.journalConference = 'MIM Draft';
+    this.authorName = '';
     this.selectedResearchArea = this.researchCategories[0]?.name ?? '';
     this.existingPdfUrl = null;
     this.selectedPdfFile = null;
