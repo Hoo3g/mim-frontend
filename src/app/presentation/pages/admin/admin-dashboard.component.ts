@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, effect, signal, WritableSignal } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, inject, effect, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -1027,6 +1027,7 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">
                     Lượt truy cập theo {{ analyticsChartGranularity === 'MONTH' ? 'tháng' : 'năm' }}
+                    <span *ngIf="analyticsChartGranularity === 'MONTH'">- {{ activeAnalyticsYear() }}</span>
                   </h3>
                   <div class="flex flex-wrap items-center gap-3">
                     <div class="inline-flex border border-hus-blue/20 bg-white text-[9px] font-black uppercase tracking-widest">
@@ -1060,6 +1061,20 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                       </span>
                     </div>
                   </div>
+                </div>
+                <div *ngIf="analyticsChartGranularity === 'MONTH'" class="mt-4 flex flex-wrap items-center gap-3">
+                  <label for="analytics-year-select" class="text-[9px] font-black uppercase tracking-widest text-gray-400">
+                    Chọn năm
+                  </label>
+                  <select
+                    id="analytics-year-select"
+                    [value]="activeAnalyticsYear()"
+                    (change)="onAnalyticsYearChange($event)"
+                    class="min-w-[120px] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 outline-none transition-colors focus:border-hus-blue">
+                    <option *ngFor="let year of analyticsAvailableYears()" [value]="year">
+                      {{ year }}
+                    </option>
+                  </select>
                 </div>
                 <p class="mt-2 text-[10px] font-semibold text-gray-500">
                   Tổng lượt truy cập: tính mọi lần mở trang. Lượt truy cập không trùng: mỗi người chỉ tính 1 lần trong kỳ.
@@ -1189,10 +1204,10 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
           <div class="border border-gray-100 bg-gray-50 p-4 sm:p-5 space-y-4">
             <div>
               <h3 class="text-sm font-black uppercase tracking-widest text-gray-900">Tạo tài khoản</h3>
-              <p class="mt-2 text-[11px] text-gray-500">Dùng để tạo nhanh tài khoản sinh viên hoặc doanh nghiệp. Tài khoản được tạo từ đây sẽ ở trạng thái dùng được ngay.</p>
+              <p class="mt-2 text-[11px] text-gray-500">Dùng để tạo nhanh tài khoản sinh viên, giảng viên hoặc doanh nghiệp. Tài khoản được tạo từ đây sẽ ở trạng thái dùng được ngay.</p>
             </div>
 
-            <div class="grid gap-3 sm:grid-cols-2">
+            <div class="grid gap-3 sm:grid-cols-3">
               <button
                 type="button"
                 (click)="adminCreatedUserType = 'STUDENT'"
@@ -1201,6 +1216,16 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                 class="border border-gray-200 px-4 py-3 text-left transition-colors">
                 <p class="text-[10px] font-black uppercase tracking-widest text-gray-900">Sinh viên</p>
                 <p class="mt-1 text-[11px] text-gray-500">Tạo tài khoản kèm mã sinh viên.</p>
+              </button>
+
+              <button
+                type="button"
+                (click)="adminCreatedUserType = 'LECTURER'"
+                [class.border-hus-blue]="adminCreatedUserType === 'LECTURER'"
+                [class.bg-blue-50]="adminCreatedUserType === 'LECTURER'"
+                class="border border-gray-200 px-4 py-3 text-left transition-colors">
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-900">Giảng viên</p>
+                <p class="mt-1 text-[11px] text-gray-500">Tạo tài khoản giảng viên với chức danh viết tắt.</p>
               </button>
 
               <button
@@ -1243,6 +1268,17 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                   type="password"
                   class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue"
                   placeholder="********">
+              </div>
+
+              <div *ngIf="adminCreatedUserType === 'LECTURER'">
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Chức danh viết tắt</label>
+                <select
+                  [(ngModel)]="adminCreatedUserForm.title"
+                  [ngModelOptions]="{ standalone: true }"
+                  class="w-full border border-gray-200 bg-white px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+                  <option value="">Chọn chức danh</option>
+                  <option *ngFor="let option of lecturerTitleOptions" [value]="option">{{ option }}</option>
+                </select>
               </div>
 
               <div *ngIf="adminCreatedUserType === 'STUDENT'">
@@ -1513,6 +1549,7 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
     styles: []
 })
 export class AdminDashboardComponent implements OnInit, OnDestroy {
+    private readonly cdr = inject(ChangeDetectorRef);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly moderationService = inject(AdminModerationService);
@@ -1643,16 +1680,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     rbacUserSearch = '';
     selectedRbacUserId: string | null = null;
     permissionToAdd = '';
-    adminCreatedUserType: 'STUDENT' | 'COMPANY' = 'STUDENT';
+    adminCreatedUserType: 'STUDENT' | 'LECTURER' | 'COMPANY' = 'STUDENT';
     adminCreatedUserForm = {
         fullName: '',
         email: '',
         password: '',
         studentId: '',
+        title: '',
         companyName: ''
     };
     creatingAdminManagedUser = false;
     adminCreatedUserNotice = '';
+    readonly lecturerTitleOptions = ['GS.TS', 'PGS.TS', 'TS', 'ThS', 'GVC', 'GV'];
 
     specializations: ResearchCategory[] = [];
     specializationForm = {
@@ -1688,6 +1727,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     analyticsLoading = false;
     analyticsError = '';
     analyticsChartGranularity: AnalyticsChartGranularity = 'MONTH';
+    analyticsSelectedYear = new Date().getFullYear();
 
     heroNotice = '';
     rbacNotice = '';
@@ -1696,7 +1736,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private pollSubscription?: Subscription;
     private analyticsPollSubscription?: Subscription;
     private routeQuerySubscription?: Subscription;
-    private readonly analyticsHistoryMonths = 120;
+    private readonly analyticsStartYear = 2025;
     private readonly analyticsOnlineWindowMinutes = 2;
 
     // Notification signal bindings
@@ -1725,6 +1765,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 this.currentTab = resolvedTab;
                 this.errorMessage = '';
                 this.tryLoadAnalyticsOverview();
+                this.cdr.detectChanges();
                 return;
             }
 
@@ -1735,6 +1776,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             this.errorMessage = '';
             this.syncTabQueryParam(fallbackTab);
             this.tryLoadAnalyticsOverview();
+            this.cdr.detectChanges();
         });
         this.loadPendingModeration();
         this.loadHeroContent();
@@ -1812,6 +1854,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.closeModerationPreview();
         this.syncTabQueryParam(tab);
         this.tryLoadAnalyticsOverview();
+        this.cdr.detectChanges();
     }
 
     tabBadge(tab: AdminTabKey): number | null {
@@ -1828,12 +1871,52 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.analyticsChartGranularity = granularity;
     }
 
+    setAnalyticsSelectedYear(year: number): void {
+        if (this.analyticsAvailableYears().includes(year)) {
+            this.analyticsSelectedYear = year;
+        }
+    }
+
+    onAnalyticsYearChange(event: Event): void {
+        const target = event.target as HTMLSelectElement | null;
+        if (!target) {
+            return;
+        }
+
+        const year = Number.parseInt(target.value, 10);
+        if (Number.isFinite(year)) {
+            this.setAnalyticsSelectedYear(year);
+        }
+    }
+
+    analyticsAvailableYears(): number[] {
+        const currentYear = new Date().getFullYear();
+        if (currentYear < this.analyticsStartYear) {
+            return [this.analyticsStartYear];
+        }
+
+        const years: number[] = [];
+        for (let year = currentYear; year >= this.analyticsStartYear; year -= 1) {
+            years.push(year);
+        }
+        return years;
+    }
+
+    activeAnalyticsYear(): number {
+        const availableYears = this.analyticsAvailableYears();
+        return availableYears.includes(this.analyticsSelectedYear)
+            ? this.analyticsSelectedYear
+            : availableYears[0];
+    }
+
     analyticsChartPoints(): AdminMonthlyTrafficPoint[] {
         const monthlyTraffic = this.analyticsNormalizedMonthlyTraffic();
         if (this.analyticsChartGranularity === 'YEAR') {
             return this.aggregateTrafficByYear(monthlyTraffic);
         }
-        return monthlyTraffic;
+
+        const selectedYear = String(this.activeAnalyticsYear());
+        return monthlyTraffic.filter((point) => this.analyticsYearKey(point) === selectedYear);
     }
 
     analyticsLinePoints(metric: 'views' | 'uniqueVisitors'): string {
@@ -1908,7 +1991,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 views: Number(item.views ?? 0),
                 uniqueVisitors: Number(item.uniqueVisitors ?? 0)
             }))
-            .filter((item) => !!item.monthKey || !!item.monthLabel);
+            .filter((item) => {
+                if (!item.monthKey && !item.monthLabel) {
+                    return false;
+                }
+
+                const year = Number.parseInt(this.analyticsYearKey(item), 10);
+                return Number.isFinite(year) && year >= this.analyticsStartYear;
+            });
     }
 
     private aggregateTrafficByYear(points: AdminMonthlyTrafficPoint[]): AdminMonthlyTrafficPoint[] {
@@ -2026,15 +2116,31 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.adminAnalyticsService.getOverview(this.analyticsHistoryMonths, this.analyticsOnlineWindowMinutes).pipe(
             finalize(() => {
                 this.analyticsLoading = false;
+                this.cdr.detectChanges();
             })
         ).subscribe({
             next: (overview) => {
                 this.analyticsOverview = overview;
+                if (!this.analyticsAvailableYears().includes(this.analyticsSelectedYear)) {
+                    this.analyticsSelectedYear = this.analyticsAvailableYears()[0];
+                }
+                this.cdr.detectChanges();
             },
             error: () => {
                 this.analyticsError = 'Không thể tải dữ liệu thống kê quản trị.';
+                this.cdr.detectChanges();
             }
         });
+    }
+
+    private get analyticsHistoryMonths(): number {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        if (currentYear < this.analyticsStartYear) {
+            return 1;
+        }
+
+        return ((currentYear - this.analyticsStartYear) * 12) + now.getMonth() + 1;
     }
 
     isPostSelected(id: string): boolean {
@@ -2837,16 +2943,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             });
     }
 
-    private buildAdminManagedUserPayload(): { email: string; password: string; fullName: string; userType: 'STUDENT' | 'COMPANY'; studentId?: string; companyName?: string } | null {
+    private buildAdminManagedUserPayload(): { email: string; password: string; fullName: string; userType: 'STUDENT' | 'LECTURER' | 'COMPANY'; studentId?: string; title?: string; companyName?: string } | null {
         const payload = {
             email: this.adminCreatedUserForm.email.trim(),
             password: this.adminCreatedUserForm.password,
             fullName: this.adminCreatedUserForm.fullName.trim(),
             userType: this.adminCreatedUserType
-        } as { email: string; password: string; fullName: string; userType: 'STUDENT' | 'COMPANY'; studentId?: string; companyName?: string };
+        } as { email: string; password: string; fullName: string; userType: 'STUDENT' | 'LECTURER' | 'COMPANY'; studentId?: string; title?: string; companyName?: string };
 
         if (this.adminCreatedUserType === 'STUDENT') {
             payload.studentId = this.adminCreatedUserForm.studentId.trim().toUpperCase();
+        } else if (this.adminCreatedUserType === 'LECTURER') {
+            payload.title = this.adminCreatedUserForm.title.trim();
         } else {
             payload.companyName = this.adminCreatedUserForm.companyName.trim();
         }
@@ -2875,6 +2983,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             return 'Vui lòng nhập mã sinh viên.';
         }
 
+        if (this.adminCreatedUserType === 'LECTURER' && !this.adminCreatedUserForm.title.trim()) {
+            return 'Vui lòng chọn chức danh viết tắt cho giảng viên.';
+        }
+
         if (this.adminCreatedUserType === 'COMPANY' && !this.adminCreatedUserForm.companyName.trim()) {
             return 'Vui lòng nhập tên công ty.';
         }
@@ -2888,6 +3000,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             email: '',
             password: '',
             studentId: '',
+            title: '',
             companyName: ''
         };
     }

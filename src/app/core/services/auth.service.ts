@@ -171,7 +171,11 @@ export class AuthService {
         }
 
         if (profile.role === Role.LECTURER) {
+            const title = profile.lecturer?.title?.trim();
             const fullName = `${profile.lecturer?.firstName || ''} ${profile.lecturer?.lastName || ''}`.trim();
+            if (title && fullName) {
+                return `${title} ${fullName}`;
+            }
             return fullName || genericName || emailFallback;
         }
 
