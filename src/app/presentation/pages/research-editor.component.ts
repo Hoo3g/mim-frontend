@@ -24,27 +24,27 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
       <div class="border-b border-gray-100 bg-blue-50/50 py-2.5 px-2 sm:py-3 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2 sm:gap-4 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-gray-400">
           <a [routerLink]="ROUTES.RESEARCH_MY_PAPERS" class="text-hus-blue hover:text-hus-dark transition">
-            Bai viet cua toi
+            Bài viết của tôi
           </a>
           <span class="text-gray-300">/</span>
-          <span class="text-hus-blue opacity-70">{{ isEditMode ? 'Chinh sua' : 'Soan thao' }}</span>
+          <span class="text-hus-blue opacity-70">{{ isEditMode ? 'Chỉnh sửa' : 'Soạn thảo' }}</span>
         </div>
       </div>
 
       <div class="mx-auto w-full px-1 sm:max-w-7xl sm:px-6 lg:px-8 py-5 sm:py-8 md:py-10">
         <div class="w-full border-0 sm:border-2 sm:border-hus-blue/10 bg-white p-2.5 sm:p-6 md:p-8 lg:p-10">
           <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
-            {{ isEditMode ? 'Chinh sua bai viet nghien cuu' : 'Soan thao bai viet nghien cuu' }}
+            {{ isEditMode ? 'Chỉnh sửa bài viết nghiên cứu' : 'Soạn thảo bài viết nghiên cứu' }}
           </h1>
           <p class="mt-3 text-[11px] sm:text-sm text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
-            Dien day du thong tin bai viet, doi tuong tac gia, nam cong bo, the loai va file PDF neu can.
+            Điền đầy đủ thông tin bài viết, đối tượng tác giả, năm công bố, thể loại và file PDF nếu cần.
           </p>
 
           <ng-container *ngIf="!isLoadingPaper; else loadingPaperTpl">
             <form class="mt-6 sm:mt-8 space-y-5 sm:space-y-6" (ngSubmit)="save()">
               <div>
                 <label for="title" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Ten de tai
+                  Tên đề tài
                 </label>
                 <textarea id="title"
                           name="title"
@@ -55,27 +55,27 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                           data-title-field="true"
                           (input)="onTitleInput($event)"
                           class="w-full min-h-[76px] border border-gray-200 px-3.5 py-2.5 text-sm leading-6 text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors resize-none overflow-hidden"
-                          placeholder="Nhap ten de tai nghien cuu"></textarea>
+                          placeholder="Nhập tên đề tài nghiên cứu"></textarea>
               </div>
 
               <div class="grid gap-5 sm:grid-cols-2">
                 <div>
                   <label for="paperType" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                    Loai bai nghien cuu
+                    Loại bài nghiên cứu
                   </label>
                   <select id="paperType"
                           name="paperType"
                           [(ngModel)]="selectedPaperType"
                           required
                           class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
-                    <option value="SCIENTIFIC_RESEARCH">Nghien cuu khoa hoc</option>
-                    <option value="GRADUATION_THESIS">Khoa luan tot nghiep</option>
+                    <option value="SCIENTIFIC_RESEARCH">Nghiên cứu khoa học</option>
+                    <option value="GRADUATION_THESIS">Khóa luận tốt nghiệp</option>
                   </select>
                 </div>
 
                 <div>
                   <label for="category" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                    Doi tuong tac gia
+                    Đối tượng tác giả
                   </label>
                   <select id="category"
                           name="category"
@@ -83,29 +83,29 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                           [disabled]="!isAdminEditor"
                           required
                           class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors disabled:bg-gray-50 disabled:text-gray-400">
-                    <option value="STUDENT">Sinh vien</option>
-                    <option value="LECTURER">Giang vien</option>
+                    <option value="STUDENT">Sinh viên</option>
+                    <option value="LECTURER">Giảng viên</option>
                   </select>
                   <p *ngIf="!isAdminEditor" class="mt-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    Truong nay duoc khoa theo vai tro tai khoan hien tai.
+                    Trường này được khóa theo vai trò tài khoản hiện tại.
                   </p>
                 </div>
 
                 <div *ngIf="isAdminEditor">
                   <label for="authorName" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                    Ten tac gia hien thi
+                    Tên tác giả hiển thị
                   </label>
                   <input id="authorName"
                          name="authorName"
                          [(ngModel)]="authorName"
                          maxlength="255"
                          class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
-                         placeholder="Nhap ten tac gia hien thi cho bai viet nay">
+                         placeholder="Nhập tên tác giả hiển thị cho bài viết này">
                 </div>
 
                 <div>
                   <label for="publicationYear" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                    Nam cong bo
+                    Năm công bố
                   </label>
                   <select id="publicationYear"
                           name="publicationYear"
@@ -120,20 +120,20 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
 
                 <div>
                   <label for="journalConference" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                    Tap chi / hoi nghi
+                    Tạp chí / hội nghị
                   </label>
                   <input id="journalConference"
                          name="journalConference"
                          [(ngModel)]="journalConference"
                          maxlength="255"
                          class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
-                         placeholder="Vi du: MIM Draft, Hoi nghi khoa hoc, Tap chi chuyen nganh">
+                         placeholder="Ví dụ: MIM Draft, Hội nghị khoa học, Tạp chí chuyên ngành">
                 </div>
               </div>
 
               <div>
                 <label for="researchArea" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Phan loai bai viet
+                  Phân loại bài viết
                 </label>
                 <select id="researchArea"
                         name="researchArea"
@@ -141,25 +141,25 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                         required
                         class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors">
                   <option value="" disabled>
-                    {{ isLoadingCategories ? 'Dang tai danh muc...' : 'Chon phan loai' }}
+                    {{ isLoadingCategories ? 'Đang tải danh mục...' : 'Chọn phân loại' }}
                   </option>
                   <option *ngFor="let category of researchCategories" [value]="category.name">
                     {{ category.name }}
                   </option>
                   <option *ngIf="selectedResearchArea && !isKnownResearchArea(selectedResearchArea)"
                           [value]="selectedResearchArea">
-                    {{ selectedResearchArea }} (khong con hoat dong)
+                    {{ selectedResearchArea }} (không còn hoạt động)
                   </option>
                 </select>
                 <p *ngIf="!isLoadingCategories && researchCategories.length === 0"
                    class="mt-2 text-[10px] font-bold uppercase tracking-widest text-amber-600">
-                  Chua co phan loai bai nghien cuu. Lien he admin de them danh muc truoc khi dang bai.
+                  Chưa có phân loại bài nghiên cứu. Liên hệ admin để thêm danh mục trước khi đăng bài.
                 </p>
               </div>
 
               <div class="w-full sm:max-w-4xl">
                 <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Tom tat
+                  Tóm tắt
                 </label>
                 <div class="w-full border border-gray-200 bg-white overflow-hidden">
                   <ng-container *ngIf="isEditorReady; else editorLoadingTpl">
@@ -171,23 +171,23 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                       [modules]="quillModules"
                       [(ngModel)]="abstract"
                       (ngModelChange)="onAbstractChange()"
-                      placeholder="Nhap noi dung tom tat cong trinh nghien cuu...">
+                      placeholder="Nhập nội dung tóm tắt công trình nghiên cứu...">
                     </quill-editor>
                   </ng-container>
                   <ng-template #editorLoadingTpl>
                     <div class="min-h-[220px] px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-gray-300">
-                      Dang tai noi dung tom tat...
+                      Đang tải nội dung tóm tắt...
                     </div>
                   </ng-template>
                 </div>
                 <p *ngIf="isAbstractBlank()" class="mt-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                  Dung toolbar de dinh dang noi dung dai: tieu de, can le, danh sach, trich dan, lien ket...
+                  Dùng toolbar để định dạng nội dung dài: tiêu đề, căn lề, danh sách, trích dẫn, liên kết...
                 </p>
               </div>
 
               <div>
                 <label for="pdfFile" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Tep PDF hien thi (khong bat buoc)
+                  Tệp PDF hiển thị (không bắt buộc)
                 </label>
                 <input id="pdfFile"
                        type="file"
@@ -197,14 +197,14 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
 
                 <div class="mt-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 space-y-2">
                   <p>
-                    {{ selectedPdfName ? 'Tep da chon: ' + selectedPdfName : (existingPdfUrl ? 'Tep hien tai: ' + existingPdfFileName : 'Chua co file PDF') }}
+                    {{ selectedPdfName ? 'Tệp đã chọn: ' + selectedPdfName : (existingPdfUrl ? 'Tệp hiện tại: ' + existingPdfFileName : 'Chưa có file PDF') }}
                   </p>
 
                   <a *ngIf="effectivePdfUrl"
                      [href]="effectivePdfUrl"
                      target="_blank"
                      class="inline-block text-hus-blue hover:text-hus-dark transition underline underline-offset-2">
-                    Xem PDF dang dung
+                    Xem PDF đang dùng
                   </a>
                 </div>
               </div>
@@ -219,17 +219,17 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
 
               <div class="pt-3 border-t border-gray-100">
                 <div class="flex items-center justify-end gap-2 lg:gap-3">
-                  <button type="button"
+                    <button type="button"
                           (click)="cancel()"
                           class="inline-flex h-8 sm:h-9 lg:h-10 shrink-0 items-center justify-center px-2.5 sm:px-3 border border-gray-200 text-gray-500 text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
-                    Huy
+                    Hủy
                   </button>
 
                   <button type="submit"
                           [disabled]="isSaving"
                           class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center px-2.5 sm:px-3 lg:px-4 bg-hus-blue text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wide hover:bg-hus-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                    <span class="sm:hidden">{{ isSaving ? 'Luu...' : (isEditMode ? 'Cap nhat' : 'Luu') }}</span>
-                    <span class="hidden sm:inline">{{ isSaving ? 'Dang luu...' : (isEditMode ? 'Cap nhat bai viet' : 'Luu bai viet') }}</span>
+                    <span class="sm:hidden">{{ isSaving ? 'Lưu...' : (isEditMode ? 'Cập nhật' : 'Lưu') }}</span>
+                    <span class="hidden sm:inline">{{ isSaving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật bài viết' : 'Lưu bài viết') }}</span>
                   </button>
                 </div>
               </div>
@@ -238,7 +238,7 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
 
           <ng-template #loadingPaperTpl>
             <div class="mt-6 sm:mt-8 border border-dashed border-gray-200 px-4 py-8 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Dang tai du lieu bai viet...
+              Đang tải dữ liệu bài viết...
             </div>
           </ng-template>
         </div>
@@ -311,21 +311,21 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       const segments = withoutQuery.split('/');
       const rawName = segments[segments.length - 1] || '';
       const decoded = decodeURIComponent(rawName);
-      return decoded || 'Tep PDF';
+      return decoded || 'Tệp PDF';
     } catch {
-      return 'Tep PDF';
+      return 'Tệp PDF';
     }
   }
 
   ngOnInit(): void {
     const currentUser = authSignal.user();
     if (!currentUser) {
-      this.redirectToMyPapers('Vui long dang nhap de thao tac bai viet.');
+      this.redirectToMyPapers('Vui lòng đăng nhập để thao tác bài viết.');
       return;
     }
 
     if (!authSignal.canCreateContent()) {
-      this.redirectToMyPapers('Tai khoan chua xac thuc email. Ban chua the tao hoac cap nhat bai viet.');
+      this.redirectToMyPapers('Tài khoản chưa xác thực email. Bạn chưa thể tạo hoặc cập nhật bài viết.');
       return;
     }
 
@@ -353,7 +353,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       })
     ).subscribe((paper) => {
       if (!paper) {
-        this.redirectToMyPapers('Bai viet khong ton tai hoac ban khong co quyen chinh sua.');
+        this.redirectToMyPapers('Bài viết không tồn tại hoặc bạn không có quyền chỉnh sửa.');
         return;
       }
 
@@ -374,12 +374,12 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
   save(): void {
     const currentUser = authSignal.user();
     if (!currentUser) {
-      this.redirectToMyPapers('Vui long dang nhap de thao tac bai viet.');
+      this.redirectToMyPapers('Vui lòng đăng nhập để thao tác bài viết.');
       return;
     }
 
     if (!authSignal.canCreateContent()) {
-      this.errorMessage = 'Tai khoan chua xac thuc email. Ban chua the tao hoac cap nhat bai viet.';
+      this.errorMessage = 'Tài khoản chưa xác thực email. Bạn chưa thể tạo hoặc cập nhật bài viết.';
       return;
     }
 
@@ -390,7 +390,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     const trimmedResearchArea = this.selectedResearchArea.trim();
 
     if (!trimmedTitle || !trimmedResearchArea || !abstractPlainText) {
-      this.errorMessage = 'Vui long nhap day du ten de tai, linh vuc va tom tat.';
+      this.errorMessage = 'Vui lòng nhập đầy đủ tên đề tài, lĩnh vực và tóm tắt.';
       return;
     }
 
@@ -424,18 +424,18 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
         next: (savedPaper) => {
           if (!savedPaper) {
             if (this.isEditMode) {
-              this.redirectToMyPapers('Khong the cap nhat bai viet.');
+              this.redirectToMyPapers('Không thể cập nhật bài viết.');
               return;
             }
-            this.errorMessage = 'Khong the luu bai viet. Vui long thu lai.';
+            this.errorMessage = 'Không thể lưu bài viết. Vui lòng thử lại.';
             return;
           }
 
           const notice = this.isEditMode
             ? (savedPaper.approvalStatus === 'PENDING'
-              ? 'Da cap nhat bai viet nghien cuu va gui lai duyet.'
-              : 'Da cap nhat bai viet nghien cuu.')
-            : 'Da tao bai viet nghien cuu moi.';
+              ? 'Đã cập nhật bài viết nghiên cứu và gửi lại duyệt.'
+              : 'Đã cập nhật bài viết nghiên cứu.')
+            : 'Đã tạo bài viết nghiên cứu mới.';
 
           if (this.isEditMode) {
             this.successMessage = notice;
@@ -443,11 +443,11 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
           }
 
           this.resetEditorForm(currentUser.role);
-          this.successMessage = 'Dang bai thanh cong. Ban co the tiep tuc tao bai viet moi.';
+          this.successMessage = 'Đăng bài thành công. Bạn có thể tiếp tục tạo bài viết mới.';
           window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         error: (error: { error?: { message?: string } }) => {
-          this.errorMessage = error?.error?.message || 'Luu bai viet that bai. Vui long thu lai.';
+          this.errorMessage = error?.error?.message || 'Lưu bài viết thất bại. Vui lòng thử lại.';
         }
       });
   }
@@ -462,7 +462,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     const isPdfMime = file.type === 'application/pdf';
     const hasPdfExtension = file.name.toLowerCase().endsWith('.pdf');
     if (!isPdfMime && !hasPdfExtension) {
-      this.errorMessage = 'Chi chap nhan tep PDF.';
+      this.errorMessage = 'Chỉ chấp nhận tệp PDF.';
       this.selectedPdfFile = null;
       this.selectedPdfName = '';
       this.revokeSelectedPreviewUrl();

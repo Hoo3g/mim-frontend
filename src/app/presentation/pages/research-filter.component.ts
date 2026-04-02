@@ -158,7 +158,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                           <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
                         </svg>
                       </span>
-                      <span class="min-w-0 flex-1">Nghien cuu khoa hoc</span>
+                      <span class="min-w-0 flex-1">Nghiên cứu khoa học</span>
                       <span class="shrink-0 text-[10px] font-black tabular-nums text-gray-400"
                             [class.text-hus-blue]="paperTypeFilter === 'SCIENTIFIC_RESEARCH'">
                         ({{ getPaperTypeCount('SCIENTIFIC_RESEARCH') }})
@@ -184,7 +184,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                           <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
                         </svg>
                       </span>
-                      <span class="min-w-0 flex-1">Khoa luan tot nghiep</span>
+                      <span class="min-w-0 flex-1">Khóa luận tốt nghiệp</span>
                       <span class="shrink-0 text-[10px] font-black tabular-nums text-gray-400"
                             [class.text-hus-blue]="paperTypeFilter === 'GRADUATION_THESIS'">
                         ({{ getPaperTypeCount('GRADUATION_THESIS') }})
@@ -308,7 +308,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                           <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
                         </svg>
                       </span>
-                      <span class="min-w-0 flex-1">Giang vien</span>
+                      <span class="min-w-0 flex-1">Giảng viên</span>
                       <span class="shrink-0 text-[10px] font-black tabular-nums text-gray-400"
                             [class.text-hus-blue]="roleFilter === 'LECTURER'">
                         ({{ getRoleCount('LECTURER') }})
@@ -334,7 +334,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                           <path d="M2.5 6.3 4.8 8.6 9.5 3.8" stroke-linecap="round" stroke-linejoin="round"></path>
                         </svg>
                       </span>
-                      <span class="min-w-0 flex-1">Sinh vien</span>
+                      <span class="min-w-0 flex-1">Sinh viên</span>
                       <span class="shrink-0 text-[10px] font-black tabular-nums text-gray-400"
                             [class.text-hus-blue]="roleFilter === 'STUDENT'">
                         ({{ getRoleCount('STUDENT') }})
@@ -403,7 +403,7 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
                       <span>{{ paper.researchArea || 'Chưa phân loại' }}</span>
                       <span class="text-gray-300">•</span>
                       <span>{{ paper.paperType === 'GRADUATION_THESIS' ? 'Khóa luận tốt nghiệp' : 'Nghiên cứu khoa học' }}</span>
-                      <span class="text-gray-300">â€¢</span>
+                      <span class="text-gray-300">•</span>
                       <span class="tabular-nums">{{ paper.publicationYear }}</span>
                     </div>
 
@@ -777,7 +777,7 @@ export class ResearchFilterComponent implements OnInit {
       next: (result) => {
         const counts: Record<string, number> = {};
         for (const paper of result.content ?? []) {
-          const key = (paper.researchArea ?? '').trim() || 'Chua phan loai';
+          const key = (paper.researchArea ?? '').trim() || 'Chưa phân loại';
           counts[key] = (counts[key] ?? 0) + 1;
         }
         this.specializationCounts = counts;
@@ -858,6 +858,4 @@ export class ResearchFilterComponent implements OnInit {
     return Array.from({ length: currentYear - 2025 + 1 }, (_, index) => currentYear - index);
   }
 }
-
-
 

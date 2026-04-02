@@ -157,7 +157,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                         (click)="loadMorePapers()"
                         [disabled]="isLoadingPapers"
                         class="inline-flex items-center justify-center border border-hus-blue px-3 py-2 text-[11px] font-black leading-none text-hus-blue transition-colors hover:bg-hus-blue hover:text-white">
-                  <span>{{ isLoadingPapers ? 'Dang tai...' : 'Xem thêm' }}</span>
+                  <span>{{ isLoadingPapers ? 'Đang tải...' : 'Xem thêm' }}</span>
                 </button>
               </div>
             </div>
