@@ -851,11 +851,11 @@ export class ResearchFilterComponent implements OnInit {
 
   get availablePublicationYears(): number[] {
     const currentYear = new Date().getFullYear();
-    if (currentYear < 2025) {
+    const maxYear = currentYear + 1;
+    if (maxYear < 2025) {
       return [2025];
     }
 
-    return Array.from({ length: currentYear - 2025 + 1 }, (_, index) => currentYear - index);
+    return Array.from({ length: maxYear - 2025 + 1 }, (_, index) => maxYear - index);
   }
 }
-

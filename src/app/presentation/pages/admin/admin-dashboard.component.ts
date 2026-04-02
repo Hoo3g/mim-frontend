@@ -194,9 +194,7 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                     <button type="button" (click)="clearPostSearch()" class="px-4 py-2 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-colors">Xóa lọc</button>
                   </div>
                 </div>
-                <p class="text-[10px] text-gray-400">
-                  Hiển thị {{ pendingPosts().length }}/{{ pendingPostsTotal }} bài chờ duyệt và {{ approvedPosts().length }}/{{ approvedPostsTotal }} bài đã duyệt.
-                </p>
+                
               </div>
 
               <div *ngIf="pendingPosts().length > 0 && can('MODERATION_POSTS_ACTION')"
@@ -311,17 +309,11 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
  
             <div *ngIf="currentTab === 'PAPERS' && can('MODERATION_PAPERS_VIEW')" class="space-y-4">
               <div class="bg-white border border-gray-100 px-4 py-3 space-y-3">
-                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div class="flex flex-col gap-2">
                   <div class="min-w-0">
                     <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Tìm kiếm nhanh bài nghiên cứu</p>
-                    <p class="mt-1 text-[10px] text-gray-400">Admin có thể tạo bài nghiên cứu mới ngay từ khu vực này.</p>
+                    <p class="mt-1 text-[10px] text-gray-400">Dùng ô tìm kiếm để lọc nhanh các bài nghiên cứu đã gửi lên hệ thống.</p>
                   </div>
-
-                  <a *ngIf="can('MODERATION_PAPERS_ACTION')"
-                     [routerLink]="['/paper/editor']"
-                     class="inline-flex items-center justify-center px-4 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors whitespace-nowrap">
-                    Tạo bài nghiên cứu
-                  </a>
                 </div>
 
                 <div class="flex flex-col gap-3 sm:flex-row">
@@ -337,9 +329,7 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                     <button type="button" (click)="clearPaperSearch()" class="px-4 py-2 border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-colors">Xóa lọc</button>
                   </div>
                 </div>
-                <p class="text-[10px] text-gray-400">
-                  Hiển thị {{ pendingPapers().length }}/{{ pendingPapersTotal }} bài chờ duyệt và {{ approvedPapers().length }}/{{ approvedPapersTotal }} bài đã duyệt.
-                </p>
+                
               </div>
 
               <div *ngIf="pendingPapers().length > 0 && can('MODERATION_PAPERS_ACTION')"

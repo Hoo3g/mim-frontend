@@ -153,18 +153,18 @@ interface HeaderNotificationItem {
 
           <!-- Nav Links Desktop -->
           <div class="hidden md:flex space-x-6 h-full items-center">
-            <a routerLink="/" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
+            <a routerLink="/" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-[13px] uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
               NGHIÊN CỨU
             </a>
             <a href=""
                (click)="navigateToRoute(ROUTES.RECRUITMENT, $event)"
                [class.text-hus-blue]="isRouteActive(ROUTES.RECRUITMENT)"
                [class.border-hus-blue]="isRouteActive(ROUTES.RECRUITMENT)"
-               class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
+               class="text-gray-700 hover:text-hus-blue font-bold text-[13px] uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
               TUYỂN DỤNG
             </a>
             
-            <a routerLink="/news" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
+            <a routerLink="/news" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-[13px] uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
               TIN TỨC
             </a>
 
@@ -259,7 +259,7 @@ interface HeaderNotificationItem {
                   </svg>
                   Hệ thống Quản trị
                 </a>
-                
+
                 <a [routerLink]="ROUTES.PROFILE"
                    (click)="showProfileMenu = false"
                    class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
@@ -267,6 +267,16 @@ interface HeaderNotificationItem {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                   Thông tin cá nhân
+                </a>
+
+                <a *ngIf="canAccessAdmin()"
+                   [routerLink]="ROUTES.RESEARCH_EDITOR"
+                   (click)="showProfileMenu = false"
+                   class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-hus-blue transition-colors group text-[10px] font-black uppercase tracking-widest">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600 group-hover:text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Tạo bài nghiên cứu
                 </a>
                 
                 <a *ngIf="canManageResearchPapers()"
@@ -370,6 +380,16 @@ interface HeaderNotificationItem {
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     <span>Thông tin cá nhân</span>
+                  </a>
+                  <a *ngIf="canAccessAdmin()"
+                     [routerLink]="ROUTES.RESEARCH_EDITOR"
+                     routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
+                     (click)="closeMobileMenu()"
+                     class="flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>Tạo bài nghiên cứu</span>
                   </a>
                   <a *ngIf="canManageResearchPapers()"
                      [routerLink]="ROUTES.RESEARCH_MY_PAPERS"

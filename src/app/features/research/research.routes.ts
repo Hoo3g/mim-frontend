@@ -33,7 +33,6 @@ export const researchRoutes: Routes = [
     },
     {
         path: ':id',
-        canActivate: [authGuard],
         loadComponent: () => import('../../presentation/pages/research-detail.component').then(m => m.ResearchDetailComponent)
     }
 ];

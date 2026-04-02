@@ -94,7 +94,7 @@ import { LoadingSpinnerComponent } from '../loading-spinner/loading-spinner.comp
           </div>
         }
 
-        <div #pagesContainer class="min-h-full p-4 sm:p-6 space-y-4">
+        <div #pagesContainer class="min-h-full p-1.5 sm:p-6 space-y-2 sm:space-y-4">
           @for (pageNumber of pageNumbers(); track pageNumber) {
             <div class="flex justify-center">
               <canvas
@@ -359,12 +359,14 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
     if (containerWidth <= 0) {
       return;
     }
+    const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 640;
 
     const pagesStyle = window.getComputedStyle(pagesContainer);
     const horizontalPadding =
       (Number.parseFloat(pagesStyle.paddingLeft) || 0) +
       (Number.parseFloat(pagesStyle.paddingRight) || 0);
-    const targetWidth = Math.max(0, containerWidth - horizontalPadding);
+    const mobileFitBoost = isMobileViewport ? 1.03 : 1;
+    const targetWidth = Math.max(0, (containerWidth - horizontalPadding) * mobileFitBoost);
     if (targetWidth <= 0) {
       return;
     }
