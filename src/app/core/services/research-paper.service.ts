@@ -24,7 +24,14 @@ export interface ResearchEditorPayload {
     journalConference?: string;
     category: 'LECTURER' | 'STUDENT';
     authorName?: string;
+    coAuthorStudentIds?: string[];
     pdfUrl?: string;
+}
+
+export interface ResearchStudentAuthorCandidate {
+    userId: string;
+    studentId: string;
+    fullName: string;
 }
 
 export interface ResearchPaperListQuery {
@@ -44,10 +51,17 @@ interface ResearchPdfUploadResponse {
 interface ResearchPaperApiAuthor {
     studentId?: string;
     name?: string;
+    authorType?: 'STUDENT' | 'LECTURER' | string;
     isMainAuthor?: boolean;
     mainAuthor?: boolean;
     authorOrder?: number;
     canViewProfile?: boolean;
+}
+
+interface ResearchStudentAuthorCandidateApiModel {
+    userId?: string;
+    studentId?: string;
+    fullName?: string;
 }
 
 interface ResearchPaperApiModel {
@@ -196,6 +210,26 @@ export class ResearchPaperService {
         return this.myPapersCache.set(cacheKey, request$);
     }
 
+    searchStudentAuthorsByStudentId(query: string): Observable<ResearchStudentAuthorCandidate[]> {
+        const keyword = (query ?? '').trim();
+        if (keyword.length < 2) {
+            return of([]);
+        }
+
+        return this.http.get<ApiResponse<ResearchStudentAuthorCandidateApiModel[]>>(
+            API_ENDPOINTS.RESEARCH.STUDENT_AUTHOR_SEARCH,
+            { params: new HttpParams().set('q', keyword) }
+        ).pipe(
+            map((response) => unwrapList(response).map((item) => ({
+                userId: item.userId?.trim() ?? '',
+                studentId: item.studentId?.trim() ?? '',
+                fullName: item.fullName?.trim() || UI_LABELS.UNKNOWN_AUTHOR
+            }))),
+            map((items) => items.filter((item) => item.userId.length > 0 && item.studentId.length > 0)),
+            catchError(() => of([]))
+        );
+    }
+
     saveFromEditor(payload: ResearchEditorPayload, _currentUser: AuthUser): Observable<ResearchPaper | null> {
         const title = payload.title.trim();
         const abstract = normalizeRichTextHtml(payload.abstract).trim();
@@ -214,6 +248,9 @@ export class ResearchPaperService {
             journalConference: payload.journalConference?.trim() || undefined,
             category: payload.category,
             authorName: payload.authorName?.trim() || undefined,
+            coAuthorStudentIds: (payload.coAuthorStudentIds ?? [])
+                .map((id) => (id ?? '').trim())
+                .filter((id) => id.length > 0),
             pdfUrl: payload.pdfUrl
         };
 
@@ -412,6 +449,7 @@ export class ResearchPaperService {
         const mappedAuthors: PaperAuthor[] = authors.map((author, index) => ({
             studentId: author.studentId ?? '',
             name: (author.name?.trim() || UI_LABELS.UNKNOWN_AUTHOR),
+            authorType: author.authorType === 'LECTURER' ? 'LECTURER' : 'STUDENT',
             isMainAuthor: author.isMainAuthor ?? author.mainAuthor ?? index === 0,
             authorOrder: author.authorOrder ?? (index + 1),
             canViewProfile: author.canViewProfile ?? true

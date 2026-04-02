@@ -4,6 +4,7 @@ import { Role } from '../enums/role.enum';
 export interface PaperAuthor {
     studentId: string;
     name: string;
+    authorType?: 'STUDENT' | 'LECTURER';
     isMainAuthor: boolean;
     authorOrder: number;
     canViewProfile?: boolean;

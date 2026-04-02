@@ -2,14 +2,14 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { finalize, of, switchMap, take } from 'rxjs';
+import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize, of, switchMap, take } from 'rxjs';
 import { QuillEditorComponent } from 'ngx-quill';
 import { QuillModules } from 'ngx-quill/config';
 
 import { Role } from '../../core/enums/role.enum';
 import { ROUTES } from '../../core/constants/route.const';
 import { authSignal } from '../../core/signals/auth.signal';
-import { ResearchEditorPayload, ResearchPaperService } from '../../core/services/research-paper.service';
+import { ResearchEditorPayload, ResearchPaperService, ResearchStudentAuthorCandidate } from '../../core/services/research-paper.service';
 import { ResearchCategoryService } from '../../core/services/research-category.service';
 import { ResearchCategory } from '../../core/models/research-category.model';
 import { normalizeRichTextHtml } from '../../core/utils/rich-text.util';
@@ -128,6 +128,89 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                          maxlength="255"
                          class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
                          placeholder="Ví dụ: MIM Draft, Hội nghị khoa học, Tạp chí chuyên ngành">
+                </div>
+              </div>
+
+              <div class="border border-gray-200 bg-gray-50/40 rounded-sm p-4 sm:p-5">
+                <div class="flex flex-col gap-1">
+                  <label for="coAuthorSearch" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                    Đồng tác giả sinh viên
+                  </label>
+                  <p class="text-[11px] sm:text-xs text-gray-500 leading-5">
+                    Tìm theo mã sinh viên để thêm đồng tác giả vào bài nghiên cứu. Tác giả chính vẫn là người tạo bài hiện tại.
+                  </p>
+                </div>
+
+                <div class="mt-4">
+                  <input id="coAuthorSearch"
+                         name="coAuthorSearch"
+                         [ngModel]="coAuthorSearchKeyword"
+                         (ngModelChange)="onCoAuthorSearchKeywordChange($event)"
+                         class="w-full border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 rounded-sm sm:px-4 sm:py-3 focus:outline-none focus:border-hus-blue transition-colors"
+                         placeholder="Nhập mã sinh viên, ví dụ: 20210001">
+                  <p class="mt-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Nhập ít nhất 2 ký tự để tìm nhanh theo mã sinh viên.
+                  </p>
+                </div>
+
+                <div *ngIf="isSearchingCoAuthors || coAuthorSearchResults.length > 0 || coAuthorSearchMessage"
+                     class="mt-4 border border-gray-200 bg-white rounded-sm overflow-hidden">
+                  <div *ngIf="isSearchingCoAuthors"
+                       class="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Đang tìm sinh viên...
+                  </div>
+
+                  <div *ngIf="!isSearchingCoAuthors && coAuthorSearchResults.length > 0" class="divide-y divide-gray-100">
+                    <div *ngFor="let candidate of coAuthorSearchResults"
+                         class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p class="text-sm font-black text-gray-900">{{ candidate.fullName }}</p>
+                        <p class="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                          Mã sinh viên: {{ candidate.studentId }}
+                        </p>
+                      </div>
+
+                      <button type="button"
+                              (click)="addCoAuthor(candidate)"
+                              class="inline-flex h-9 items-center justify-center px-3 rounded-sm border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-wide hover:bg-hus-blue hover:text-white transition-colors">
+                        Thêm đồng tác giả
+                      </button>
+                    </div>
+                  </div>
+
+                  <div *ngIf="!isSearchingCoAuthors && coAuthorSearchMessage"
+                       class="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    {{ coAuthorSearchMessage }}
+                  </div>
+                </div>
+
+                <div class="mt-4">
+                  <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                    Danh sách đồng tác giả đã chọn
+                  </p>
+
+                  <div *ngIf="selectedCoAuthors.length > 0" class="space-y-2">
+                    <div *ngFor="let author of selectedCoAuthors"
+                         class="flex flex-col gap-3 rounded-sm border border-gray-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p class="text-sm font-black text-gray-900">{{ author.fullName }}</p>
+                        <p class="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                          {{ author.studentId ? ('Mã sinh viên: ' + author.studentId) : 'Đồng tác giả sinh viên đã liên kết' }}
+                        </p>
+                      </div>
+
+                      <button type="button"
+                              (click)="removeCoAuthor(author.userId)"
+                              class="inline-flex h-9 items-center justify-center px-3 rounded-sm border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-wide hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-colors">
+                        Bỏ khỏi bài viết
+                      </button>
+                    </div>
+                  </div>
+
+                  <p *ngIf="selectedCoAuthors.length === 0"
+                     class="rounded-sm border border-dashed border-gray-200 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Chưa có đồng tác giả sinh viên nào được thêm.
+                  </p>
                 </div>
               </div>
 
@@ -252,6 +335,8 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
   private readonly paperService = inject(ResearchPaperService);
   private readonly researchCategoryService = inject(ResearchCategoryService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly coAuthorSearchInput$ = new Subject<string>();
+  private coAuthorSearchSub: Subscription | null = null;
 
   protected readonly ROUTES = ROUTES;
   protected readonly quillModules: QuillModules = {
@@ -277,6 +362,11 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
   selectedPaperType: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS' = 'SCIENTIFIC_RESEARCH';
   selectedCategory: 'LECTURER' | 'STUDENT' = 'STUDENT';
   authorName = '';
+  coAuthorSearchKeyword = '';
+  coAuthorSearchResults: ResearchStudentAuthorCandidate[] = [];
+  selectedCoAuthors: ResearchStudentAuthorCandidate[] = [];
+  coAuthorSearchMessage = '';
+  isSearchingCoAuthors = false;
   publicationYear = new Date().getFullYear();
   journalConference = 'MIM Draft';
 
@@ -331,6 +421,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
 
     this.initializeAuthorCategory(currentUser.role);
     this.loadResearchCategories();
+    this.bindCoAuthorSearch();
 
     const paperId = this.route.snapshot.paramMap.get('id');
     if (!paperId) {
@@ -364,6 +455,13 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
       this.selectedPaperType = paper.paperType ?? 'SCIENTIFIC_RESEARCH';
       this.selectedCategory = paper.category === Role.LECTURER ? 'LECTURER' : 'STUDENT';
       this.authorName = paper.authors.find((author) => author.isMainAuthor)?.name ?? '';
+      this.selectedCoAuthors = paper.authors
+        .filter((author) => !author.isMainAuthor && author.authorType === 'STUDENT' && author.studentId)
+        .map((author) => ({
+          userId: author.studentId,
+          studentId: '',
+          fullName: author.name
+        }));
       this.publicationYear = paper.publicationYear || new Date().getFullYear();
       this.journalConference = (paper.journalConference ?? 'MIM Draft').trim() || 'MIM Draft';
       this.scheduleTitleTextareaResize();
@@ -414,6 +512,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             journalConference: this.journalConference.trim(),
             category: this.selectedCategory,
             authorName: this.isAdminEditor ? this.authorName.trim() : undefined,
+            coAuthorStudentIds: this.selectedCoAuthors.map((author) => author.userId),
             pdfUrl: uploadedPdfUrl ?? this.existingPdfUrl ?? undefined
           };
           return this.paperService.saveFromEditor(payload, currentUser);
@@ -490,6 +589,11 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     this.autoResizeTextarea(textarea);
   }
 
+  onCoAuthorSearchKeywordChange(value: string): void {
+    this.coAuthorSearchKeyword = value ?? '';
+    this.coAuthorSearchInput$.next(this.coAuthorSearchKeyword);
+  }
+
   isAbstractBlank(): boolean {
     return !this.toPlainText(this.abstract);
   }
@@ -498,7 +602,27 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     return this.researchCategories.some((category) => category.name === name);
   }
 
+  addCoAuthor(candidate: ResearchStudentAuthorCandidate): void {
+    const currentUserId = authSignal.user()?.id ?? '';
+    if (!candidate?.userId || candidate.userId === currentUserId || this.hasSelectedCoAuthor(candidate.userId)) {
+      return;
+    }
+
+    this.selectedCoAuthors = [...this.selectedCoAuthors, candidate];
+    this.coAuthorSearchKeyword = '';
+    this.coAuthorSearchResults = [];
+    this.coAuthorSearchMessage = '';
+  }
+
+  removeCoAuthor(userId: string): void {
+    this.selectedCoAuthors = this.selectedCoAuthors.filter((author) => author.userId !== userId);
+    if (this.coAuthorSearchKeyword.trim().length >= 2) {
+      this.coAuthorSearchInput$.next(this.coAuthorSearchKeyword);
+    }
+  }
+
   ngOnDestroy(): void {
+    this.coAuthorSearchSub?.unsubscribe();
     this.revokeSelectedPreviewUrl();
   }
 
@@ -558,6 +682,50 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     });
   }
 
+  private bindCoAuthorSearch(): void {
+    this.coAuthorSearchSub = this.coAuthorSearchInput$.pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap((rawKeyword) => {
+        const keyword = (rawKeyword ?? '').trim();
+        if (keyword.length < 2) {
+          this.isSearchingCoAuthors = false;
+          this.coAuthorSearchResults = [];
+          this.coAuthorSearchMessage = keyword ? 'Nhập ít nhất 2 ký tự để tìm mã sinh viên.' : '';
+          this.cdr.detectChanges();
+          return of<ResearchStudentAuthorCandidate[]>([]);
+        }
+
+        this.isSearchingCoAuthors = true;
+        this.coAuthorSearchMessage = '';
+        return this.paperService.searchStudentAuthorsByStudentId(keyword).pipe(
+          finalize(() => {
+            this.isSearchingCoAuthors = false;
+            this.cdr.detectChanges();
+          })
+        );
+      })
+    ).subscribe((items) => {
+      const keyword = this.coAuthorSearchKeyword.trim();
+      if (keyword.length < 2) {
+        return;
+      }
+
+      const currentUserId = authSignal.user()?.id ?? '';
+      const availableItems = items.filter((item) => item.userId !== currentUserId && !this.hasSelectedCoAuthor(item.userId));
+      this.coAuthorSearchResults = availableItems;
+
+      if (availableItems.length > 0) {
+        this.coAuthorSearchMessage = '';
+      } else {
+        this.coAuthorSearchMessage = items.length > 0
+          ? 'Các sinh viên phù hợp đã được thêm vào bài viết.'
+          : 'Không tìm thấy sinh viên phù hợp.';
+      }
+      this.cdr.detectChanges();
+    });
+  }
+
   private loadResearchCategories(): void {
     this.isLoadingCategories = true;
     this.researchCategoryService.getActiveCategories()
@@ -582,6 +750,10 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     this.selectedCategory = 'STUDENT';
   }
 
+  private hasSelectedCoAuthor(userId: string): boolean {
+    return this.selectedCoAuthors.some((author) => author.userId === userId);
+  }
+
   private buildPublicationYears(): number[] {
     const currentYear = new Date().getFullYear();
     const years: number[] = [];
@@ -598,6 +770,11 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     this.publicationYear = new Date().getFullYear();
     this.journalConference = 'MIM Draft';
     this.authorName = '';
+    this.coAuthorSearchKeyword = '';
+    this.coAuthorSearchResults = [];
+    this.selectedCoAuthors = [];
+    this.coAuthorSearchMessage = '';
+    this.isSearchingCoAuthors = false;
     this.selectedResearchArea = this.researchCategories[0]?.name ?? '';
     this.existingPdfUrl = null;
     this.selectedPdfFile = null;
