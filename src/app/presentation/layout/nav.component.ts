@@ -30,6 +30,13 @@ interface HeaderNotificationItem {
     <header class="font-sans fixed inset-x-0 top-0 z-50 transition-shadow duration-300"
             [class.shadow-sm]="!showMobileMenu || isDesktopViewport"
             [class.shadow-none]="showMobileMenu && !isDesktopViewport">
+      <img *ngIf="isAuth() && currentUser()?.avatarUrl"
+           [src]="currentUser()?.avatarUrl"
+           alt=""
+           aria-hidden="true"
+           loading="eager"
+           fetchpriority="high"
+           class="hidden">
       <!-- Top Bar -->
       <div class="bg-hus-blue text-white text-[10px] uppercase tracking-widest py-1.5 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center justify-between gap-3 font-bold">
@@ -149,7 +156,11 @@ interface HeaderNotificationItem {
             <a routerLink="/" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
               NGHIÊN CỨU
             </a>
-            <a routerLink="/recruitment" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
+            <a href=""
+               (click)="navigateToRoute(ROUTES.RECRUITMENT, $event)"
+               [class.text-hus-blue]="isRouteActive(ROUTES.RECRUITMENT)"
+               [class.border-hus-blue]="isRouteActive(ROUTES.RECRUITMENT)"
+               class="text-gray-700 hover:text-hus-blue font-bold text-sm uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
               TUYỂN DỤNG
             </a>
             
@@ -346,7 +357,7 @@ interface HeaderNotificationItem {
                      routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                      (click)="closeMobileMenu()"
                      class="flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                     </svg>
                     <span>Hệ thống Quản trị</span>
@@ -355,7 +366,7 @@ interface HeaderNotificationItem {
                      routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                      (click)="closeMobileMenu()"
                      class="flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors group">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     <span>Thông tin cá nhân</span>
@@ -365,29 +376,29 @@ interface HeaderNotificationItem {
                      routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                      (click)="closeMobileMenu()"
                      class="flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors group">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                     <span>Bài viết của tôi</span>
-                  </a>
-                  <a [routerLink]="ROUTES.RESEARCH_SAVED_PAPERS"
-                     routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
-                     (click)="closeMobileMenu()"
-                     class="flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors group">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                    </svg>
-                    <span>Bài đã lưu</span>
                   </a>
                   <a *ngIf="canManageRecruitmentPosts()"
                      [routerLink]="ROUTES.RECRUITMENT_MY_POSTS"
                      routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                      (click)="closeMobileMenu()"
                      class="flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors group">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H5a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293H19a2 2 0 012 2v10a2 2 0 01-2 2z" />
                     </svg>
                     <span>Bài tuyển dụng của tôi</span>
+                  </a>
+                  <a [routerLink]="ROUTES.RESEARCH_SAVED_PAPERS"
+                     routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
+                     (click)="closeMobileMenu()"
+                     class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    <span>Bài đã lưu</span>
                   </a>
                   <button type="button"
                           (click)="logout()"
@@ -411,32 +422,27 @@ interface HeaderNotificationItem {
                    routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                    (click)="closeMobileMenu()"
                    class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-hus-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   <span>Nghiên cứu</span>
                 </a>
-                <a routerLink="/recruitment"
-                   routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
-                   (click)="closeMobileMenu()"
+                <a href=""
+                   (click)="navigateToRoute(ROUTES.RECRUITMENT, $event)"
+                   [class.bg-hus-blue/15]="isRouteActive(ROUTES.RECRUITMENT)"
+                   [class.text-gray-900]="isRouteActive(ROUTES.RECRUITMENT)"
+                   [class.shadow-sm]="isRouteActive(ROUTES.RECRUITMENT)"
                    class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2h-3V4a2 2 0 00-2-2h-2a2 2 0 00-2 2v1H6a2 2 0 00-2 2v6m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-4m-8 0H4m4 0v1a1 1 0 001 1h6a1 1 0 001-1v-1" />
                   </svg>
                   <span>Tuyển dụng</span>
-                </a>
-                <a href="#"
-                   class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422A12.083 12.083 0 0118 14.576c0 2.69-2.686 4.924-6 4.924s-6-2.233-6-4.924c0-1.46.311-2.845.84-4.078L12 14z" />
-                  </svg>
-                  
                 </a>
                 <a routerLink="/news"
                    routerLinkActive="bg-hus-blue/15 text-gray-900 shadow-sm"
                    (click)="closeMobileMenu()"
                    class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-900 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11a2 2 0 012 2v1m0 13a2 2 0 002-2V9a2 2 0 00-2-2m0 13a2 2 0 01-2-2V9a2 2 0 012-2m-8 3h4m-4 4h6m-6 4h6M7 10h.01M7 14h.01M7 18h.01" />
                   </svg>
                   <span>Bảng tin khoa</span>
@@ -562,6 +568,18 @@ export class NavComponent implements OnInit, OnDestroy {
   closeMobileMenu(): void {
     this.showMobileMenu = false;
     this.showMobileProfileSection = false;
+  }
+
+  navigateToRoute(url: string, event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    this.showProfileMenu = false;
+    this.showNotificationPanel = false;
+    this.showMobileMenu = false;
+    this.showMobileProfileSection = false;
+    queueMicrotask(() => {
+      void this.router.navigateByUrl(url);
+    });
   }
 
   toggleMobileProfileSection(event: Event): void {
@@ -776,6 +794,14 @@ export class NavComponent implements OnInit, OnDestroy {
 
   mobileAccountLinksMaxHeight(): number {
     return this.isMobileAccountMenuVisible() ? 420 : 0;
+  }
+
+  isRouteActive(url: string): boolean {
+    const currentUrl = this.router.url.split('?')[0].split('#')[0];
+    if (url === ROUTES.RECRUITMENT) {
+      return currentUrl === ROUTES.RECRUITMENT || currentUrl.startsWith(`${ROUTES.RECRUITMENT}/`);
+    }
+    return currentUrl === url;
   }
 
   private formatNotificationTime(timestamp: number): string {

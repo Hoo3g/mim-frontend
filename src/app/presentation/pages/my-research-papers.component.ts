@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { of, Subscription, timer } from 'rxjs';
 import { finalize, switchMap, take, tap } from 'rxjs/operators';
@@ -12,7 +13,7 @@ import { authSignal } from '../../core/signals/auth.signal';
 @Component({
   selector: 'app-my-research-papers',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="bg-white min-h-screen">
       <div class="bg-gray-50 border-b border-gray-100">
@@ -32,12 +33,12 @@ import { authSignal } from '../../core/signals/auth.signal';
           </h2>
           <a *ngIf="canCreateContent(); else verifyResearchCta"
              [routerLink]="ROUTES.RESEARCH_EDITOR"
-             class="inline-flex items-center justify-center px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors">
+             class="inline-flex items-center justify-center rounded-md px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors">
             Tạo bài viết
           </a>
           <ng-template #verifyResearchCta>
             <a [routerLink]="ROUTES.PROFILE"
-               class="inline-flex items-center justify-center px-5 py-2.5 border border-amber-300 text-[10px] font-black uppercase tracking-widest text-amber-800 hover:bg-amber-50 transition-colors">
+               class="inline-flex items-center justify-center rounded-md px-5 py-2.5 border border-amber-300 text-[10px] font-black uppercase tracking-widest text-amber-800 hover:bg-amber-50 transition-colors">
               Xác thực email để đăng bài
             </a>
           </ng-template>
@@ -53,10 +54,48 @@ import { authSignal } from '../../core/signals/auth.signal';
           Tài khoản chưa xác thực email. Bạn chỉ có thể xem danh sách bài viết.
         </div>
 
+        <div class="mb-6">
+          <label for="researchTitleSearch"
+                 class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+            Tìm kiếm bài nghiên cứu
+          </label>
+          <div class="max-w-3xl">
+            <div class="min-w-0">
+              <textarea id="researchTitleSearch"
+                        name="researchTitleSearch"
+                        rows="1"
+                        [(ngModel)]="searchKeyword"
+                        (ngModelChange)="onSearchKeywordChange($event)"
+                        (input)="onSearchFieldInput($event)"
+                        class="w-full min-h-[44px] resize-none overflow-hidden border border-gray-200 bg-white rounded-md px-4 py-2.5 text-sm leading-6 text-gray-900 break-all focus:outline-none focus:border-hus-blue transition-colors sm:min-h-[46px]"
+                        style="overflow-wrap:anywhere;"
+                        placeholder="Nhập tên bài nghiên cứu cần tìm"></textarea>
+            </div>
+
+            <button *ngIf="searchKeyword.trim()"
+                    type="button"
+                    (click)="clearSearch()"
+                    class="mt-2 inline-flex items-center justify-center gap-2 self-end rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:border-gray-300 hover:bg-white hover:text-gray-700 transition-colors"
+                    aria-label="Xóa nội dung tìm kiếm"
+                    title="Xóa nội dung tìm kiếm">
+              <svg viewBox="0 0 24 24"
+                   class="h-4 w-4"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2"
+                   aria-hidden="true">
+                <path d="M18 6 6 18"></path>
+                <path d="m6 6 12 12"></path>
+              </svg>
+              <span>Xóa tìm kiếm</span>
+            </button>
+          </div>
+        </div>
+
         <div *ngIf="displayedPapers">
           <div *ngIf="displayedPapers.length === 0"
                class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
-            Bạn chưa có bài viết nghiên cứu nào.
+            {{ emptyStateMessage() }}
           </div>
 
           <div *ngIf="displayedPapers.length > 0" class="divide-y divide-gray-100 border border-gray-100">
@@ -175,7 +214,9 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
   protected readonly ROUTES = ROUTES;
   protected readonly canCreateContent = authSignal.canCreateContent;
 
+  allPapers: ResearchPaper[] = [];
   displayedPapers: ResearchPaper[] = [];
+  searchKeyword = '';
   noticeMessage = '';
   errorMessage = '';
   deletingPaperIds = new Set<string>();
@@ -225,7 +266,8 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
         return this.paperService.getMyPapers(currentUser, true).pipe(take(1));
       }),
       tap(papers => {
-        this.displayedPapers = papers;
+        this.allPapers = papers;
+        this.applySearchFilter();
         // If no papers are PENDING, we could potentially slow down polling or stop it,
         // but for research papers (which are fewer), 10s is fine while the page is open.
       })
@@ -283,7 +325,8 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.displayedPapers = this.displayedPapers.filter((item) => item.id !== paper.id);
+        this.allPapers = this.allPapers.filter((item) => item.id !== paper.id);
+        this.applySearchFilter();
         this.noticeMessage = 'Đã xóa bài nghiên cứu.';
         this.cdr.detectChanges();
       },
@@ -315,6 +358,25 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
     this.router.navigateByUrl(ROUTES.RESEARCH_EDITOR_EDIT(id));
   }
 
+  onSearchKeywordChange(value: string): void {
+    this.searchKeyword = value ?? '';
+    this.applySearchFilter();
+  }
+
+  clearSearch(): void {
+    this.searchKeyword = '';
+    this.applySearchFilter();
+    this.syncSearchFieldHeight();
+  }
+
+  onSearchFieldInput(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement | null;
+    if (!textarea) {
+      return;
+    }
+    this.autoResizeTextarea(textarea);
+  }
+
   toPlainText(html: string): string {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = html ?? '';
@@ -331,5 +393,48 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
     if (status === 'PENDING') return 'text-amber-600';
     if (status === 'REJECTED') return 'text-red-500';
     return 'text-emerald-600';
+  }
+
+  emptyStateMessage(): string {
+    if (this.searchKeyword.trim()) {
+      return 'Không tìm thấy bài nghiên cứu phù hợp.';
+    }
+    return 'Bạn chưa có bài viết nghiên cứu nào.';
+  }
+
+  private applySearchFilter(): void {
+    const normalizedKeyword = this.normalizeSearchValue(this.searchKeyword);
+    if (!normalizedKeyword) {
+      this.displayedPapers = [...this.allPapers];
+      return;
+    }
+
+    this.displayedPapers = this.allPapers.filter((paper) =>
+      this.normalizeSearchValue(paper.title).includes(normalizedKeyword)
+    );
+  }
+
+  private normalizeSearchValue(value: string): string {
+    return (value ?? '')
+      .normalize('NFD')
+      .replace(/\p{M}+/gu, '')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ');
+  }
+
+  private autoResizeTextarea(textarea: HTMLTextAreaElement): void {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }
+
+  private syncSearchFieldHeight(): void {
+    setTimeout(() => {
+      const textarea = document.querySelector<HTMLTextAreaElement>('#researchTitleSearch');
+      if (!textarea) {
+        return;
+      }
+      this.autoResizeTextarea(textarea);
+    });
   }
 }

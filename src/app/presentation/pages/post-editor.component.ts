@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -25,7 +25,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
   template: `
     <div class="bg-white min-h-screen">
       <div class="border-b border-gray-100 bg-blue-50/50 py-2.5 px-2 sm:py-3 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2 sm:gap-4 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-gray-400">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2 sm:gap-4 text-[11px] sm:text-[11px] font-bold uppercase tracking-widest text-gray-400">
           <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS" class="text-hus-blue hover:text-hus-dark transition">
             Bài tuyển dụng của tôi
           </a>
@@ -51,9 +51,9 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                   : 'Sinh viên: đăng hồ sơ ứng tuyển và thành tích nổi bật.' }}
               </p>
 
-              <div class="mt-4 inline-flex max-w-full flex-wrap items-center gap-1.5 sm:gap-2 border border-gray-200 px-2.5 py-1.5 sm:px-3 sm:py-2">
-                <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400">Chế độ tài khoản</span>
-                <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest"
+              <div class="mt-4 inline-flex max-w-full flex-wrap items-center gap-2 border border-gray-200 px-3 py-2 sm:px-3 sm:py-2">
+                <span class="text-[11px] sm:text-[11px] font-black uppercase tracking-widest text-gray-400">Chế độ tài khoản</span>
+                <span class="text-[11px] sm:text-[11px] font-black uppercase tracking-widest"
                       [ngClass]="isCompanyRole ? 'text-hus-blue' : 'text-emerald-600'">
                   {{ isCompanyRole ? 'Doanh nghiệp' : 'Sinh viên' }}
                 </span>
@@ -66,12 +66,12 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
               </div>
 
               <div *ngIf="loading"
-                   class="mt-6 sm:mt-8 border border-dashed border-gray-200 px-4 py-8 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                   class="mt-6 sm:mt-8 border border-dashed border-gray-200 px-4 py-8 text-center text-[11px] font-bold uppercase tracking-widest text-gray-400">
                 Đang tải dữ liệu bài đăng...
               </div>
 
               <form *ngIf="!roleBlocked && !loading" class="mt-6 sm:mt-8 space-y-4 sm:space-y-5" (ngSubmit)="save()">
-                <article class="border border-gray-100 p-3 sm:p-5 space-y-4">
+                <article class="p-3 sm:p-5 space-y-4">
                   <h2 class="text-xs sm:text-[13px] font-black uppercase tracking-widest text-hus-blue">Thông tin chính</h2>
 
                   <div>
@@ -133,7 +133,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                   </div>
                 </article>
 
-                <article class="border border-gray-100 p-3 sm:p-5 space-y-4">
+                <article class="p-3 sm:p-5 space-y-4">
                   <h2 class="text-xs sm:text-[13px] font-black uppercase tracking-widest text-hus-blue">Nội dung theo vai trò</h2>
 
                   <div *ngIf="isCompanyRole">
@@ -196,7 +196,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       <button type="button"
                               *ngIf="studentProfile"
                               (click)="applyStudentProfilePrefill(true)"
-                              class="w-full sm:w-auto px-3 py-1.5 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-colors">
+                              class="inline-flex h-10 w-full sm:w-auto items-center justify-center px-4 border border-gray-200 rounded-md text-gray-500 text-xs sm:text-[11px] font-black uppercase tracking-widest hover:border-hus-blue hover:text-hus-blue transition-colors">
                         Lấy từ hồ sơ
                       </button>
                     </div>
@@ -268,7 +268,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                   </div>
                 </article>
 
-                <article *ngIf="!isCompanyRole" class="border border-gray-100 p-3 sm:p-5 space-y-4">
+                <article *ngIf="!isCompanyRole" class="p-3 sm:p-5 space-y-4">
                   <h2 class="text-xs sm:text-[13px] font-black uppercase tracking-widest text-hus-blue">Đính kèm hồ sơ và nghiên cứu</h2>
 
                   <div class="border border-gray-100 bg-gray-50/50 p-4 space-y-3">
@@ -301,7 +301,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                       <button type="button"
                               *ngIf="uploadedCvUrl"
                               (click)="removeUploadedCv()"
-                              class="w-full sm:w-auto px-3 py-1.5 border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-colors">
+                              class="inline-flex h-10 w-full sm:w-auto items-center justify-center px-4 border border-gray-200 rounded-md text-gray-500 text-xs sm:text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition-colors">
                         Gỡ CV riêng
                       </button>
                     </div>
@@ -357,7 +357,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                   </div>
                 </article>
 
-                <article class="border border-gray-100 p-3 sm:p-5 space-y-4">
+                <article class="p-3 sm:p-5 space-y-4">
                   <h2 class="text-xs sm:text-[13px] font-black uppercase tracking-widest text-hus-blue">Liên hệ và trạng thái</h2>
 
                   <div class="grid sm:grid-cols-2 gap-4">
@@ -438,32 +438,32 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                 </p>
 
                 <div class="pt-4 border-t border-gray-100">
-                  <div class="flex items-center justify-between gap-2 lg:justify-end lg:gap-3">
+                  <div class="flex items-center gap-2 sm:justify-between lg:justify-end lg:gap-3">
                     <button type="button"
                             (click)="cancel()"
-                            class="inline-flex h-8 sm:h-9 lg:h-10 shrink-0 items-center justify-center px-2.5 sm:px-3 border border-gray-200 rounded-md text-gray-600 text-[9px] sm:text-[10px] font-semibold hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
+                            class="inline-flex h-10 shrink-0 items-center justify-center px-3 border border-gray-200 rounded-md text-gray-600 text-[11px] sm:text-[11px] font-semibold hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors">
                       Hủy
                     </button>
 
-                    <div class="ml-auto flex items-center gap-2">
+                    <div class="ml-auto flex items-center gap-2 sm:gap-2">
                       <button type="button"
                               (click)="openPreviewModal()"
-                              class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center gap-1 px-2.5 sm:px-3 border border-hus-blue/30 rounded-md bg-blue-50/40 text-hus-blue text-[9px] sm:text-[10px] font-semibold hover:bg-hus-blue hover:text-white hover:border-hus-blue transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="hidden sm:block h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              class="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 px-3 border border-hus-blue/30 rounded-md bg-blue-50/40 text-hus-blue text-[11px] sm:text-[11px] font-semibold hover:bg-hus-blue hover:text-white hover:border-hus-blue transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
-                        <span class="sm:hidden">Preview</span>
+                        <span class="sm:hidden">Xem trước</span>
                         <span class="hidden sm:inline">Xem preview</span>
                       </button>
 
                       <button type="submit"
                               [disabled]="saving || cvUploading"
-                              class="inline-flex h-8 sm:h-9 lg:h-10 items-center justify-center gap-1 px-2.5 sm:px-3 lg:px-4 rounded-md bg-hus-blue text-white text-[9px] sm:text-[10px] font-semibold hover:bg-hus-dark transition-colors shadow-[0_10px_24px_-16px_rgba(30,102,170,0.9)] disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="hidden sm:block h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              class="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 px-3 rounded-md bg-hus-blue text-white text-[11px] sm:text-[11px] font-semibold hover:bg-hus-dark transition-colors shadow-[0_10px_24px_-16px_rgba(30,102,170,0.9)] disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
-                        <span class="sm:hidden">{{ saving ? 'Lưu...' : (isEditMode ? 'Cập nhật' : 'Đăng') }}</span>
+                        <span class="sm:hidden">{{ saving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật' : 'Đăng') }}</span>
                         <span class="hidden sm:inline">{{ saving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật bài đăng' : 'Đăng bài tuyển dụng') }}</span>
                       </button>
                     </div>
@@ -653,6 +653,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
   `
 })
 export class PostEditorComponent implements OnInit, OnDestroy {
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly postService = inject(PostService);
@@ -1204,6 +1205,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
         if (!post) {
           this.errorMessage = 'Không tìm thấy bài đăng.';
           this.loading = false;
+          this.cdr.detectChanges();
           return;
         }
 
@@ -1211,15 +1213,18 @@ export class PostEditorComponent implements OnInit, OnDestroy {
           this.errorMessage = 'Bạn không có quyền chỉnh sửa bài đăng này.';
           this.roleBlocked = true;
           this.loading = false;
+          this.cdr.detectChanges();
           return;
         }
 
         this.patchForm(post);
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.errorMessage = 'Không thể tải dữ liệu bài đăng.';
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -1239,6 +1244,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     this.postService.getMyPosts(currentUserId, true).pipe(
       finalize(() => {
         this.loading = false;
+        this.cdr.detectChanges();
       })
     ).subscribe({
       next: (posts) => {
@@ -1248,9 +1254,11 @@ export class PostEditorComponent implements OnInit, OnDestroy {
         this.studentSinglePostLimitReached = true;
         this.roleBlocked = true;
         this.errorMessage = 'Tài khoản sinh viên chỉ được tạo duy nhất 1 bài tuyển dụng. Bạn hãy chỉnh sửa bài đã có.';
+        this.cdr.detectChanges();
       },
       error: () => {
         this.errorMessage = 'Không thể kiểm tra giới hạn tạo bài tuyển dụng cho tài khoản sinh viên.';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -1266,6 +1274,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
         }
 
         this.applyStudentProfilePrefill(false);
+        this.cdr.detectChanges();
       }
     });
   }
@@ -1276,10 +1285,12 @@ export class PostEditorComponent implements OnInit, OnDestroy {
       next: (papers) => {
         this.myResearchPapers = papers;
         this.loadingMyPapers = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.myResearchPapers = [];
         this.loadingMyPapers = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -1445,11 +1456,13 @@ export class PostEditorComponent implements OnInit, OnDestroy {
         }
 
         this.loadingRecruitmentCategories = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.recruitmentCategories = [];
         this.selectedRecruitmentCategories = [];
         this.loadingRecruitmentCategories = false;
+        this.cdr.detectChanges();
       }
     });
   }

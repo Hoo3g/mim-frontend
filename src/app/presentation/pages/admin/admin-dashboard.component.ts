@@ -2335,6 +2335,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 return;
             }
 
+            this.contentService.invalidateResearchHeroContentCache();
             this.heroForm = {
                 titlePrefix: saved.titlePrefix,
                 titleHighlight: saved.titleHighlight,

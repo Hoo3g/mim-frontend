@@ -1,4 +1,4 @@
-import { Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -353,6 +353,7 @@ export class PostsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly searchTermChanges = new Subject<string>();
   protected readonly ROUTES = ROUTES;
 
@@ -488,6 +489,7 @@ export class PostsComponent implements OnInit {
     this.recruitmentCategoryService.getActiveCategories().subscribe((items) => {
       this.categories = items;
       this.isLoadingCategories = false;
+      this.cdr.detectChanges();
     });
   }
 
@@ -531,6 +533,7 @@ export class PostsComponent implements OnInit {
         const totalElements = result.pageInfo?.totalElements ?? this.posts.length;
         this.hasMorePosts = this.posts.length < totalElements;
         this.currentPage = page + 1;
+        this.cdr.detectChanges();
       },
       error: () => {
         if (page === 0) {
@@ -538,9 +541,11 @@ export class PostsComponent implements OnInit {
         }
         this.hasMorePosts = false;
         this.isLoadingPosts = false;
+        this.cdr.detectChanges();
       },
       complete: () => {
         this.isLoadingPosts = false;
+        this.cdr.detectChanges();
       }
     });
   }

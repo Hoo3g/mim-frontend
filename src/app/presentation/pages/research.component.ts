@@ -25,6 +25,8 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
             <div class="md:hidden relative h-[280px] sm:h-[320px] overflow-hidden">
               <img [src]="hero.imageUrl"
                    alt="MIM Faculty Building"
+                   loading="eager"
+                   fetchpriority="high"
                    class="absolute inset-0 w-full h-full object-cover">
               <div class="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/20"></div>
               <div class="absolute inset-x-0 bottom-0 p-4">
@@ -63,7 +65,11 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                 </div>
               </div>
               <div class="h-40 md:h-full relative overflow-hidden bg-gray-100">
-                <img [src]="hero.imageUrl" alt="MIM Faculty Building" class="w-full h-full object-cover grayscale-0 hover:scale-105 transition-transform duration-700">
+                <img [src]="hero.imageUrl"
+                     alt="MIM Faculty Building"
+                     loading="eager"
+                     fetchpriority="high"
+                     class="w-full h-full object-cover grayscale-0 hover:scale-105 transition-transform duration-700">
               </div>
             </div>
           </div>
