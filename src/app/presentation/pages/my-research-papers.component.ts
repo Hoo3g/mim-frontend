@@ -268,10 +268,16 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
       tap(papers => {
         this.allPapers = papers;
         this.applySearchFilter();
+        this.cdr.detectChanges();
         // If no papers are PENDING, we could potentially slow down polling or stop it,
         // but for research papers (which are fewer), 10s is fine while the page is open.
       })
-    ).subscribe();
+    ).subscribe({
+      error: () => {
+        this.errorMessage = 'Không thể tải danh sách bài nghiên cứu.';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   private stopPolling(): void {

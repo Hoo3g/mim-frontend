@@ -112,6 +112,7 @@ import { LoadingSpinnerComponent } from '../loading-spinner/loading-spinner.comp
 export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   readonly MIN_ZOOM = 0.3;
   readonly MAX_ZOOM = 2.8;
+  private readonly RESIZE_WIDTH_DELTA_THRESHOLD = 4;
 
   src = input<string>('');
   title = input<string>('Tài liệu PDF');
@@ -140,6 +141,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   private isDestroyed = false;
   private resizeTimer: ReturnType<typeof setTimeout> | null = null;
   private workerFallbackPromise: Promise<void> | null = null;
+  private lastMeasuredContainerWidth = 0;
 
   constructor() {
     effect(() => {
@@ -176,7 +178,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
       clearTimeout(this.resizeTimer);
     }
     this.resizeTimer = setTimeout(() => {
-      void this.fitWidthAndRerender();
+      void this.handleStableResize();
     }, 120);
   }
 
@@ -323,42 +325,69 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
       return;
     }
     const token = this.loadToken;
-    await this.applyFitToWidth(this.pdfDocument, token);
-    await this.renderAllPages();
+    const zoomChanged = await this.applyFitToWidth(this.pdfDocument, token);
+    if (zoomChanged) {
+      await this.renderAllPages();
+    }
     this.updateCurrentPageFromScroll();
   }
 
-  private async applyFitToWidth(document: PDFDocumentProxy, token: number): Promise<void> {
-    if (this.isDestroyed || token !== this.loadToken || document.numPages <= 0) {
+  private async handleStableResize(): Promise<void> {
+    this.resizeTimer = null;
+    const container = this.scrollContainerRef()?.nativeElement;
+    if (!container || !this.pdfDocument || this.isDestroyed) {
       return;
+    }
+
+    const currentWidth = container.clientWidth;
+    if (currentWidth <= 0) {
+      return;
+    }
+
+    // Mobile browsers fire resize when the address bar hides/shows while scrolling.
+    // Ignore those height-only viewport changes to avoid repaint flicker.
+    if (
+      this.lastMeasuredContainerWidth > 0 &&
+      Math.abs(currentWidth - this.lastMeasuredContainerWidth) < this.RESIZE_WIDTH_DELTA_THRESHOLD
+    ) {
+      return;
+    }
+
+    await this.fitWidthAndRerender();
+  }
+
+  private async applyFitToWidth(document: PDFDocumentProxy, token: number): Promise<boolean> {
+    if (this.isDestroyed || token !== this.loadToken || document.numPages <= 0) {
+      return false;
     }
 
     const container = this.scrollContainerRef()?.nativeElement;
     const pagesContainer = this.pagesContainerRef()?.nativeElement;
     if (!container || !pagesContainer) {
-      return;
+      return false;
     }
 
     // Wait one frame so container measurements are stable.
     await new Promise((resolve) => setTimeout(resolve, 0));
     if (this.isDestroyed || token !== this.loadToken) {
-      return;
+      return false;
     }
 
     const basePage = await document.getPage(1);
     if (this.isDestroyed || token !== this.loadToken) {
-      return;
+      return false;
     }
 
     const baseViewport = basePage.getViewport({ scale: 1 });
     if (!Number.isFinite(baseViewport.width) || baseViewport.width <= 0) {
-      return;
+      return false;
     }
 
     const containerWidth = container.clientWidth;
     if (containerWidth <= 0) {
-      return;
+      return false;
     }
+    this.lastMeasuredContainerWidth = containerWidth;
     const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 640;
 
     const pagesStyle = window.getComputedStyle(pagesContainer);
@@ -368,18 +397,20 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
     const mobileFitBoost = isMobileViewport ? 1.03 : 1;
     const targetWidth = Math.max(0, (containerWidth - horizontalPadding) * mobileFitBoost);
     if (targetWidth <= 0) {
-      return;
+      return false;
     }
 
     const fitZoomRaw = targetWidth / baseViewport.width;
     const fitZoom = Math.min(this.MAX_ZOOM, Math.max(this.MIN_ZOOM, fitZoomRaw));
     const roundedZoom = Number(fitZoom.toFixed(2));
     if (!Number.isFinite(roundedZoom) || roundedZoom <= 0) {
-      return;
+      return false;
     }
 
+    const previousZoom = this.zoom();
     this.zoom.set(roundedZoom);
     this.zoomPercent.set(Math.round(roundedZoom * 100));
+    return Math.abs(previousZoom - roundedZoom) >= 0.01;
   }
 
   private async renderAllPages(): Promise<void> {
@@ -444,6 +475,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
       await this.pdfDocument.destroy();
       this.pdfDocument = null;
     }
+    this.lastMeasuredContainerWidth = 0;
   }
 
   private async renderSinglePage(

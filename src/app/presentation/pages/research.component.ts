@@ -30,7 +30,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                    class="absolute inset-0 w-full h-full object-cover">
               <div class="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/20"></div>
               <div class="absolute inset-x-0 bottom-0 p-4">
-                <h1 class="text-[32px] leading-[0.95] font-black text-gray-900 uppercase tracking-tighter">
+                <h1 class="text-[26px] sm:text-[30px] leading-[0.95] font-black text-gray-900 uppercase tracking-tighter">
                   {{ hero.titlePrefix }}<br/>
                   <span class="text-hus-blue">{{ hero.titleHighlight }}</span>
                 </h1>

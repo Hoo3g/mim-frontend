@@ -279,10 +279,12 @@ export class MyRecruitmentPostsComponent implements OnInit, OnDestroy {
         this.receivedApplicants = applicants;
         this.loading = false;
         this.syncPolling(currentUser.id);
+        this.cdr.detectChanges();
       },
       error: () => {
         this.errorMessage = 'Không thể tải danh sách bài đăng tuyển dụng.';
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -326,6 +328,7 @@ export class MyRecruitmentPostsComponent implements OnInit, OnDestroy {
           this.pollSubscription?.unsubscribe();
           this.pollSubscription = undefined;
         }
+        this.cdr.detectChanges();
       }
     });
   }

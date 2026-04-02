@@ -1443,8 +1443,9 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
               </div>
               <button type="button"
                       (click)="closeModerationPreview()"
-                      class="w-10 h-10 inline-flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600 transition-colors flex-shrink-0">
-                <i class="fa-solid fa-xmark"></i>
+                      class="w-10 h-10 inline-flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-colors flex-shrink-0"
+                      aria-label="Đóng xem trước">
+                <span aria-hidden="true" class="text-xl font-semibold leading-none">×</span>
               </button>
             </div>
             <div *ngIf="previewPaper() as paper" class="bg-white">
