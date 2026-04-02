@@ -2,13 +2,13 @@ import { Component, inject } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Observable, BehaviorSubject, catchError, combineLatest, finalize, map, of, startWith, switchMap } from 'rxjs';
 
 import { ResearchPaper } from '../../core/models/research-paper.model';
 import { ResearchPaperService } from '../../core/services/research-paper.service';
 import { authSignal } from '../../core/signals/auth.signal';
 import { API_CONFIG } from '../../core/config/api.config';
-import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-canvas-viewer.component';
 import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading-spinner.component';
 
 interface PaperDetailState {
@@ -19,7 +19,7 @@ interface PaperDetailState {
 @Component({
   selector: 'app-research-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, PdfCanvasViewerComponent, LoadingSpinnerComponent],
+  imports: [CommonModule, RouterModule, LoadingSpinnerComponent],
   template: `
     <ng-container *ngIf="paperState$ | async as state">
       <div *ngIf="state.status === 'loading'" class="min-h-screen bg-white flex items-center justify-center px-6">
@@ -110,12 +110,12 @@ interface PaperDetailState {
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tác giả biên soạn:</span>
                 <div class="flex flex-wrap gap-x-6 gap-y-2">
                   <div *ngFor="let author of paper.authors" class="text-sm font-bold text-gray-900">
-                    <a *ngIf="author.isMainAuthor && author.studentId"
+                    <a *ngIf="author.isMainAuthor && author.studentId && author.canViewProfile !== false"
                        [routerLink]="['/profile', author.studentId]"
                        class="transition-colors hover:text-hus-blue">
                       {{ author.name }}
                     </a>
-                    <span *ngIf="!author.isMainAuthor || !author.studentId">{{ author.name }}</span>
+                    <span *ngIf="!author.isMainAuthor || !author.studentId || author.canViewProfile === false">{{ author.name }}</span>
                     <span *ngIf="author.isMainAuthor" class="ml-1 text-[9px] text-hus-blue uppercase tracking-tighter font-black">(Chủ biên)</span>
                   </div>
                 </div>
@@ -141,11 +141,12 @@ interface PaperDetailState {
               </div>
 
               <div class="w-full aspect-[1/1.55] min-h-[560px] md:min-h-[720px] bg-gray-50 border-2 border-hus-blue/10">
-                <app-pdf-canvas-viewer *ngIf="hasPdfUrl(paper.pdfUrl); else missingInlinePdf"
-                                       [src]="getDownloadUrl(paper.pdfUrl)"
-                                       [title]="paper.title"
-                                       class="block w-full h-full">
-                </app-pdf-canvas-viewer>
+                <iframe *ngIf="hasPdfUrl(paper.pdfUrl); else missingInlinePdf"
+                        [src]="getSafePdfUrl(paper.pdfUrl)"
+                        class="block w-full h-full border-0 bg-white"
+                        loading="lazy"
+                        referrerpolicy="no-referrer">
+                </iframe>
                 <ng-template #missingInlinePdf>
                   <div class="w-full h-full flex flex-col items-center justify-center text-center px-6">
                     <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
@@ -188,6 +189,7 @@ interface PaperDetailState {
 export class ResearchDetailComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
+  private readonly sanitizer = inject(DomSanitizer);
   private readonly paperService = inject(ResearchPaperService);
   private readonly reloadToken$ = new BehaviorSubject(0);
   private readonly frontendOrigin = this.resolveOrigin(typeof window !== 'undefined' ? window.location.origin : '');
@@ -195,6 +197,8 @@ export class ResearchDetailComponent {
   private readonly frontendProtocol = this.resolveProtocol(this.frontendOrigin);
   private readonly backendHost = this.resolveHost(this.backendOrigin);
   private trackedPaperId: string | null = null;
+  private lastSafePdfSource = '';
+  private lastSafePdfUrl: SafeResourceUrl | null = null;
 
   isAuth = authSignal.isAuth;
   isDownloadingPdf = false;
@@ -242,6 +246,23 @@ export class ResearchDetailComponent {
 
   hasPdfUrl(url: string): boolean {
     return !!this.getDownloadUrl(url);
+  }
+
+  getSafePdfUrl(url: string): SafeResourceUrl {
+    const resolved = this.getDownloadUrl(url);
+    if (!resolved) {
+      this.lastSafePdfSource = '';
+      this.lastSafePdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl('about:blank');
+      return this.lastSafePdfUrl;
+    }
+
+    if (resolved === this.lastSafePdfSource && this.lastSafePdfUrl) {
+      return this.lastSafePdfUrl;
+    }
+
+    this.lastSafePdfSource = resolved;
+    this.lastSafePdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(resolved);
+    return this.lastSafePdfUrl;
   }
 
   downloadPdf(paper: ResearchPaper): void {

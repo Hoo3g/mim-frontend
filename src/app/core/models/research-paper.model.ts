@@ -6,6 +6,7 @@ export interface PaperAuthor {
     name: string;
     isMainAuthor: boolean;
     authorOrder: number;
+    canViewProfile?: boolean;
 }
 
 export interface ResearchPaper {

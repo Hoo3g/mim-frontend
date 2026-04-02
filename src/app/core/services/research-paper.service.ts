@@ -12,6 +12,7 @@ import { emptyPagedResult, parseDate, unwrap, unwrapList, unwrapPaged } from '..
 import { ApprovalStatus } from '../enums/post-status.enum';
 import { Role } from '../enums/role.enum';
 import { UI_LABELS } from '../constants/ui-labels.const';
+import { resolvePublicAssetUrl } from '../utils/public-asset-url.util';
 
 export interface ResearchEditorPayload {
     id?: string;
@@ -19,6 +20,10 @@ export interface ResearchEditorPayload {
     abstract: string;
     researchArea: string;
     paperType: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS';
+    publicationYear: number;
+    journalConference?: string;
+    category: 'LECTURER' | 'STUDENT';
+    authorName?: string;
     pdfUrl?: string;
 }
 
@@ -42,6 +47,7 @@ interface ResearchPaperApiAuthor {
     isMainAuthor?: boolean;
     mainAuthor?: boolean;
     authorOrder?: number;
+    canViewProfile?: boolean;
 }
 
 interface ResearchPaperApiModel {
@@ -204,6 +210,10 @@ export class ResearchPaperService {
             abstract,
             researchArea,
             paperType,
+            publicationYear: payload.publicationYear,
+            journalConference: payload.journalConference?.trim() || undefined,
+            category: payload.category,
+            authorName: payload.authorName?.trim() || undefined,
             pdfUrl: payload.pdfUrl
         };
 
@@ -334,7 +344,7 @@ export class ResearchPaperService {
                     if (!response.success || !response.data?.fileUrl) {
                         throw new Error(response.message || 'Failed to upload PDF');
                     }
-                    return response.data.fileUrl;
+                    return resolvePublicAssetUrl(response.data.fileUrl) || response.data.fileUrl;
                 })
             );
     }
@@ -403,14 +413,15 @@ export class ResearchPaperService {
             studentId: author.studentId ?? '',
             name: (author.name?.trim() || UI_LABELS.UNKNOWN_AUTHOR),
             isMainAuthor: author.isMainAuthor ?? author.mainAuthor ?? index === 0,
-            authorOrder: author.authorOrder ?? (index + 1)
+            authorOrder: author.authorOrder ?? (index + 1),
+            canViewProfile: author.canViewProfile ?? true
         }));
 
         return {
             id: apiPaper.id,
             title: apiPaper.title ?? UI_LABELS.UNTITLED,
             abstract: normalizeRichTextHtml(apiPaper.abstract ?? ''),
-            pdfUrl: apiPaper.pdfUrl ?? '',
+            pdfUrl: resolvePublicAssetUrl(apiPaper.pdfUrl) || '',
             paperType: apiPaper.paperType === 'GRADUATION_THESIS' ? 'GRADUATION_THESIS' : 'SCIENTIFIC_RESEARCH',
             publicationYear: apiPaper.publicationYear ?? new Date().getFullYear(),
             journalConference: apiPaper.journalConference ?? UI_LABELS.DEFAULT_JOURNAL,
