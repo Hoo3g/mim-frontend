@@ -4,7 +4,7 @@ import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 
 import { API_ENDPOINTS } from '../config/api-endpoints.config';
 import { ApiResponse } from '../models/api-response.model';
-import { NewsItem } from '../models/news.model';
+import { NewsItem, NewsScheduleEntry } from '../models/news.model';
 import { TimedObservableCache } from '../utils/timed-observable-cache.util';
 import { parseDate, unwrap, unwrapList } from '../utils/api-response.util';
 import { UI_LABELS } from '../constants/ui-labels.const';
@@ -16,10 +16,23 @@ interface NewsApiModel {
     summary?: string;
     imageUrl?: string;
     status?: string;
+    contentType?: string;
     pinned?: boolean;
     authorId?: string;
+    importSourceUrl?: string;
+    scheduleEntries?: NewsScheduleEntryApiModel[];
+    importedAt?: string | Date;
     createdAt?: string | Date;
     updatedAt?: string | Date;
+}
+
+interface NewsScheduleEntryApiModel {
+    reportTime?: string;
+    reportRoom?: string;
+    reportFormat?: string;
+    paperTitle?: string;
+    paperId?: string;
+    displayOrder?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -75,10 +88,25 @@ export class NewsService {
             summary: item.summary?.trim() || '',
             imageUrl: item.imageUrl?.trim() || '',
             status: item.status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
+            contentType: item.contentType === 'RESEARCH_SCHEDULE' ? 'RESEARCH_SCHEDULE' : 'STANDARD',
             pinned: !!item.pinned,
             authorId: item.authorId,
+            importSourceUrl: item.importSourceUrl?.trim() || '',
+            scheduleEntries: (item.scheduleEntries ?? []).map((entry, index) => this.toScheduleEntry(entry, index)),
+            importedAt: item.importedAt ? parseDate(item.importedAt) : undefined,
             createdAt: parseDate(item.createdAt),
             updatedAt: parseDate(item.updatedAt)
+        };
+    }
+
+    private toScheduleEntry(item: NewsScheduleEntryApiModel | null | undefined, index: number): NewsScheduleEntry {
+        return {
+            reportTime: item?.reportTime?.trim() || '',
+            reportRoom: item?.reportRoom?.trim() || '',
+            reportFormat: item?.reportFormat?.trim() || '',
+            paperTitle: item?.paperTitle?.trim() || UI_LABELS.UNTITLED_VN,
+            paperId: item?.paperId?.trim() || undefined,
+            displayOrder: item?.displayOrder ?? index + 1
         };
     }
 

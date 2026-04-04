@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { catchError, debounceTime, distinctUntilChanged, forkJoin, map, Observab
 import { ResearchCategory } from '../../core/models/research-category.model';
 import { ResearchPaper } from '../../core/models/research-paper.model';
 import { ResearchCategoryService } from '../../core/services/research-category.service';
+import { ResearchListViewStateService } from '../../core/services/research-list-view-state.service';
 import { ResearchPaperListQuery, ResearchPaperService } from '../../core/services/research-paper.service';
 
 @Component({
@@ -391,7 +392,8 @@ import { ResearchPaperListQuery, ResearchPaperService } from '../../core/service
                     <button
                       type="button"
                       (click)="openPaperDetail(paper.id)"
-                      class="text-left text-base sm:text-lg font-bold text-gray-900 leading-7 hover:text-hus-blue transition-colors">
+                      class="text-left text-base sm:text-lg font-bold leading-7 transition-colors"
+                      [ngClass]="isLastViewedPaper(paper.id) ? 'text-hus-blue' : 'text-gray-900 hover:text-hus-blue'">
                       {{ paper.title }}
                     </button>
 
@@ -450,7 +452,7 @@ import { ResearchPaperListQuery, ResearchPaperService } from '../../core/service
     </div>
   `
 })
-export class ResearchFilterComponent implements OnInit {
+export class ResearchFilterComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
@@ -458,6 +460,7 @@ export class ResearchFilterComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly researchCategoryService = inject(ResearchCategoryService);
   private readonly researchPaperService = inject(ResearchPaperService);
+  private readonly researchListViewStateService = inject(ResearchListViewStateService);
   private readonly searchKeywordChanges = new Subject<string>();
   private readonly mobileBreakpoint = 768;
   private readonly countPageSize = 50;
@@ -494,6 +497,7 @@ export class ResearchFilterComponent implements OnInit {
   };
   private currentPage = 0;
   private readonly pageSize = 10;
+  private currentStateKey = '';
 
   ngOnInit(): void {
     this.updateViewportState();
@@ -515,7 +519,26 @@ export class ResearchFilterComponent implements OnInit {
     });
 
     this.hydrateFiltersFromQuery();
+    this.currentStateKey = this.buildStateKey();
+    this.loadAllCounters();
+
+    const cachedState = this.researchListViewStateService.get(this.currentStateKey);
+    if (cachedState) {
+      this.allPapers = cachedState.papers;
+      this.currentPage = cachedState.currentPage;
+      this.hasMorePapers = cachedState.hasMorePapers;
+      this.totalPaperCount = cachedState.totalPaperCount ?? cachedState.papers.length;
+      this.isLoadingPapers = false;
+      this.cdr.detectChanges();
+      this.restoreScrollPosition(cachedState.scrollY);
+      return;
+    }
+
     this.resetAndLoadPapers();
+  }
+
+  ngOnDestroy(): void {
+    this.persistViewState();
   }
 
   @HostListener('window:resize')
@@ -617,6 +640,8 @@ export class ResearchFilterComponent implements OnInit {
   }
 
   openPaperDetail(paperId: string): void {
+    this.persistViewState();
+    this.researchListViewStateService.markLastViewedPaper(paperId, this.router.url);
     this.router.navigate(['/paper', paperId]);
   }
 
@@ -635,6 +660,10 @@ export class ResearchFilterComponent implements OnInit {
 
   getRoleCount(role: 'LECTURER' | 'STUDENT'): number {
     return this.roleCounts[role] ?? 0;
+  }
+
+  isLastViewedPaper(paperId: string): boolean {
+    return this.researchListViewStateService.getLastViewedPaperId() === paperId;
   }
 
   private parseSpecializationsFromQuery(specializations: string[], fallback: string | null): string[] {
@@ -670,6 +699,7 @@ export class ResearchFilterComponent implements OnInit {
         this.totalPaperCount = result.pageInfo?.totalElements ?? this.allPapers.length;
         this.hasMorePapers = this.allPapers.length < this.totalPaperCount;
         this.currentPage = page + 1;
+        this.persistViewState();
         this.cdr.detectChanges();
       },
       error: () => {
@@ -687,7 +717,23 @@ export class ResearchFilterComponent implements OnInit {
   }
 
   private applyFilters(): void {
+    this.persistViewState();
+    this.currentStateKey = this.buildStateKey();
     this.syncFiltersToUrl();
+    this.loadAllCounters();
+
+    const cachedState = this.researchListViewStateService.get(this.currentStateKey);
+    if (cachedState) {
+      this.allPapers = cachedState.papers;
+      this.currentPage = cachedState.currentPage;
+      this.hasMorePapers = cachedState.hasMorePapers;
+      this.totalPaperCount = cachedState.totalPaperCount ?? cachedState.papers.length;
+      this.isLoadingPapers = false;
+      this.cdr.detectChanges();
+      this.restoreScrollPosition(cachedState.scrollY);
+      return;
+    }
+
     this.resetAndLoadPapers();
   }
 
@@ -743,9 +789,7 @@ export class ResearchFilterComponent implements OnInit {
     this.totalPaperCount = 0;
     this.allPapers = [];
     this.hasMorePapers = false;
-    this.loadSpecializationCounts();
-    this.loadPaperTypeCounts();
-    this.loadRoleCounts();
+    this.researchListViewStateService.clear(this.currentStateKey);
     this.loadNextPage(true);
   }
 
@@ -764,6 +808,12 @@ export class ResearchFilterComponent implements OnInit {
   private updateViewportState(): void {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < this.mobileBreakpoint;
     this.isMobileViewport = isMobile;
+  }
+
+  private loadAllCounters(): void {
+    this.loadSpecializationCounts();
+    this.loadPaperTypeCounts();
+    this.loadRoleCounts();
   }
 
   private loadSpecializationCounts(): void {
@@ -878,5 +928,53 @@ export class ResearchFilterComponent implements OnInit {
     }
 
     return Array.from({ length: maxYear - 2025 + 1 }, (_, index) => maxYear - index);
+  }
+
+  private buildStateKey(): string {
+    const role = this.roleFilter?.trim().toLowerCase() ?? '';
+    const paperType = this.paperTypeFilter?.trim().toLowerCase() ?? '';
+    const metric = this.metricSort?.trim().toLowerCase() ?? '';
+    const keyword = this.searchKeyword.trim().toLowerCase();
+    const year = this.yearFilter ? String(this.yearFilter) : '';
+    const specializations = [...this.selectedSpecializations]
+      .map((item) => item.trim().toLowerCase())
+      .filter((item, index, arr) => !!item && arr.indexOf(item) === index)
+      .sort()
+      .join('|');
+    return `filter-role=${role};paperType=${paperType};metric=${metric};q=${keyword};year=${year};specialization=${specializations}`;
+  }
+
+  private persistViewState(): void {
+    if (!this.currentStateKey) {
+      return;
+    }
+
+    this.researchListViewStateService.set(this.currentStateKey, {
+      papers: this.allPapers,
+      currentPage: this.currentPage,
+      hasMorePapers: this.hasMorePapers,
+      scrollY: typeof window !== 'undefined' ? window.scrollY : 0,
+      totalPaperCount: this.totalPaperCount
+    });
+  }
+
+  private restoreScrollPosition(scrollY: number): void {
+    if (typeof window === 'undefined' || scrollY <= 0) {
+      return;
+    }
+
+    const restore = () => {
+      window.scrollTo({ top: scrollY, behavior: 'auto' });
+    };
+
+    setTimeout(() => {
+      restore();
+      requestAnimationFrame(() => {
+        restore();
+        requestAnimationFrame(() => {
+          restore();
+        });
+      });
+    }, 0);
   }
 }

@@ -165,7 +165,7 @@ interface HeaderNotificationItem {
             </a>
             
             <a routerLink="/news" routerLinkActive="text-hus-blue border-hus-blue" class="text-gray-700 hover:text-hus-blue font-bold text-[13px] uppercase tracking-tighter h-full flex items-center border-b-[3px] border-transparent transition-all">
-              TIN TỨC
+              THÔNG BÁO
             </a>
 
             <div *ngIf="!isAuth()" class="ml-4 pl-4 border-l border-gray-100 flex items-center gap-4 h-full">
@@ -465,7 +465,7 @@ interface HeaderNotificationItem {
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11a2 2 0 012 2v1m0 13a2 2 0 002-2V9a2 2 0 00-2-2m0 13a2 2 0 01-2-2V9a2 2 0 012-2m-8 3h4m-4 4h6m-6 4h6M7 10h.01M7 14h.01M7 18h.01" />
                   </svg>
-                  <span>Bảng tin khoa</span>
+                  <span>Thông báo</span>
                 </a>
               </div>
             </div>

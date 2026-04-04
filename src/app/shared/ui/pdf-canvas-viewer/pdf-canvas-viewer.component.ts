@@ -720,7 +720,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   private scheduleSlowLoadingHint(): void {
     this.clearSlowLoadingHintTimer();
     this.slowLoadingHintTimer = setTimeout(() => {
-      this.slowLoadingHint.set('Mạng đang chậm, hệ thống vẫn đang tải PDF...');
+      this.slowLoadingHint.set('Đang tải...');
       this.slowLoadingHintTimer = null;
     }, this.SLOW_HINT_DELAY_MS);
   }

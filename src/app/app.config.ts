@@ -14,8 +14,8 @@ export const appConfig: ApplicationConfig = {
       routes,
       withComponentInputBinding(),
       withInMemoryScrolling({
-        // Always move to top on each navigation instead of keeping previous scroll position.
-        scrollPositionRestoration: 'top',
+        // Restore previous scroll position on browser back/forward while still scrolling to top on new pages.
+        scrollPositionRestoration: 'enabled',
       }),
     ),
     // HTTP client với JWT interceptor và error handler

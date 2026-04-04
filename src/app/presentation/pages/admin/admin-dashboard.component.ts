@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { finalize, forkJoin, Subscription, timer } from 'rxjs';
+import { catchError, finalize, forkJoin, map, Observable, of, Subscription, switchMap, timer } from 'rxjs';
 import { take } from 'rxjs/operators';
 
 import { adminNotificationSignal } from '../../../core/signals/admin-notification.signal';
@@ -26,7 +26,7 @@ import {
     RbacUserAssignment
 } from '../../../core/models/rbac.model';
 import { ResearchCategory } from '../../../core/models/research-category.model';
-import { NewsItem, NewsStatus } from '../../../core/models/news.model';
+import { NewsContentType, NewsItem, NewsScheduleEntry, NewsStatus } from '../../../core/models/news.model';
 import { ApprovalStatus } from '../../../core/enums/post-status.enum';
 import { authSignal } from '../../../core/signals/auth.signal';
 import { Post } from '../../../core/models/post.model';
@@ -514,8 +514,8 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
 
         <div *ngIf="currentTab === 'NEWS' && can('RESEARCH_HERO_EDIT')" class="bg-white border border-gray-100 p-6 md:p-8 space-y-6">
           <div>
-            <h2 class="text-lg font-black text-gray-900 uppercase tracking-widest">Quản lý Bảng tin khoa</h2>
-            <p class="mt-2 text-[11px] text-gray-500 font-medium">Đăng, cập nhật và hiển thị thông báo ở khối "Bảng tin khoa" trang nghiên cứu.</p>
+            <h2 class="text-lg font-black text-gray-900 uppercase tracking-widest">Quản lý Thông báo</h2>
+            <p class="mt-2 text-[11px] text-gray-500 font-medium">Đăng, cập nhật và hiển thị thông báo ở khối "Thông báo" trang nghiên cứu.</p>
           </div>
 
           <div *ngIf="newsNotice" class="border border-hus-blue/20 bg-blue-50 text-hus-blue text-[10px] font-bold uppercase tracking-widest px-4 py-3">
@@ -525,50 +525,130 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
           <div class="grid xl:grid-cols-[380px_1fr] gap-6">
             <div class="border border-gray-100 p-4 space-y-4">
               <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                {{ editingNewsId ? 'Cập nhật bản tin' : 'Đăng bản tin mới' }}
+                {{ editingNewsId ? 'Cập nhật thông báo' : 'Đăng thông báo mới' }}
               </p>
 
               <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tiêu đề</label>
-                <input
-                  [(ngModel)]="newsForm.title"
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Loại thông báo</label>
+                <select
+                  [(ngModel)]="newsForm.contentType"
+                  (ngModelChange)="onNewsContentTypeChange($event)"
                   [ngModelOptions]="{ standalone: true }"
-                  type="text"
-                  maxlength="300"
-                  placeholder="Ví dụ: Thông báo lịch seminar..."
-                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-700 focus:outline-none focus:border-hus-blue">
+                  <option [ngValue]="'STANDARD'">Thông báo thường</option>
+                  <option [ngValue]="'RESEARCH_SCHEDULE'">Lịch báo cáo nghiên cứu</option>
+                </select>
               </div>
 
               <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tóm tắt (tùy chọn)</label>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tiêu đề</label>
+                <textarea
+                  [(ngModel)]="newsForm.title"
+                  [ngModelOptions]="{ standalone: true }"
+                  (input)="autoResizeNewsTextarea($event)"
+                  rows="1"
+                  maxlength="300"
+                  placeholder="Ví dụ: Thông báo lịch seminar..."
+                  data-news-autogrow="true"
+                  class="w-full resize-none overflow-hidden border border-gray-200 px-3 py-2 text-[12px] leading-5 text-gray-800 focus:outline-none focus:border-hus-blue">
+                </textarea>
+              </div>
+
+              <div *ngIf="newsForm.contentType === 'RESEARCH_SCHEDULE'">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Nội dung chi tiết</label>
                 <textarea
                   [(ngModel)]="newsForm.summary"
                   [ngModelOptions]="{ standalone: true }"
-                  rows="3"
+                  (input)="autoResizeNewsTextarea($event)"
+                  rows="2"
                   placeholder="Dòng mô tả ngắn hiển thị ở trang chi tiết"
-                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+                  data-news-autogrow="true"
+                  class="w-full resize-none overflow-hidden border border-gray-200 px-3 py-2 text-[12px] leading-5 text-gray-800 focus:outline-none focus:border-hus-blue">
                 </textarea>
               </div>
 
-              <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Nội dung chi tiết</label>
+              <div *ngIf="newsForm.contentType === 'RESEARCH_SCHEDULE'" class="border border-blue-100 bg-blue-50/40 p-4 space-y-4">
+                <div class="space-y-1">
+                  <p class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">Import lịch báo cáo</p>
+                  <p class="text-[11px] text-gray-500 leading-relaxed">
+                    Hỗ trợ file <span class="font-semibold">.xlsx / .xls / .csv</span> hoặc URL Google Sheets công khai.
+                    Hệ thống sẽ map theo tên đề tài trùng với bài nghiên cứu đã có.
+                  </p>
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">URL bảng tính (tùy chọn)</label>
+                  <input
+                    [(ngModel)]="newsForm.importSourceUrl"
+                    (blur)="onNewsScheduleSourceUrlBlur()"
+                    [ngModelOptions]="{ standalone: true }"
+                    type="text"
+                    placeholder="https://docs.google.com/spreadsheets/..."
+                    class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+                  <p class="mt-2 text-[11px] text-gray-500">Nhập URL rồi click ra ngoài để tự nạp lịch báo cáo.</p>
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Hoặc chọn file Excel</label>
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    (change)="onNewsScheduleFileSelected($event)"
+                    class="w-full border border-gray-200 px-3 py-2 text-[11px] text-gray-700 focus:outline-none focus:border-hus-blue file:mr-3 file:border-0 file:bg-hus-blue file:px-3 file:py-2 file:text-[10px] file:font-black file:text-white file:uppercase file:tracking-widest hover:file:bg-hus-dark">
+                  <p *ngIf="selectedNewsScheduleFile" class="mt-2 text-[11px] text-gray-500">
+                    File đã chọn: <span class="font-semibold text-gray-700">{{ selectedNewsScheduleFile.name }}</span>
+                  </p>
+                  <p class="mt-2 text-[11px] text-gray-500">Chọn file là hệ thống sẽ tự nạp lịch báo cáo.</p>
+                </div>
+
+                <div *ngIf="newsForm.scheduleEntries.length > 0" class="space-y-3">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-[9px] font-bold uppercase tracking-widest px-2 py-1 bg-blue-50 text-hus-blue">
+                      {{ newsForm.scheduleEntries.length }} dòng
+                    </span>
+                    <span class="text-[9px] font-bold uppercase tracking-widest px-2 py-1 bg-emerald-50 text-emerald-700">
+                      Ghép được {{ newsScheduleMatchedCount }}
+                    </span>
+                    <span class="text-[9px] font-bold uppercase tracking-widest px-2 py-1 bg-amber-50 text-amber-700">
+                      Chưa ghép {{ newsScheduleUnmatchedCount }}
+                    </span>
+                  </div>
+
+                  <div class="max-h-72 overflow-auto border border-gray-200 bg-white">
+                    <div *ngFor="let entry of newsForm.scheduleEntries; let entryIndex = index"
+                         class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 border-b border-gray-100 px-3 py-3 text-[11px] last:border-b-0">
+                      <div class="text-gray-400 font-bold tabular-nums">{{ entryIndex + 1 }}</div>
+                      <div class="space-y-1">
+                        <p class="font-semibold text-gray-800">{{ entry.paperTitle }}</p>
+                        <div class="flex flex-wrap gap-x-3 gap-y-1 text-gray-500">
+                          <span>{{ entry.reportTime }}</span>
+                          <span>{{ entry.reportRoom }}</span>
+                          <span>{{ entry.reportFormat }}</span>
+                        </div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest"
+                           [class.text-emerald-700]="entry.paperId"
+                           [class.text-amber-700]="!entry.paperId">
+                          {{ entry.paperId ? 'Đã ghép sang bài nghiên cứu' : 'Chưa ghép được bài nghiên cứu' }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="newsForm.contentType !== 'RESEARCH_SCHEDULE'">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                  Nội dung chi tiết
+                </label>
                 <textarea
                   [(ngModel)]="newsForm.content"
                   [ngModelOptions]="{ standalone: true }"
-                  rows="8"
+                  (input)="autoResizeNewsTextarea($event)"
+                  rows="5"
                   placeholder="Nội dung thông báo đầy đủ"
-                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
+                  data-news-autogrow="true"
+                  class="w-full resize-none overflow-hidden border border-gray-200 px-3 py-2 text-[12px] leading-5 text-gray-800 focus:outline-none focus:border-hus-blue">
                 </textarea>
-              </div>
-
-              <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">URL ảnh (tùy chọn)</label>
-                <input
-                  [(ngModel)]="newsForm.imageUrl"
-                  [ngModelOptions]="{ standalone: true }"
-                  type="text"
-                  placeholder="https://..."
-                  class="w-full border border-gray-200 px-3 py-2 text-[12px] text-gray-800 focus:outline-none focus:border-hus-blue">
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -600,7 +680,7 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                   (click)="saveNews()"
                   [disabled]="isSavingNews"
                   class="px-5 py-2 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors disabled:opacity-50">
-                  {{ isSavingNews ? 'Đang lưu...' : (editingNewsId ? 'Cập nhật bản tin' : 'Đăng bản tin') }}
+                  {{ isSavingNews ? 'Đang lưu...' : (editingNewsId ? 'Cập nhật thông báo' : 'Đăng thông báo') }}
                 </button>
                 <button
                   (click)="startCreateNews()"
@@ -614,13 +694,13 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
             <div class="border border-gray-100">
               <div *ngIf="newsItems.length === 0"
                    class="py-12 text-center text-[11px] text-gray-400 uppercase tracking-widest">
-                Chưa có bản tin khoa nào.
+                Chưa có thông báo khoa nào.
               </div>
 
               <article *ngFor="let news of newsItems"
                        class="p-4 border-b border-gray-100 space-y-3">
                 <div class="flex items-center justify-between gap-3">
-                  <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2">
                     <span class="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5"
                           [class.bg-blue-50]="news.status === 'PUBLISHED'"
                           [class.text-hus-blue]="news.status === 'PUBLISHED'"
@@ -631,6 +711,10 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                     <span *ngIf="news.pinned"
                           class="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 bg-amber-50 text-amber-700">
                       Ghim
+                    </span>
+                    <span *ngIf="news.contentType === 'RESEARCH_SCHEDULE'"
+                          class="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 bg-emerald-50 text-emerald-700">
+                      Lịch báo cáo
                     </span>
                   </div>
                   <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest tabular-nums">
@@ -1592,7 +1676,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         },
         {
             key: 'NEWS',
-            label: 'Bảng tin khoa',
+            label: 'Thông báo',
             helper: 'Đăng thông báo cho trang research',
             permission: 'RESEARCH_HERO_EDIT'
         },
@@ -1659,6 +1743,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         content: string;
         imageUrl: string;
         status: NewsStatus;
+        contentType: NewsContentType;
+        importSourceUrl: string;
+        scheduleEntries: NewsScheduleEntry[];
         pinned: boolean;
     } = {
             title: '',
@@ -1666,10 +1753,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             content: '',
             imageUrl: '',
             status: 'PUBLISHED',
+            contentType: 'STANDARD',
+            importSourceUrl: '',
+            scheduleEntries: [],
             pinned: false
         };
     editingNewsId: string | null = null;
     isSavingNews = false;
+    isImportingNewsSchedule = false;
+    selectedNewsScheduleFile: File | null = null;
     newsNotice = '';
 
     rbacPermissions: RbacPermissionDefinition[] = [];
@@ -2079,7 +2171,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             case 'RECRUITMENT':
                 return 'Tuyển dụng';
             case 'NEWS':
-                return 'Bản tin';
+                return 'Thông báo';
             case 'PROFILE':
                 return 'Hồ sơ';
             case 'AUTH':
@@ -2451,10 +2543,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             content: '',
             imageUrl: '',
             status: 'PUBLISHED',
+            contentType: 'STANDARD',
+            importSourceUrl: '',
+            scheduleEntries: [],
             pinned: false
         };
+        this.selectedNewsScheduleFile = null;
         this.errorMessage = '';
         this.newsNotice = '';
+        this.scheduleNewsTextareasResize();
     }
 
     editNews(news: NewsItem): void {
@@ -2465,54 +2562,183 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             content: news.content,
             imageUrl: news.imageUrl ?? '',
             status: news.status,
+            contentType: news.contentType ?? 'STANDARD',
+            importSourceUrl: news.importSourceUrl ?? '',
+            scheduleEntries: [...(news.scheduleEntries ?? [])],
             pinned: news.pinned
         };
+        this.selectedNewsScheduleFile = null;
         this.errorMessage = '';
         this.newsNotice = '';
+        this.scheduleNewsTextareasResize();
+    }
+
+    onNewsContentTypeChange(contentType: NewsContentType): void {
+        if (contentType === 'STANDARD') {
+            this.newsForm = {
+                ...this.newsForm,
+                summary: ''
+            };
+        }
+        this.scheduleNewsTextareasResize();
+    }
+
+    autoResizeNewsTextarea(event: Event): void {
+        const textarea = event.target as HTMLTextAreaElement | null;
+        if (!textarea) {
+            return;
+        }
+        textarea.style.height = 'auto';
+        textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+
+    private scheduleNewsTextareasResize(): void {
+        requestAnimationFrame(() => {
+            document
+                .querySelectorAll<HTMLTextAreaElement>('[data-news-autogrow="true"]')
+                .forEach((textarea) => {
+                    textarea.style.height = 'auto';
+                    textarea.style.height = `${textarea.scrollHeight}px`;
+                });
+        });
+    }
+
+    onNewsScheduleFileSelected(event: Event): void {
+        const input = event.target as HTMLInputElement | null;
+        const file = input?.files?.[0] ?? null;
+        this.selectedNewsScheduleFile = file;
+        if (!file) {
+            return;
+        }
+        this.newsForm = {
+            ...this.newsForm,
+            importSourceUrl: ''
+        };
+        this.importNewsSchedule();
+    }
+
+    onNewsScheduleSourceUrlBlur(): void {
+        const sourceUrl = this.newsForm.importSourceUrl.trim();
+        if (!sourceUrl) {
+            return;
+        }
+        this.selectedNewsScheduleFile = null;
+        this.newsForm = {
+            ...this.newsForm,
+            importSourceUrl: sourceUrl
+        };
+        this.importNewsSchedule();
+    }
+
+    importNewsSchedule(): void {
+        if (!this.selectedNewsScheduleFile && !this.newsForm.importSourceUrl.trim()) {
+            this.errorMessage = 'Vui lòng chọn file hoặc nhập URL bảng tính để nạp lịch báo cáo.';
+            return;
+        }
+
+        this.errorMessage = '';
+        this.newsNotice = '';
+        this.isImportingNewsSchedule = true;
+
+        this.adminNewsService.importResearchSchedule(
+            this.selectedNewsScheduleFile,
+            this.newsForm.importSourceUrl.trim()
+        ).pipe(
+            finalize(() => {
+                this.isImportingNewsSchedule = false;
+                this.cdr.detectChanges();
+            })
+        ).subscribe({
+            next: (preview) => {
+                if (!preview) {
+                    this.errorMessage = 'Không thể nạp lịch báo cáo từ nguồn đã chọn.';
+                    this.cdr.detectChanges();
+                    return;
+                }
+
+                this.newsForm = {
+                    ...this.newsForm,
+                    contentType: 'RESEARCH_SCHEDULE',
+                    importSourceUrl: preview.sourceUrl || this.newsForm.importSourceUrl.trim(),
+                    scheduleEntries: preview.entries
+                };
+                this.newsNotice = `Đã nạp ${preview.totalEntries} dòng lịch báo cáo. Ghép được ${preview.matchedEntries} bài nghiên cứu.`;
+                this.cdr.detectChanges();
+            },
+            error: (error: unknown) => {
+                this.errorMessage = this.resolveAdminErrorMessage(
+                    error,
+                    'Không thể nạp lịch báo cáo từ nguồn đã chọn.'
+                );
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    clearNewsScheduleEntries(): void {
+        this.newsForm = {
+            ...this.newsForm,
+            importSourceUrl: '',
+            scheduleEntries: []
+        };
+        this.selectedNewsScheduleFile = null;
     }
 
     saveNews(): void {
-        const payload = {
-            title: this.newsForm.title.trim(),
-            summary: this.newsForm.summary.trim(),
-            content: this.newsForm.content.trim(),
-            imageUrl: this.newsForm.imageUrl.trim(),
-            status: this.newsForm.status,
-            pinned: this.newsForm.pinned
-        };
-
-        if (!payload.title) {
-            this.errorMessage = 'Vui lòng nhập tiêu đề bản tin.';
+        if (!this.newsForm.title.trim()) {
+            this.errorMessage = 'Vui lòng nhập tiêu đề thông báo.';
             return;
         }
-        if (!payload.content) {
-            this.errorMessage = 'Vui lòng nhập nội dung bản tin.';
+        if (this.newsForm.contentType === 'STANDARD' && !this.newsForm.content.trim()) {
+            this.errorMessage = 'Vui lòng nhập nội dung thông báo.';
             return;
         }
 
         this.errorMessage = '';
         this.newsNotice = '';
-        this.isSavingNews = true;
 
-        const request$ = this.editingNewsId
-            ? this.adminNewsService.update(this.editingNewsId, payload)
-            : this.adminNewsService.create(payload);
+        this.ensureNewsScheduleEntriesReadyForSave().pipe(
+            switchMap((ready) => {
+                if (!ready) {
+                    return of(null);
+                }
 
-        request$.pipe(
-            finalize(() => {
-                this.isSavingNews = false;
+                const payload = {
+                    title: this.newsForm.title.trim(),
+                    summary: this.newsForm.contentType === 'STANDARD' ? '' : this.newsForm.summary.trim(),
+                    content: this.newsForm.contentType === 'RESEARCH_SCHEDULE' ? '' : this.newsForm.content.trim(),
+                    imageUrl: this.newsForm.imageUrl.trim(),
+                    status: this.newsForm.status,
+                    contentType: this.newsForm.contentType,
+                    importSourceUrl: this.newsForm.importSourceUrl.trim(),
+                    scheduleEntries: [...this.newsForm.scheduleEntries],
+                    pinned: this.newsForm.pinned
+                };
+
+                this.isSavingNews = true;
+                const request$ = this.editingNewsId
+                    ? this.adminNewsService.update(this.editingNewsId, payload)
+                    : this.adminNewsService.create(payload);
+
+                return request$.pipe(
+                    finalize(() => {
+                        this.isSavingNews = false;
+                    })
+                );
             })
         ).subscribe((saved) => {
             if (!saved) {
-                this.errorMessage = this.editingNewsId
-                    ? 'Không thể cập nhật bản tin.'
-                    : 'Không thể tạo bản tin.';
+                if (!this.errorMessage) {
+                    this.errorMessage = this.editingNewsId
+                        ? 'Không thể cập nhật thông báo.'
+                        : 'Không thể tạo thông báo.';
+                }
                 return;
             }
 
             const notice = this.editingNewsId
-                ? 'Đã cập nhật bản tin.'
-                : 'Đã đăng bản tin mới.';
+                ? 'Đã cập nhật thông báo.'
+                : 'Đã đăng thông báo mới.';
             this.startCreateNews();
             this.newsNotice = notice;
             this.loadNews();
@@ -2520,23 +2746,96 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     deleteNews(newsId: string): void {
-        if (!confirm('Bạn có chắc muốn xóa bản tin này?')) {
+        if (!confirm('Bạn có chắc muốn xóa thông báo này?')) {
             return;
         }
 
         this.errorMessage = '';
         this.newsNotice = '';
+        const previousNewsItems = [...this.newsItems];
         this.adminNewsService.delete(newsId).subscribe((ok) => {
             if (!ok) {
-                this.errorMessage = 'Không thể xóa bản tin đã chọn.';
+                this.newsItems = previousNewsItems;
+                this.errorMessage = 'Không thể xóa thông báo đã chọn.';
+                this.cdr.detectChanges();
                 return;
             }
+            this.newsItems = this.newsItems.filter((news) => news.id !== newsId);
             if (this.editingNewsId === newsId) {
                 this.startCreateNews();
             }
-            this.newsNotice = 'Đã xóa bản tin.';
+            this.newsNotice = 'Đã xóa thông báo.';
+            this.cdr.detectChanges();
             this.loadNews();
         });
+    }
+
+    get newsScheduleMatchedCount(): number {
+        return this.newsForm.scheduleEntries.filter((entry) => !!entry.paperId).length;
+    }
+
+    get newsScheduleUnmatchedCount(): number {
+        return Math.max(this.newsForm.scheduleEntries.length - this.newsScheduleMatchedCount, 0);
+    }
+
+    private ensureNewsScheduleEntriesReadyForSave(): Observable<boolean> {
+        if (this.newsForm.contentType !== 'RESEARCH_SCHEDULE') {
+            return of(true);
+        }
+
+        if (this.newsForm.scheduleEntries.length > 0) {
+            return of(true);
+        }
+
+        const sourceUrl = this.newsForm.importSourceUrl.trim();
+        if (!this.selectedNewsScheduleFile && !sourceUrl) {
+            this.errorMessage = 'Vui lòng chọn file hoặc nhập URL bảng tính trước khi lưu.';
+            return of(false);
+        }
+
+        this.isImportingNewsSchedule = true;
+        return this.adminNewsService.importResearchSchedule(
+            this.selectedNewsScheduleFile,
+            sourceUrl
+        ).pipe(
+            map((preview) => {
+                if (!preview || preview.entries.length === 0) {
+                    this.errorMessage = 'Không tìm thấy dòng lịch báo cáo hợp lệ trong nguồn đã nhập.';
+                    return false;
+                }
+
+                this.newsForm = {
+                    ...this.newsForm,
+                    importSourceUrl: preview.sourceUrl || sourceUrl,
+                    scheduleEntries: preview.entries
+                };
+                this.newsNotice = `Đã tự nạp ${preview.totalEntries} dòng lịch báo cáo trước khi lưu.`;
+                return true;
+            }),
+            catchError((error: unknown) => {
+                this.errorMessage = this.resolveAdminErrorMessage(
+                    error,
+                    'Không thể nạp lịch báo cáo từ nguồn đã chọn.'
+                );
+                return of(false);
+            }),
+            finalize(() => {
+                this.isImportingNewsSchedule = false;
+            })
+        );
+    }
+
+    private resolveAdminErrorMessage(error: unknown, fallback: string): string {
+        if (error instanceof HttpErrorResponse) {
+            const apiMessage = typeof error.error?.message === 'string' ? error.error.message.trim() : '';
+            if (apiMessage) {
+                return apiMessage;
+            }
+        }
+        if (error instanceof Error && error.message.trim()) {
+            return error.message.trim();
+        }
+        return fallback;
     }
 
     startCreateSpecialization(): void {
@@ -3405,11 +3704,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private loadNews(): void {
         if (!this.can('RESEARCH_HERO_EDIT')) {
             this.newsItems = [];
+            this.cdr.detectChanges();
             return;
         }
 
         this.adminNewsService.getAll().subscribe((items) => {
             this.newsItems = items;
+            this.cdr.detectChanges();
         });
     }
 

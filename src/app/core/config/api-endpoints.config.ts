@@ -82,6 +82,7 @@ export const API_ENDPOINTS = {
         RECRUITMENT_CATEGORY_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/recruitment-categories/${id}`,
         NEWS: `${API_CONFIG.PREFIX}/admin/news`,
         NEWS_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/news/${id}`,
+        NEWS_IMPORT_SCHEDULE: `${API_CONFIG.PREFIX}/admin/news/import-research-schedule`,
         NOTIFICATIONS_STREAM: `${API_CONFIG.PREFIX}/admin/notifications/stream`,
         ANALYTICS_OVERVIEW: `${API_CONFIG.PREFIX}/admin/analytics/overview`,
     },

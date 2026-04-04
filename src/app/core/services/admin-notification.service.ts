@@ -22,7 +22,7 @@ export class AdminNotificationService implements OnDestroy {
     private reconnectDelayMs = 3000;
     private maxReconnectDelayMs = 30000;
     private isConnecting = false;
-    private streamAuthMode: NotificationStreamAuthMode = 'cookie';
+    private streamAuthMode: NotificationStreamAuthMode = 'token-query';
     private static readonly SYNC_INTERVAL_MS = 30_000;
 
     /**

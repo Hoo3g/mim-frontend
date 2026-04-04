@@ -7,6 +7,7 @@ export interface ResearchListViewState {
     currentPage: number;
     hasMorePapers: boolean;
     scrollY: number;
+    totalPaperCount?: number;
     savedAt: number;
 }
 
@@ -15,7 +16,11 @@ export interface ResearchListViewState {
 })
 export class ResearchListViewStateService {
     private readonly ttlMs = 10 * 60 * 1000;
+    private readonly lastViewedPaperStorageKey = 'research:last-viewed-paper-id';
+    private readonly lastListUrlStorageKey = 'research:last-list-url';
     private readonly states = new Map<string, ResearchListViewState>();
+    private lastViewedPaperId: string | null = null;
+    private lastListUrl: string | null = null;
 
     get(key: string): ResearchListViewState | null {
         const normalizedKey = key.trim();
@@ -57,6 +62,67 @@ export class ResearchListViewStateService {
         this.states.delete(normalizedKey);
     }
 
+    markLastViewedPaper(paperId: string, listUrl?: string): void {
+        const normalizedPaperId = paperId.trim();
+        if (!normalizedPaperId) {
+            return;
+        }
+
+        this.lastViewedPaperId = normalizedPaperId;
+        this.writeSessionValue(this.lastViewedPaperStorageKey, normalizedPaperId);
+
+        const normalizedListUrl = listUrl?.trim();
+        if (normalizedListUrl) {
+            this.lastListUrl = normalizedListUrl;
+            this.writeSessionValue(this.lastListUrlStorageKey, normalizedListUrl);
+        }
+    }
+
+    getLastViewedPaperId(): string | null {
+        if (this.lastViewedPaperId) {
+            return this.lastViewedPaperId;
+        }
+
+        const storedValue = this.readSessionValue(this.lastViewedPaperStorageKey);
+        this.lastViewedPaperId = storedValue;
+        return storedValue;
+    }
+
+    getLastListUrl(): string | null {
+        if (this.lastListUrl) {
+            return this.lastListUrl;
+        }
+
+        const storedValue = this.readSessionValue(this.lastListUrlStorageKey);
+        this.lastListUrl = storedValue;
+        return storedValue;
+    }
+
+    private readSessionValue(key: string): string | null {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+
+        try {
+            const value = window.sessionStorage.getItem(key)?.trim() ?? '';
+            return value || null;
+        } catch {
+            return null;
+        }
+    }
+
+    private writeSessionValue(key: string, value: string): void {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        try {
+            window.sessionStorage.setItem(key, value);
+        } catch {
+            // Ignore storage errors in restricted browser modes.
+        }
+    }
+
     private cloneState(state: ResearchListViewState): ResearchListViewState {
         return {
             papers: state.papers.map((paper) => ({
@@ -68,6 +134,7 @@ export class ResearchListViewStateService {
             currentPage: state.currentPage,
             hasMorePapers: state.hasMorePapers,
             scrollY: state.scrollY,
+            totalPaperCount: state.totalPaperCount,
             savedAt: state.savedAt
         };
     }

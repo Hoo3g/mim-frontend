@@ -128,7 +128,8 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                           </div>
                         </div>
 
-                        <h3 class="text-lg sm:text-xl font-bold text-gray-900 leading-tight group-hover:text-hus-blue transition-all">
+                        <h3 class="text-lg sm:text-xl font-bold leading-tight transition-all"
+                            [ngClass]="isLastViewedPaper(paper.id) ? 'text-hus-blue' : 'text-gray-900 group-hover:text-hus-blue'">
                           {{ paper.title }}
                         </h3>
 
@@ -174,31 +175,34 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
           </section>
 
           <!-- RIGHT: Sidebar - Bulletins (hidden on mobile, moved to hamburger menu) -->
-           <aside class="hidden md:block bg-white border border-gray-100 p-5 md:p-6 space-y-8 md:space-y-12 self-start">
+           <aside class="hidden md:block rounded-md bg-white border border-hus-blue/25 px-5 pb-5 pt-3 md:px-6 md:pb-6 md:pt-3 space-y-8 md:space-y-12 self-start lg:mt-0">
              <section>
-               <div class="flex items-center justify-between gap-3 mb-6 pb-2 border-b-2 border-hus-blue">
-                 <h3 class="text-[10px] font-bold text-hus-blue uppercase tracking-widest">
-                   Bảng tin Khoa
+               <div class="flex h-9 items-center justify-between gap-3 mb-3 pb-2 border-b-2 border-hus-blue">
+                 <h3 class="text-[11px] font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                   <span class="w-1 h-4 bg-hus-blue"></span>
+                   Thông báo
                  </h3>
                  <a routerLink="/news"
-                    class="text-[10px] font-bold uppercase tracking-widest text-hus-blue hover:text-hus-dark transition-colors">
-                   Xem tất cả
-                 </a>
-               </div>
+                    class="inline-flex items-center justify-center text-[10px] font-bold uppercase tracking-widest text-hus-blue transition-colors hover:text-hus-dark">
+                    Tất cả
+                  </a>
+                </div>
                <div *ngIf="(news$ | async) as newsItems; else newsLoading">
                  <div *ngIf="newsItems.length === 0"
                       class="text-[10px] text-gray-400 uppercase tracking-widest border border-dashed border-gray-100 px-3 py-4">
-                   Chưa có bản tin.
+                   Chưa có thông báo.
                  </div>
-                 <div *ngIf="newsItems.length > 0" class="space-y-8">
-                   <a *ngFor="let item of newsItems | slice:0:6"
+                 <div *ngIf="newsItems.length > 0" class="space-y-0">
+                   <a *ngFor="let item of newsItems | slice:0:6; let isLast = last"
                       [routerLink]="['/news', item.id]"
-                      class="block group cursor-pointer">
-                     <p class="text-[9px] font-bold text-hus-blue opacity-50 mb-2 font-mono tabular-nums">{{ item.createdAt | date:'dd.MM.yyyy' }}</p>
-                     <h4 class="text-xs font-bold text-gray-700 leading-normal group-hover:text-hus-blue transition-colors">
+                      class="block group cursor-pointer pt-2 pb-3 first:pt-1 last:pb-0">
+                     <div class="mb-1 flex flex-wrap items-center gap-2">
+                       <p class="text-[10px] font-black text-hus-blue opacity-60 font-mono tabular-nums">{{ item.createdAt | date:'dd.MM.yyyy' }}</p>
+                     </div>
+                     <h4 class="text-[13px] font-black text-gray-700 leading-snug group-hover:text-hus-blue transition-colors">
                        {{ item.title }}
                      </h4>
-                     <div class="mt-2 text-[10px] text-hus-blue opacity-0 group-hover:opacity-100 transition-opacity font-bold">Xem chi tiết &rarr;</div>
+                     <div *ngIf="!isLast" class="mt-3 h-px bg-hus-blue/15"></div>
                    </a>
                  </div>
                </div>
@@ -274,6 +278,8 @@ export class ResearchComponent implements OnInit, OnDestroy {
   }
 
   navigateToDetail(id: string): void {
+    this.persistViewState();
+    this.researchListViewStateService.markLastViewedPaper(id, this.router.url);
     this.router.navigate(['/paper', id]);
   }
 
@@ -296,6 +302,10 @@ export class ResearchComponent implements OnInit, OnDestroy {
   getMainAuthor(paper: ResearchPaper): string {
     const main = paper.authors.find(a => a.isMainAuthor) || paper.authors[0];
     return main ? main.name : 'Unknown';
+  }
+
+  isLastViewedPaper(paperId: string): boolean {
+    return this.researchListViewStateService.getLastViewedPaperId() === paperId;
   }
 
   private resetAndLoadPapers(): void {
@@ -394,8 +404,18 @@ export class ResearchComponent implements OnInit, OnDestroy {
       return;
     }
 
-    setTimeout(() => {
+    const restore = () => {
       window.scrollTo({ top: scrollY, behavior: 'auto' });
+    };
+
+    setTimeout(() => {
+      restore();
+      requestAnimationFrame(() => {
+        restore();
+        requestAnimationFrame(() => {
+          restore();
+        });
+      });
     }, 0);
   }
 
