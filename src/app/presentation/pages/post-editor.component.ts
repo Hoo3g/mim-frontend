@@ -437,6 +437,10 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                   {{ errorMessage }}
                 </p>
 
+                <p *ngIf="successMessage" class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
+                  {{ successMessage }}
+                </p>
+
                 <div class="pt-4 border-t border-gray-100">
                   <div class="flex items-center gap-2 sm:justify-between lg:justify-end lg:gap-3">
                     <button type="button"
@@ -672,6 +676,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
   saving = false;
   editingPostId: string | null = null;
   errorMessage = '';
+  successMessage = '';
   postingMode: PostingMode = 'JOB';
   today = new Date();
   showPreviewModal = false;
@@ -1143,6 +1148,7 @@ export class PostEditorComponent implements OnInit, OnDestroy {
     }
 
     this.errorMessage = '';
+    this.successMessage = '';
     this.saving = true;
 
     const payload: PostEditorPayload = {
@@ -1182,6 +1188,13 @@ export class PostEditorComponent implements OnInit, OnDestroy {
             ? 'Đã cập nhật bài đăng tuyển dụng.'
             : 'Đã tạo bài đăng tuyển dụng mới.';
 
+          if (this.isEditMode) {
+            this.closePreviewModal();
+            this.successMessage = notice;
+            this.scrollToTop();
+            return;
+          }
+
           this.router.navigateByUrl(ROUTES.RECRUITMENT_MY_POSTS, { state: { notice } });
         },
         error: (error) => {
@@ -1197,6 +1210,13 @@ export class PostEditorComponent implements OnInit, OnDestroy {
   cancel(): void {
     this.closePreviewModal();
     this.router.navigateByUrl(ROUTES.RECRUITMENT_MY_POSTS);
+  }
+
+  private scrollToTop(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   private loadPostForEdit(postId: string, currentUserId: string): void {

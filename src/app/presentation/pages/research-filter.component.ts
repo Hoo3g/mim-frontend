@@ -3,12 +3,12 @@ import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, forkJoin, map, Observable, of, Subject, switchMap } from 'rxjs';
 
 import { ResearchCategory } from '../../core/models/research-category.model';
 import { ResearchPaper } from '../../core/models/research-paper.model';
 import { ResearchCategoryService } from '../../core/services/research-category.service';
-import { ResearchPaperService } from '../../core/services/research-paper.service';
+import { ResearchPaperListQuery, ResearchPaperService } from '../../core/services/research-paper.service';
 
 @Component({
   selector: 'app-research-filter',
@@ -460,6 +460,7 @@ export class ResearchFilterComponent implements OnInit {
   private readonly researchPaperService = inject(ResearchPaperService);
   private readonly searchKeywordChanges = new Subject<string>();
   private readonly mobileBreakpoint = 768;
+  private readonly countPageSize = 50;
 
   roleFilter: 'LECTURER' | 'STUDENT' | null = null;
   paperTypeFilter: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS' | null = null;
@@ -766,17 +767,17 @@ export class ResearchFilterComponent implements OnInit {
   }
 
   private loadSpecializationCounts(): void {
-    this.researchPaperService.getPapersPage({
+    this.loadAllPapersForCounts({
       type: this.roleFilter,
       paperType: this.paperTypeFilter,
       specialization: null,
       year: this.yearFilter,
       q: this.searchKeyword,
       metric: null
-    }, 0, 1000).subscribe({
-      next: (result) => {
+    }).subscribe({
+      next: (papers) => {
         const counts: Record<string, number> = {};
-        for (const paper of result.content ?? []) {
+        for (const paper of papers) {
           const key = (paper.researchArea ?? '').trim() || 'Chưa phân loại';
           counts[key] = (counts[key] ?? 0) + 1;
         }
@@ -790,20 +791,20 @@ export class ResearchFilterComponent implements OnInit {
   }
 
   private loadPaperTypeCounts(): void {
-    this.researchPaperService.getPapersPage({
+    this.loadAllPapersForCounts({
       type: this.roleFilter,
       paperType: null,
       specialization: this.selectedSpecializations,
       year: this.yearFilter,
       q: this.searchKeyword,
       metric: null
-    }, 0, 1000).subscribe({
-      next: (result) => {
+    }).subscribe({
+      next: (papers) => {
         const counts: Record<'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS', number> = {
           SCIENTIFIC_RESEARCH: 0,
           GRADUATION_THESIS: 0
         };
-        for (const paper of result.content ?? []) {
+        for (const paper of papers) {
           const key = paper.paperType === 'GRADUATION_THESIS' ? 'GRADUATION_THESIS' : 'SCIENTIFIC_RESEARCH';
           counts[key] += 1;
         }
@@ -820,20 +821,20 @@ export class ResearchFilterComponent implements OnInit {
   }
 
   private loadRoleCounts(): void {
-    this.researchPaperService.getPapersPage({
+    this.loadAllPapersForCounts({
       type: null,
       paperType: this.paperTypeFilter,
       specialization: this.selectedSpecializations,
       year: this.yearFilter,
       q: this.searchKeyword,
       metric: null
-    }, 0, 1000).subscribe({
-      next: (result) => {
+    }).subscribe({
+      next: (papers) => {
         const counts: Record<'LECTURER' | 'STUDENT', number> = {
           LECTURER: 0,
           STUDENT: 0
         };
-        for (const paper of result.content ?? []) {
+        for (const paper of papers) {
           const key = paper.category === 'LECTURER' ? 'LECTURER' : 'STUDENT';
           counts[key] += 1;
         }
@@ -847,6 +848,26 @@ export class ResearchFilterComponent implements OnInit {
         };
       }
     });
+  }
+
+  private loadAllPapersForCounts(query: ResearchPaperListQuery): Observable<ResearchPaper[]> {
+    return this.researchPaperService.getPapersPage(query, 0, this.countPageSize).pipe(
+      switchMap((firstPage) => {
+        const totalPages = Math.max(firstPage.pageInfo?.totalPages ?? 0, 1);
+        if (totalPages <= 1) {
+          return of(firstPage.content ?? []);
+        }
+
+        const remainingRequests = Array.from({ length: totalPages - 1 }, (_, index) =>
+          this.researchPaperService.getPapersPage(query, index + 1, this.countPageSize)
+        );
+
+        return forkJoin(remainingRequests).pipe(
+          map((pages) => [firstPage, ...pages].flatMap((page) => page.content ?? []))
+        );
+      }),
+      catchError(() => of([]))
+    );
   }
 
   get availablePublicationYears(): number[] {

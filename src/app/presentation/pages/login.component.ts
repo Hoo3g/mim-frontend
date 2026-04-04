@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -68,6 +68,7 @@ export class LoginComponent {
 
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
+    private readonly cdr = inject(ChangeDetectorRef);
 
     submitLogin(): void {
         this.errorMessage = '';
@@ -78,11 +79,15 @@ export class LoginComponent {
 
         this.isLoading = true;
         this.authService.login({ identifier: this.identifier.trim(), password: this.password }).pipe(
-            finalize(() => (this.isLoading = false))
+            finalize(() => {
+                this.isLoading = false;
+                this.cdr.detectChanges();
+            })
         ).subscribe({
             next: (auth) => this.handlePostLogin(auth),
             error: (error: unknown) => {
                 this.errorMessage = this.extractError(error);
+                this.cdr.detectChanges();
             }
         });
     }

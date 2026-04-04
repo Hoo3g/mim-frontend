@@ -13,7 +13,7 @@ import {
   viewChild,
   viewChildren
 } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import {
   GlobalWorkerOptions,
   getDocument,
@@ -69,10 +69,25 @@ import { LoadingSpinnerComponent } from '../loading-spinner/loading-spinner.comp
       >
         @if (isLoading()) {
           <div class="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
-            <app-loading-spinner
-              [compact]="true"
-              [size]="46">
-            </app-loading-spinner>
+            <div class="flex flex-col items-center justify-center px-6 text-center">
+              <app-loading-spinner
+                [compact]="true"
+                [size]="46">
+              </app-loading-spinner>
+              @if (!!slowLoadingHint()) {
+                <p class="mt-3 text-[11px] font-bold uppercase tracking-widest text-gray-400">
+                  {{ slowLoadingHint() }}
+                </p>
+              }
+            </div>
+          </div>
+        }
+
+        @if (isRendering() && !isLoading() && !errorMessage()) {
+          <div class="pointer-events-none absolute right-3 top-3 z-10">
+            <div class="rounded-full border border-hus-blue/15 bg-white/92 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-hus-blue shadow-sm">
+              Đang hiển thị PDF...
+            </div>
           </div>
         }
 
@@ -113,6 +128,8 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   readonly MIN_ZOOM = 0.3;
   readonly MAX_ZOOM = 2.8;
   private readonly RESIZE_WIDTH_DELTA_THRESHOLD = 4;
+  private readonly PDF_LOAD_TIMEOUT_MS = 20000;
+  private readonly SLOW_HINT_DELAY_MS = 3500;
 
   src = input<string>('');
   title = input<string>('Tài liệu PDF');
@@ -124,6 +141,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   pageNumbers = signal<number[]>([]);
   zoom = signal<number>(1.1);
   errorMessage = signal<string>('');
+  slowLoadingHint = signal<string>('');
   zoomPercent = signal<number>(110);
 
   private readonly scrollContainerRef = viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
@@ -142,6 +160,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   private resizeTimer: ReturnType<typeof setTimeout> | null = null;
   private workerFallbackPromise: Promise<void> | null = null;
   private lastMeasuredContainerWidth = 0;
+  private slowLoadingHintTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     effect(() => {
@@ -165,6 +184,10 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
     if (this.resizeTimer) {
       clearTimeout(this.resizeTimer);
       this.resizeTimer = null;
+    }
+    if (this.slowLoadingHintTimer) {
+      clearTimeout(this.slowLoadingHintTimer);
+      this.slowLoadingHintTimer = null;
     }
     void this.disposeDocument();
   }
@@ -219,10 +242,12 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
     const token = ++this.loadToken;
 
     this.errorMessage.set('');
+    this.slowLoadingHint.set('');
     this.isLoading.set(true);
     this.totalPages.set(0);
     this.pageNumbers.set([]);
     this.page.set(1);
+    this.scheduleSlowLoadingHint();
 
     await this.disposeDocument();
 
@@ -247,15 +272,17 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
       this.pageNumbers.set(Array.from({ length: document.numPages }, (_, index) => index + 1));
       this.page.set(1);
       await this.applyFitToWidth(document, token);
-      await this.renderAllPages();
+      void this.renderAllPages();
       this.updateCurrentPageFromScroll();
     } catch (error) {
       if (token === this.loadToken && !this.isDestroyed) {
         this.errorMessage.set(this.resolveLoadErrorMessage(error));
       }
     } finally {
+      this.clearSlowLoadingHintTimer();
       if (token === this.loadToken) {
         this.isLoading.set(false);
+        this.slowLoadingHint.set('');
       }
     }
   }
@@ -267,7 +294,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
     });
 
     try {
-      return await this.loadingTask.promise;
+      return await this.waitForLoadingTask(this.loadingTask);
     } catch (primaryError) {
       if (token !== this.loadToken || this.isDestroyed) {
         throw primaryError;
@@ -285,7 +312,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
             url: source,
             withCredentials: true
           });
-          return await this.loadingTask.promise;
+          return await this.waitForLoadingTask(this.loadingTask);
         } catch {
           if (this.loadingTask) {
             await this.loadingTask.destroy();
@@ -298,13 +325,15 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
         const arrayBuffer = await firstValueFrom<ArrayBuffer>(this.http.get(source, {
           responseType: 'arraybuffer',
           withCredentials: true
-        }));
+        }).pipe(
+          timeout(this.PDF_LOAD_TIMEOUT_MS)
+        ));
         const bytes = new Uint8Array(arrayBuffer);
         if (bytes.byteLength <= 0) {
           throw new Error('Không thể tải PDF');
         }
         this.loadingTask = getDocument({ data: bytes });
-        return await this.loadingTask.promise;
+        return await this.waitForLoadingTask(this.loadingTask);
       } catch {
         try {
           const fallbackTask = getDocument({
@@ -312,7 +341,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
             withCredentials: true
           });
           this.loadingTask = fallbackTask;
-          return await fallbackTask.promise;
+          return await this.waitForLoadingTask(fallbackTask);
         } catch {
           throw primaryError;
         }
@@ -455,6 +484,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
     } finally {
       if (token === this.renderToken) {
         this.isRendering.set(false);
+        this.updateCurrentPageFromScroll();
       }
     }
   }
@@ -652,6 +682,54 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
     }
 
     await this.workerFallbackPromise;
+  }
+
+  private waitForLoadingTask(task: PDFDocumentLoadingTask): Promise<PDFDocumentProxy> {
+    return new Promise<PDFDocumentProxy>((resolve, reject) => {
+      let settled = false;
+      const timeoutId = setTimeout(() => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        void task.destroy().catch(() => undefined);
+        reject(new Error('Tải PDF quá lâu trên kết nối hiện tại. Bạn có thể mở tài liệu ở tab mới.'));
+      }, this.PDF_LOAD_TIMEOUT_MS);
+
+      task.promise.then(
+        (document) => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          clearTimeout(timeoutId);
+          resolve(document);
+        },
+        (error) => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          clearTimeout(timeoutId);
+          reject(error);
+        }
+      );
+    });
+  }
+
+  private scheduleSlowLoadingHint(): void {
+    this.clearSlowLoadingHintTimer();
+    this.slowLoadingHintTimer = setTimeout(() => {
+      this.slowLoadingHint.set('Mạng đang chậm, hệ thống vẫn đang tải PDF...');
+      this.slowLoadingHintTimer = null;
+    }, this.SLOW_HINT_DELAY_MS);
+  }
+
+  private clearSlowLoadingHintTimer(): void {
+    if (this.slowLoadingHintTimer) {
+      clearTimeout(this.slowLoadingHintTimer);
+      this.slowLoadingHintTimer = null;
+    }
   }
 
   private resolveLoadErrorMessage(error: unknown): string {

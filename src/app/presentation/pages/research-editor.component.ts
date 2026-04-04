@@ -283,16 +283,27 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                          class="hidden">
 
                   <div class="w-full rounded-md border-2 border-gray-300 bg-white px-3 py-2.5 transition-colors focus-within:border-hus-blue sm:px-4 sm:py-3">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div class="flex items-center gap-2">
                       <button type="button"
                               (click)="triggerPdfPicker(pdfFileInput)"
                               class="inline-flex h-9 w-fit items-center justify-center rounded-md bg-hus-blue px-2.5 text-[10px] font-semibold uppercase tracking-wide text-white hover:bg-hus-dark transition-colors sm:h-9 sm:px-3 sm:text-[11px]">
                         Choose file
                       </button>
 
-                      <p class="min-w-0 text-[10px] sm:text-[11px] text-gray-500 break-all leading-5">
+                      <p class="min-w-0 flex-1 text-[12px] sm:text-[13px] font-medium text-gray-600 break-all leading-5">
                         {{ selectedPdfName || (existingPdfUrl ? existingPdfFileName : 'No file chosen') }}
                       </p>
+
+                      <button *ngIf="effectivePdfUrl || selectedPdfName"
+                              type="button"
+                              (click)="removePdfAttachment()"
+                              class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+                              aria-label="Gỡ PDF"
+                              title="Gỡ PDF">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 0v12m4-12v12m4-12v12M5 7l1 13a1 1 0 001 1h10a1 1 0 001-1l1-13" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
 
@@ -608,7 +619,7 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             category: this.selectedCategory,
             authorName: this.isAdminEditor ? this.authorName.trim() : undefined,
             coAuthorStudentIds: this.selectedCoAuthors.map((author) => author.userId),
-            pdfUrl: uploadedPdfUrl ?? this.existingPdfUrl ?? undefined
+            pdfUrl: uploadedPdfUrl ?? this.existingPdfUrl ?? ''
           };
           return this.paperService.saveFromEditor(payload, currentUser);
         }),
@@ -633,12 +644,13 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
 
           if (this.isEditMode) {
             this.successMessage = notice;
+            this.scrollToTop();
             return;
           }
 
           this.resetEditorForm(currentUser.role);
           this.successMessage = 'Đăng bài thành công. Bạn có thể tiếp tục tạo bài viết mới.';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.scrollToTop();
         },
         error: (error: { error?: { message?: string } }) => {
           this.errorMessage = error?.error?.message || 'Lưu bài viết thất bại. Vui lòng thử lại.';
@@ -673,6 +685,14 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
 
   triggerPdfPicker(input: HTMLInputElement): void {
     input.click();
+  }
+
+  removePdfAttachment(): void {
+    this.selectedPdfFile = null;
+    this.selectedPdfName = '';
+    this.existingPdfUrl = null;
+    this.revokeSelectedPreviewUrl();
+    this.errorMessage = '';
   }
 
   cancel(): void {
@@ -939,5 +959,12 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
     this.initializeAuthorCategory(role);
     this.scheduleTitleTextareaResize();
     this.cdr.detectChanges();
+  }
+
+  private scrollToTop(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }

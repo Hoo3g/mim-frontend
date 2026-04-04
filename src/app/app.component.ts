@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { RouterModule, RouterOutlet } from '@angular/router';
+import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterModule, RouterOutlet } from '@angular/router';
 import { authSignal } from './core/signals/auth.signal';
 import { AuthSessionSyncService } from './core/services/auth-session-sync.service';
 import { AnalyticsTrackingService } from './core/services/analytics-tracking.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -11,6 +12,12 @@ import { AnalyticsTrackingService } from './core/services/analytics-tracking.ser
   imports: [CommonModule, RouterOutlet, RouterModule],
   template: `
     <div class="min-h-screen bg-gray-50 flex flex-col">
+      <div class="pointer-events-none fixed inset-x-0 top-0 z-[250] h-[3px]">
+        <div class="h-full origin-left bg-hus-blue shadow-[0_0_10px_rgba(59,130,246,0.45)] transition-[transform,opacity] duration-200 ease-out"
+             [style.transform]="'scaleX(' + routeProgress + ')'"
+             [style.opacity]="isRouteNavigating ? 1 : 0"></div>
+      </div>
+
       <router-outlet></router-outlet>
 
       <footer class="mt-16 bg-white border-t border-gray-100">
@@ -80,16 +87,72 @@ import { AnalyticsTrackingService } from './core/services/analytics-tracking.ser
 export class AppComponent implements OnInit, OnDestroy {
   private readonly authSessionSyncService = inject(AuthSessionSyncService);
   private readonly analyticsTrackingService = inject(AnalyticsTrackingService);
+  private readonly router = inject(Router);
   readonly currentYear = new Date().getFullYear();
+  isRouteNavigating = false;
+  routeProgress = 0;
+  private routeEventsSub?: Subscription;
+  private routeProgressIntervalId: number | null = null;
+  private routeProgressFinishTimeoutId: number | null = null;
 
   ngOnInit(): void {
     authSignal.restoreFromStorage();
     this.authSessionSyncService.start();
     this.analyticsTrackingService.start();
+    this.routeEventsSub = this.router.events.subscribe((event) => {
+      if (event instanceof NavigationStart) {
+        this.startRouteProgress();
+        return;
+      }
+
+      if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
+        this.finishRouteProgress();
+      }
+    });
   }
 
   ngOnDestroy(): void {
     this.authSessionSyncService.stop();
     this.analyticsTrackingService.stop();
+    this.routeEventsSub?.unsubscribe();
+    this.clearRouteProgressTimers();
+  }
+
+  private startRouteProgress(): void {
+    this.clearRouteProgressTimers();
+    this.isRouteNavigating = true;
+    this.routeProgress = 0.12;
+    this.routeProgressIntervalId = window.setInterval(() => {
+      if (this.routeProgress >= 0.85) {
+        return;
+      }
+      this.routeProgress = Math.min(this.routeProgress + 0.08, 0.85);
+    }, 120);
+  }
+
+  private finishRouteProgress(): void {
+    if (!this.isRouteNavigating) {
+      return;
+    }
+
+    this.clearRouteProgressTimers();
+    this.routeProgress = 1;
+    this.routeProgressFinishTimeoutId = window.setTimeout(() => {
+      this.isRouteNavigating = false;
+      this.routeProgress = 0;
+      this.routeProgressFinishTimeoutId = null;
+    }, 220);
+  }
+
+  private clearRouteProgressTimers(): void {
+    if (this.routeProgressIntervalId !== null) {
+      window.clearInterval(this.routeProgressIntervalId);
+      this.routeProgressIntervalId = null;
+    }
+
+    if (this.routeProgressFinishTimeoutId !== null) {
+      window.clearTimeout(this.routeProgressFinishTimeoutId);
+      this.routeProgressFinishTimeoutId = null;
+    }
   }
 }

@@ -256,12 +256,20 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                 <span class="text-gray-900 font-bold">{{ defaultCvFileName() }}</span>
               </p>
 
-              <a *ngIf="studentForm.cvUrl"
-                 [href]="studentForm.cvUrl!"
-                 target="_blank"
-                 class="inline-block text-[10px] font-black uppercase tracking-widest text-hus-blue hover:underline">
-                Xem CV hiện tại
-              </a>
+              <div *ngIf="studentForm.cvUrl" class="flex flex-wrap items-center gap-3">
+                <a [href]="studentForm.cvUrl!"
+                   target="_blank"
+                   class="inline-block text-[10px] font-black uppercase tracking-widest text-hus-blue hover:underline">
+                  Xem CV hiện tại
+                </a>
+
+                <button *ngIf="editingStudent"
+                        type="button"
+                        (click)="removeStudentCv()"
+                        class="inline-flex items-center justify-center rounded-md border border-red-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-colors">
+                  Gỡ CV
+                </button>
+              </div>
             </article>
           </div>
 
@@ -946,6 +954,7 @@ export class ProfileComponent implements OnInit {
       next: () => {
         this.setSuccess('Đã lưu hồ sơ sinh viên');
         this.editingStudent = false;
+        this.scrollToTop();
         this.reload();
       },
       error: (error) => this.setError(error?.error?.message || 'Lưu hồ sơ sinh viên thất bại')
@@ -961,6 +970,7 @@ export class ProfileComponent implements OnInit {
       next: () => {
         this.setSuccess('Đã lưu hồ sơ doanh nghiệp');
         this.editingCompany = false;
+        this.scrollToTop();
         this.reload();
       },
       error: (error) => this.setError(error?.error?.message || 'Lưu hồ sơ doanh nghiệp thất bại')
@@ -983,6 +993,7 @@ export class ProfileComponent implements OnInit {
       next: () => {
         this.setSuccess('Đã lưu hồ sơ giảng viên');
         this.editingLecturer = false;
+        this.scrollToTop();
         this.reload();
       },
       error: (error) => this.setError(error?.error?.message || 'Lưu hồ sơ giảng viên thất bại')
@@ -1012,6 +1023,15 @@ export class ProfileComponent implements OnInit {
         this.setError(error?.error?.message || 'Upload CV thất bại');
       }
     });
+  }
+
+  removeStudentCv(): void {
+    if (!this.editingStudent || !this.guardProfileEditAccess()) {
+      return;
+    }
+
+    this.studentForm.cvUrl = '';
+    this.setSuccess('Đã gỡ CV khỏi hồ sơ. Hãy lưu hồ sơ sinh viên để áp dụng thay đổi.');
   }
 
   onAvatarSelected(event: Event): void {
@@ -1176,6 +1196,13 @@ export class ProfileComponent implements OnInit {
   private setError(message: string): void {
     this.feedbackMessage = message;
     this.feedbackError = true;
+  }
+
+  private scrollToTop(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   adminCapabilities(): string[] {
