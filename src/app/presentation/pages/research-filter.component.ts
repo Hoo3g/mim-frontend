@@ -45,8 +45,11 @@ import { ResearchPaperListQuery, ResearchPaperService } from '../../core/service
                     [(ngModel)]="searchKeyword"
                     (ngModelChange)="onSearchKeywordChange($event)"
                     (input)="onSearchFieldInput($event)"
+                    (keydown.enter)="onSearchFieldSubmit($event)"
                     rows="1"
                     wrap="soft"
+                    enterkeyhint="search"
+                    inputmode="search"
                     placeholder="Tên bài viết, tác giả..."
                     class="block w-full min-h-[44px] resize-none overflow-hidden bg-gray-50 border border-hus-blue/30 px-3 py-2 text-xs leading-6 focus:ring-1 focus:ring-hus-blue/30 focus:border-hus-blue outline-none transition-all font-medium break-all"
                     style="overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap;"></textarea>
@@ -648,6 +651,15 @@ export class ResearchFilterComponent implements OnInit, OnDestroy, AfterViewInit
     }
 
     requestAnimationFrame(() => this.autoResizeTextarea(textarea));
+  }
+
+  onSearchFieldSubmit(event: Event): void {
+    event.preventDefault();
+
+    const textarea = this.searchField?.nativeElement;
+    textarea?.blur();
+    this.syncSearchFieldHeight();
+    this.applyFilters();
   }
 
   loadMorePapers(): void {
