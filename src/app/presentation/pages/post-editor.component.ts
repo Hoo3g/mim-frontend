@@ -24,16 +24,6 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="bg-white min-h-screen">
-      <div class="border-b border-gray-100 bg-blue-50/50 py-2.5 px-2 sm:py-3 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2 sm:gap-4 text-[11px] sm:text-[11px] font-bold uppercase tracking-widest text-gray-400">
-          <a [routerLink]="ROUTES.RECRUITMENT_MY_POSTS" class="text-hus-blue hover:text-hus-dark transition">
-            Bài tuyển dụng của tôi
-          </a>
-          <span class="text-gray-300">/</span>
-          <span class="text-hus-blue opacity-70">{{ isEditMode ? 'Chỉnh sửa' : 'Soạn thảo' }}</span>
-        </div>
-      </div>
-
       <div class="mx-auto w-full px-1 sm:max-w-5xl sm:px-6 lg:px-8 py-5 sm:py-8 md:py-10">
           <section class="min-w-0">
             <div class="bg-white border border-hus-blue shadow-[0_18px_40px_-28px_rgba(30,102,170,0.4)] p-2.5 sm:p-6 md:p-8">
@@ -42,7 +32,7 @@ type CompanyContentField = 'description' | 'requirements' | 'benefits';
                   Chỉnh sửa bài <span class="text-hus-blue">tuyển dụng</span>
                 </ng-container>
                 <ng-template #createPostHeading>
-                  Soạn bài <span class="text-hus-blue">tuyển dụng mới</span>
+                  Soạn bài <span class="text-hus-blue">tuyển dụng</span>
                 </ng-template>
               </h1>
               <p class="mt-3 text-[11px] sm:text-sm text-gray-400 font-bold uppercase tracking-widest leading-relaxed">

@@ -1533,14 +1533,6 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
               </button>
             </div>
             <div *ngIf="previewPaper() as paper" class="bg-white">
-              <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-5 sm:px-6 lg:px-8">
-                <div class="max-w-4xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                  <span class="text-hus-blue">Bài nghiên cứu chờ duyệt</span>
-                  <span class="text-gray-300">/</span>
-                  <span class="text-hus-blue opacity-70">{{ formatModerationValue(paper.researchArea) }}</span>
-                </div>
-              </div>
-
               <div class="px-5 py-8 sm:px-6 lg:px-8 lg:py-10">
                 <div class="max-w-4xl mx-auto">
                   <header class="mb-8 sm:mb-12 border-b-2 border-hus-blue pb-8 sm:pb-10">

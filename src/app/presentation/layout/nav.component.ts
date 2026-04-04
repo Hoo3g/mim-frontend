@@ -77,7 +77,7 @@ interface HeaderNotificationItem {
             <ng-container *ngIf="!isAuth()">
               <a
                 [routerLink]="ROUTES.AUTH.LOGIN"
-                class="inline-flex items-center justify-center px-2.5 py-2 text-[8px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors">
+                class="inline-flex h-9 min-w-[96px] items-center justify-center rounded-md px-3 text-[10px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors sm:h-10 sm:min-w-[104px] sm:px-4 sm:text-[10px]">
                 Đăng nhập
               </a>
             </ng-container>
@@ -169,7 +169,7 @@ interface HeaderNotificationItem {
             </a>
 
             <div *ngIf="!isAuth()" class="ml-4 pl-4 border-l border-gray-100 flex items-center gap-4 h-full">
-              <a [routerLink]="ROUTES.AUTH.LOGIN" class="text-white bg-hus-blue hover:bg-hus-dark px-3 py-2 font-black text-[9px] uppercase tracking-widest transition-colors">
+              <a [routerLink]="ROUTES.AUTH.LOGIN" class="inline-flex h-10 items-center justify-center rounded-md text-white bg-hus-blue hover:bg-hus-dark px-4 font-black text-[10px] uppercase tracking-widest transition-colors">
                 Đăng nhập
               </a>
             </div>
@@ -473,7 +473,7 @@ interface HeaderNotificationItem {
 	            <div *ngIf="!isAuth()" class="pt-3 mt-2 space-y-1">
 	              <a [routerLink]="ROUTES.AUTH.LOGIN"
 	                 (click)="closeMobileMenu()"
-	                 class="block px-3 py-2 text-[9px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors text-center">
+	                 class="block rounded-md px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-hus-blue hover:bg-hus-dark transition-colors text-center">
                 Đăng nhập
               </a>
 	            </div>

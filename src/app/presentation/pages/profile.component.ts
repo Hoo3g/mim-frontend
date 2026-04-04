@@ -232,12 +232,18 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                          class="mt-1 w-full text-xs font-semibold text-gray-500" />
                 </label>
 
-                
+                <p *ngIf="selectedAvatarFileName"
+                   class="text-xs font-semibold text-gray-500">
+                  File avatar:
+                  <span class="font-bold text-gray-900">{{ selectedAvatarFileName }}</span>
+                </p>
 
-                <button (click)="saveStudentProfile()"
-                        class="px-5 py-2.5 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">
-                  Lưu hồ sơ sinh viên
-                </button>
+                <div class="flex justify-end">
+                  <button (click)="saveStudentProfile()"
+                          class="rounded-md px-5 py-2.5 bg-hus-blue text-white text-[10px] font-black uppercase tracking-widest hover:bg-hus-dark transition-colors">
+                    Lưu hồ sơ sinh viên
+                  </button>
+                </div>
               </div>
             </article>
 
@@ -395,6 +401,12 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                          class="mt-1 w-full text-xs font-semibold text-gray-500" />
                 </label>
 
+                <p *ngIf="selectedAvatarFileName"
+                   class="text-xs font-semibold text-gray-500">
+                  File avatar:
+                  <span class="font-bold text-gray-900">{{ selectedAvatarFileName }}</span>
+                </p>
+
                 <a *ngIf="me.avatarUrl"
                    [href]="me.avatarUrl!"
                    target="_blank"
@@ -534,6 +546,12 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
                          class="mt-1 w-full text-xs font-semibold text-gray-500" />
                 </label>
 
+                <p *ngIf="selectedAvatarFileName"
+                   class="text-xs font-semibold text-gray-500">
+                  File avatar:
+                  <span class="font-bold text-gray-900">{{ selectedAvatarFileName }}</span>
+                </p>
+
                 <a *ngIf="me.avatarUrl"
                    [href]="me.avatarUrl!"
                    target="_blank"
@@ -658,6 +676,8 @@ export class ProfileComponent implements OnInit {
   feedbackMessage = '';
   feedbackError = false;
   avatarLoadError = false;
+  selectedAvatarFileName = '';
+  pendingAvatarFile: File | null = null;
   resendingVerification = false;
   verificationLinkRequested = false;
 
@@ -809,22 +829,7 @@ export class ProfileComponent implements OnInit {
   }
 
   defaultCvFileName(): string {
-    const url = this.studentForm.cvUrl;
-    if (!url) {
-      return '';
-    }
-
-    const cleaned = url.split('#')[0].split('?')[0];
-    const rawName = cleaned.substring(cleaned.lastIndexOf('/') + 1);
-    if (!rawName) {
-      return 'cv.pdf';
-    }
-
-    try {
-      return decodeURIComponent(rawName);
-    } catch {
-      return rawName;
-    }
+    return this.extractFileName(this.studentForm.cvUrl, 'cv.pdf');
   }
 
   researchInterestsLabel(me: ProfileMeResponse): string {
@@ -903,6 +908,8 @@ export class ProfileComponent implements OnInit {
     }
     this.editingStudent = true;
     this.feedbackMessage = '';
+    this.selectedAvatarFileName = this.extractFileName(this.me?.avatarUrl);
+    this.pendingAvatarFile = null;
   }
 
   cancelEditStudent(): void {
@@ -911,6 +918,7 @@ export class ProfileComponent implements OnInit {
     }
     this.editingStudent = false;
     this.feedbackMessage = '';
+    this.pendingAvatarFile = null;
   }
 
   beginEditCompany(): void {
@@ -919,6 +927,8 @@ export class ProfileComponent implements OnInit {
     }
     this.editingCompany = true;
     this.feedbackMessage = '';
+    this.selectedAvatarFileName = this.extractFileName(this.me?.avatarUrl);
+    this.pendingAvatarFile = null;
   }
 
   cancelEditCompany(): void {
@@ -927,6 +937,7 @@ export class ProfileComponent implements OnInit {
     }
     this.editingCompany = false;
     this.feedbackMessage = '';
+    this.pendingAvatarFile = null;
   }
 
   beginEditLecturer(): void {
@@ -935,6 +946,8 @@ export class ProfileComponent implements OnInit {
     }
     this.editingLecturer = true;
     this.feedbackMessage = '';
+    this.selectedAvatarFileName = this.extractFileName(this.me?.avatarUrl);
+    this.pendingAvatarFile = null;
   }
 
   cancelEditLecturer(): void {
@@ -943,6 +956,7 @@ export class ProfileComponent implements OnInit {
     }
     this.editingLecturer = false;
     this.feedbackMessage = '';
+    this.pendingAvatarFile = null;
   }
 
   saveStudentProfile(): void {
@@ -950,14 +964,20 @@ export class ProfileComponent implements OnInit {
       return;
     }
     this.feedbackMessage = '';
-    this.profileService.updateStudentProfile(this.buildStudentProfilePayload()).subscribe({
-      next: () => {
-        this.setSuccess('Đã lưu hồ sơ sinh viên');
-        this.editingStudent = false;
-        this.scrollToTop();
-        this.reload();
-      },
-      error: (error) => this.setError(error?.error?.message || 'Lưu hồ sơ sinh viên thất bại')
+    this.uploadPendingAvatarIfNeeded((uploadedAvatarUrl) => {
+      this.profileService.updateStudentProfile(this.buildStudentProfilePayload()).subscribe({
+        next: () => {
+          if (uploadedAvatarUrl) {
+            authSignal.updateAvatar(uploadedAvatarUrl);
+          }
+          this.pendingAvatarFile = null;
+          this.setSuccess('Đã lưu hồ sơ sinh viên');
+          this.editingStudent = false;
+          this.scrollToTop();
+          this.reload();
+        },
+        error: (error) => this.setError(error?.error?.message || 'Lưu hồ sơ sinh viên thất bại')
+      });
     });
   }
 
@@ -966,14 +986,20 @@ export class ProfileComponent implements OnInit {
       return;
     }
     this.feedbackMessage = '';
-    this.profileService.updateCompanyProfile(this.companyForm).subscribe({
-      next: () => {
-        this.setSuccess('Đã lưu hồ sơ doanh nghiệp');
-        this.editingCompany = false;
-        this.scrollToTop();
-        this.reload();
-      },
-      error: (error) => this.setError(error?.error?.message || 'Lưu hồ sơ doanh nghiệp thất bại')
+    this.uploadPendingAvatarIfNeeded((uploadedAvatarUrl) => {
+      this.profileService.updateCompanyProfile(this.companyForm).subscribe({
+        next: () => {
+          if (uploadedAvatarUrl) {
+            authSignal.updateAvatar(uploadedAvatarUrl);
+          }
+          this.pendingAvatarFile = null;
+          this.setSuccess('Đã lưu hồ sơ doanh nghiệp');
+          this.editingCompany = false;
+          this.scrollToTop();
+          this.reload();
+        },
+        error: (error) => this.setError(error?.error?.message || 'Lưu hồ sơ doanh nghiệp thất bại')
+      });
     });
   }
 
@@ -988,15 +1014,24 @@ export class ProfileComponent implements OnInit {
 
     this.lecturerForm.researchInterests = interests;
     this.feedbackMessage = '';
+    this.uploadPendingAvatarIfNeeded((uploadedAvatarUrl) => {
+      if (uploadedAvatarUrl) {
+        this.lecturerForm.avatarUrl = uploadedAvatarUrl;
+      }
 
-    this.profileService.updateLecturerProfile(this.lecturerForm).subscribe({
-      next: () => {
-        this.setSuccess('Đã lưu hồ sơ giảng viên');
-        this.editingLecturer = false;
-        this.scrollToTop();
-        this.reload();
-      },
-      error: (error) => this.setError(error?.error?.message || 'Lưu hồ sơ giảng viên thất bại')
+      this.profileService.updateLecturerProfile(this.lecturerForm).subscribe({
+        next: () => {
+          if (uploadedAvatarUrl) {
+            authSignal.updateAvatar(uploadedAvatarUrl);
+          }
+          this.pendingAvatarFile = null;
+          this.setSuccess('Đã lưu hồ sơ giảng viên');
+          this.editingLecturer = false;
+          this.scrollToTop();
+          this.reload();
+        },
+        error: (error) => this.setError(error?.error?.message || 'Lưu hồ sơ giảng viên thất bại')
+      });
     });
   }
 
@@ -1046,21 +1081,7 @@ export class ProfileComponent implements OnInit {
     }
 
     this.feedbackMessage = '';
-    this.profileService.uploadAvatar(file).subscribe({
-      next: (uploaded: ProfileAvatarUploadResponse) => {
-        if (this.me) {
-          this.me = { ...this.me, avatarUrl: uploaded.fileUrl };
-        }
-        input.value = '';
-        this.avatarLoadError = false;
-        authSignal.updateAvatar(uploaded.fileUrl);
-        this.setSuccess('Cập nhật avatar thành công');
-      },
-      error: (error) => {
-        input.value = '';
-        this.setError(error?.error?.message || 'Cập nhật avatar thất bại');
-      }
-    });
+    this.pendingAvatarFile = file;
   }
 
   private reload(): void {
@@ -1145,6 +1166,8 @@ export class ProfileComponent implements OnInit {
     };
     this.studentFullName = this.composeStudentFullName(me.student?.firstName, me.student?.lastName);
     this.studentAchievements = this.parseAchievementItems(me.student?.achievements);
+    this.selectedAvatarFileName = this.extractFileName(me.avatarUrl);
+    this.pendingAvatarFile = null;
 
     this.companyForm = {
       name: me.company?.name ?? '',
@@ -1170,6 +1193,40 @@ export class ProfileComponent implements OnInit {
 
   private emailName(email: string): string {
     return email.split('@')[0] || email;
+  }
+
+  private extractFileName(url?: string | null, fallback = ''): string {
+    if (!url) {
+      return fallback;
+    }
+
+    const cleaned = url.split('#')[0].split('?')[0];
+    const rawName = cleaned.substring(cleaned.lastIndexOf('/') + 1);
+    if (!rawName) {
+      return fallback;
+    }
+
+    try {
+      return decodeURIComponent(rawName);
+    } catch {
+      return rawName;
+    }
+  }
+
+  private uploadPendingAvatarIfNeeded(onUploaded: (avatarUrl: string | null) => void): void {
+    if (!this.pendingAvatarFile) {
+      onUploaded(null);
+      return;
+    }
+
+    this.profileService.uploadAvatar(this.pendingAvatarFile).subscribe({
+      next: (uploaded: ProfileAvatarUploadResponse) => {
+        onUploaded(uploaded.fileUrl);
+      },
+      error: (error) => {
+        this.setError(error?.error?.message || 'Cập nhật avatar thất bại');
+      }
+    });
   }
 
   studentAchievementItems(value?: string | null): string[] {

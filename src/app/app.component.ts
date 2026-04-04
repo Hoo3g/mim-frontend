@@ -20,7 +20,9 @@ import { Subscription } from 'rxjs';
 
       <router-outlet></router-outlet>
 
-      <footer class="mt-16 bg-white border-t border-gray-100">
+      <footer class="bg-white border-t border-gray-100"
+              [class.mt-8]="isCompactFooterRoute()"
+              [class.mt-16]="!isCompactFooterRoute()">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
             <section>
@@ -91,6 +93,7 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly currentYear = new Date().getFullYear();
   isRouteNavigating = false;
   routeProgress = 0;
+  currentUrl = '';
   private routeEventsSub?: Subscription;
   private routeProgressIntervalId: number | null = null;
   private routeProgressFinishTimeoutId: number | null = null;
@@ -99,13 +102,20 @@ export class AppComponent implements OnInit, OnDestroy {
     authSignal.restoreFromStorage();
     this.authSessionSyncService.start();
     this.analyticsTrackingService.start();
+    this.currentUrl = this.router.url;
     this.routeEventsSub = this.router.events.subscribe((event) => {
       if (event instanceof NavigationStart) {
         this.startRouteProgress();
         return;
       }
 
-      if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
+      if (event instanceof NavigationEnd) {
+        this.currentUrl = event.urlAfterRedirects;
+        this.finishRouteProgress();
+        return;
+      }
+
+      if (event instanceof NavigationCancel || event instanceof NavigationError) {
         this.finishRouteProgress();
       }
     });
@@ -154,5 +164,9 @@ export class AppComponent implements OnInit, OnDestroy {
       window.clearTimeout(this.routeProgressFinishTimeoutId);
       this.routeProgressFinishTimeoutId = null;
     }
+  }
+
+  isCompactFooterRoute(): boolean {
+    return this.currentUrl.startsWith('/auth/login');
   }
 }

@@ -13,9 +13,9 @@ import { AuthResponse } from '../../features/auth/models/auth.model';
     selector: 'app-login',
     standalone: true,
     imports: [CommonModule, FormsModule, RouterModule],
-    template: `
-    <div class="min-h-screen flex items-start justify-center bg-gray-50 pt-6 pb-12 px-4 sm:px-6 sm:pt-8 md:pt-10 lg:px-8">
-      <div class="max-w-md w-full space-y-8 bg-white p-10 shadow-xl border border-gray-100">
+  template: `
+    <div class="min-h-[calc(100vh-240px)] sm:min-h-[calc(100vh-260px)] flex items-start justify-center bg-gray-50 pt-10 pb-6 px-4 sm:px-6 sm:pt-12 sm:pb-8 md:pt-12 lg:px-8">
+      <div class="max-w-md w-full space-y-8 bg-white p-8 sm:p-10 shadow-xl border border-gray-100 rounded-xl">
         <div>
           <h2 class="mt-6 text-center text-3xl font-black text-gray-900 uppercase tracking-tighter">Đăng nhập</h2>
           <p class="mt-2 text-center text-[10px] font-bold text-hus-blue uppercase tracking-widest">
@@ -52,7 +52,7 @@ import { AuthResponse } from '../../features/auth/models/auth.model';
           <button
             type="submit"
             [disabled]="isLoading"
-            class="flex w-full justify-center border border-transparent bg-hus-blue px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-white transition-all hover:bg-hus-dark disabled:cursor-not-allowed disabled:opacity-60">
+            class="flex w-full justify-center rounded-md border border-transparent bg-hus-blue px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-white transition-all hover:bg-hus-dark disabled:cursor-not-allowed disabled:opacity-60">
             {{ isLoading ? 'Đang đăng nhập...' : 'Đăng nhập' }}
           </button>
         </form>

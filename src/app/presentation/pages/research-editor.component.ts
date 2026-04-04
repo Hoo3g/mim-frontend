@@ -21,16 +21,6 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
   imports: [CommonModule, FormsModule, RouterModule, QuillEditorComponent],
   template: `
     <div class="bg-white min-h-screen">
-      <div class="border-b border-gray-100 bg-blue-50/50 px-3 py-2.5 sm:px-6 sm:py-3 lg:px-8">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-gray-400">
-          <a [routerLink]="ROUTES.RESEARCH_MY_PAPERS" class="text-hus-blue hover:text-hus-dark transition">
-            Bài viết của tôi
-          </a>
-          <span class="text-gray-300">/</span>
-          <span class="text-hus-blue opacity-70">{{ isEditMode ? 'Chỉnh sửa' : 'Soạn thảo' }}</span>
-        </div>
-      </div>
-
       <div class="mx-auto w-full px-3 py-5 sm:max-w-5xl sm:px-6 sm:py-8 md:py-10 lg:px-8">
         <div class="w-full border-0 sm:border-2 sm:border-hus-blue/10 bg-white p-0 sm:p-6 md:p-8 lg:p-10">
           <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight tracking-tight">
@@ -38,7 +28,7 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
               Chỉnh sửa bài <span class="text-hus-blue">nghiên cứu</span>
             </ng-container>
             <ng-template #createResearchHeading>
-              Soạn bài <span class="text-hus-blue">nghiên cứu mới</span>
+              Soạn bài <span class="text-hus-blue">nghiên cứu </span>
             </ng-template>
           </h1>
           <p class="mt-3 text-[10px] sm:text-sm text-gray-400 font-bold uppercase tracking-widest leading-relaxed">

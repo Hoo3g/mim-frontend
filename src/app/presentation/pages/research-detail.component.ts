@@ -45,16 +45,8 @@ interface PaperDetailState {
         </div>
       </div>
 
-      <div *ngIf="state.paper as paper" class="min-h-screen bg-white pb-20">
-      <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-3 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-          <a routerLink="/" class="text-hus-blue hover:text-hus-dark transition">Cổng nghiên cứu</a>
-          <span class="text-gray-300">/</span>
-          <span class="text-hus-blue opacity-70">{{ paper.researchArea }}</span>
-        </div>
-      </div>
-
-      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-8 sm:mt-12">
+      <div *ngIf="state.paper as paper" class="min-h-screen bg-white pt-8 sm:pt-12 pb-20">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div class="max-w-4xl mx-auto">
           <header class="mb-8 sm:mb-12 border-b-2 border-hus-blue pb-8 sm:pb-12">
             <div class="flex items-center gap-3 mb-6 text-[11px] font-bold uppercase tracking-tighter">

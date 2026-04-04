@@ -23,14 +23,6 @@ interface ScheduleTableRow {
     imports: [CommonModule, RouterModule, LoadingSpinnerComponent],
     template: `
     <div class="bg-white min-h-screen">
-      <div class="border-b border-gray-100 bg-blue-50/50 py-3 px-3 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-          <a routerLink="/" class="text-hus-blue hover:text-hus-dark transition">Cổng nghiên cứu</a>
-          <span class="text-gray-300">/</span>
-          <a routerLink="/news" class="text-hus-blue hover:text-hus-dark transition opacity-70">Thông báo</a>
-        </div>
-      </div>
-
       <div class="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-8 md:py-12">
         <div *ngIf="loading" class="py-20 text-center text-gray-400 text-xs uppercase tracking-widest border-2 border-dashed border-gray-100">
           <app-loading-spinner

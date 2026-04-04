@@ -17,10 +17,6 @@ import { PendingApplicantResponse } from '../../core/models/profile.model';
   imports: [CommonModule, RouterModule, PostDetailComponent],
   template: `
     <div class="bg-white min-h-screen">
-      <div class="bg-gray-50 border-b border-gray-100">
-        
-      </div>
-
       <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-10">
         <div *ngIf="errorMessage"
              class="mb-6 border border-red-200 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-widest px-4 py-3">
