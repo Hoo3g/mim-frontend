@@ -18,7 +18,9 @@ import { Subscription } from 'rxjs';
              [style.opacity]="isRouteNavigating ? 1 : 0"></div>
       </div>
 
-      <router-outlet></router-outlet>
+      <div class="flex-1 flex flex-col">
+        <router-outlet></router-outlet>
+      </div>
 
       <footer class="bg-white border-t border-gray-100"
               [class.mt-8]="isCompactFooterRoute()"

@@ -412,7 +412,7 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
     }
 
     this.displayedPapers = this.allPapers.filter((paper) =>
-      this.normalizeSearchValue(paper.title).includes(normalizedKeyword)
+      this.matchesSearch(this.normalizeSearchValue(paper.title), normalizedKeyword)
     );
   }
 
@@ -423,6 +423,63 @@ export class MyResearchPapersComponent implements OnInit, OnDestroy {
       .toLowerCase()
       .trim()
       .replace(/\s+/g, ' ');
+  }
+
+  private matchesSearch(normalizedTitle: string, normalizedKeyword: string): boolean {
+    if (!normalizedKeyword) {
+      return true;
+    }
+
+    const keywordTokens = this.searchTokens(normalizedKeyword);
+    if (keywordTokens.length === 1 && keywordTokens[0].length <= 2) {
+      return this.containsWholeWord(normalizedTitle, keywordTokens[0]);
+    }
+
+    if (normalizedTitle.includes(normalizedKeyword)) {
+      return true;
+    }
+
+    if (keywordTokens.length <= 1) {
+      return normalizedTitle.includes(normalizedKeyword);
+    }
+
+    const matchedTokenCount = keywordTokens.filter((token) => normalizedTitle.includes(token)).length;
+    return matchedTokenCount >= this.requiredMatchedTokenCount(keywordTokens.length);
+  }
+
+  private searchTokens(normalizedKeyword: string): string[] {
+    const tokens = normalizedKeyword
+      .split(/[^\p{L}\p{N}]+/u)
+      .map((token) => token.trim())
+      .filter((token, index, array) => {
+        if (!token) {
+          return false;
+        }
+        if (token.length === 1 && !/\d/.test(token)) {
+          return false;
+        }
+        return array.indexOf(token) === index;
+      });
+
+    return tokens.length > 0 ? tokens : [normalizedKeyword];
+  }
+
+  private requiredMatchedTokenCount(tokenCount: number): number {
+    if (tokenCount <= 1) {
+      return tokenCount;
+    }
+    if (tokenCount === 2) {
+      return 2;
+    }
+    if (tokenCount <= 5) {
+      return tokenCount - 1;
+    }
+    return Math.max(3, Math.ceil(tokenCount * 0.6));
+  }
+
+  private containsWholeWord(normalizedValue: string, token: string): boolean {
+    const paddedValue = ` ${normalizedValue.replace(/[^\p{L}\p{N}]+/gu, ' ').replace(/\s+/g, ' ').trim()} `;
+    return paddedValue.includes(` ${token} `);
   }
 
   private autoResizeTextarea(textarea: HTMLTextAreaElement): void {

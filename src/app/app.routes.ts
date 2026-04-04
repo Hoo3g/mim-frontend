@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { ProfileComponent } from './presentation/pages/profile.component';
 import { PublicProfileComponent } from './presentation/pages/public-profile.component';
+import { PublicLayoutComponent } from './layouts/public-layout/public-layout.component';
 
 /**
  * Root routes — sử dụng lazy loading cho từng feature.
@@ -11,7 +12,7 @@ export const routes: Routes = [
     // ─── Public layout (có Nav bar) ─────────────────────────
     {
         path: '',
-        loadComponent: () => import('./layouts/public-layout/public-layout.component').then(m => m.PublicLayoutComponent),
+        component: PublicLayoutComponent,
         children: [
             { path: '', loadChildren: () => import('./features/research/research.routes').then(m => m.researchRoutes), pathMatch: 'full' },
             { path: 'research', loadChildren: () => import('./features/research/research.routes').then(m => m.researchRoutes) },

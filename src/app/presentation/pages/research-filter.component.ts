@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, DestroyRef, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -40,12 +40,16 @@ import { ResearchPaperListQuery, ResearchPaperService } from '../../core/service
               <section>
                 <h3 class="text-[10px] font-bold text-gray-900 uppercase tracking-widest mb-4">Tìm kiếm</h3>
                 <div class="relative">
-                  <input
+                  <textarea
+                    #searchField
                     [(ngModel)]="searchKeyword"
                     (ngModelChange)="onSearchKeywordChange($event)"
-                    type="text"
+                    (input)="onSearchFieldInput($event)"
+                    rows="1"
+                    wrap="soft"
                     placeholder="Tên bài viết, tác giả..."
-                    class="w-full bg-gray-50 border border-hus-blue/30 px-3 py-2 text-xs focus:ring-1 focus:ring-hus-blue/30 focus:border-hus-blue outline-none transition-all font-medium">
+                    class="block w-full min-h-[44px] resize-none overflow-hidden bg-gray-50 border border-hus-blue/30 px-3 py-2 text-xs leading-6 focus:ring-1 focus:ring-hus-blue/30 focus:border-hus-blue outline-none transition-all font-medium break-all"
+                    style="overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap;"></textarea>
                 </div>
               </section>
 
@@ -452,7 +456,7 @@ import { ResearchPaperListQuery, ResearchPaperService } from '../../core/service
     </div>
   `
 })
-export class ResearchFilterComponent implements OnInit, OnDestroy {
+export class ResearchFilterComponent implements OnInit, OnDestroy, AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
@@ -464,6 +468,8 @@ export class ResearchFilterComponent implements OnInit, OnDestroy {
   private readonly searchKeywordChanges = new Subject<string>();
   private readonly mobileBreakpoint = 768;
   private readonly countPageSize = 50;
+  @ViewChild('searchField') private searchField?: ElementRef<HTMLTextAreaElement>;
+  private pendingSearchFieldViewportTop: number | null = null;
 
   roleFilter: 'LECTURER' | 'STUDENT' | null = null;
   paperTypeFilter: 'SCIENTIFIC_RESEARCH' | 'GRADUATION_THESIS' | null = null;
@@ -537,6 +543,10 @@ export class ResearchFilterComponent implements OnInit, OnDestroy {
     this.resetAndLoadPapers();
   }
 
+  ngAfterViewInit(): void {
+    this.syncSearchFieldHeight();
+  }
+
   ngOnDestroy(): void {
     this.persistViewState();
   }
@@ -558,6 +568,7 @@ export class ResearchFilterComponent implements OnInit, OnDestroy {
   onSearchKeywordChange(value: string): void {
     this.searchKeyword = value;
     this.searchKeywordChanges.next(value.trim());
+    this.syncSearchFieldHeight();
   }
 
   setRoleFilter(value: 'LECTURER' | 'STUDENT'): void {
@@ -626,7 +637,17 @@ export class ResearchFilterComponent implements OnInit, OnDestroy {
     this.yearFilterValue = '';
     this.selectedSpecializations = [];
     this.searchKeyword = '';
+    this.syncSearchFieldHeight();
     this.applyFilters();
+  }
+
+  onSearchFieldInput(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement | null;
+    if (!textarea) {
+      return;
+    }
+
+    requestAnimationFrame(() => this.autoResizeTextarea(textarea));
   }
 
   loadMorePapers(): void {
@@ -701,6 +722,7 @@ export class ResearchFilterComponent implements OnInit, OnDestroy {
         this.currentPage = page + 1;
         this.persistViewState();
         this.cdr.detectChanges();
+        this.restoreSearchFieldViewportPosition();
       },
       error: () => {
         if (page === 0) {
@@ -709,6 +731,7 @@ export class ResearchFilterComponent implements OnInit, OnDestroy {
         }
         this.hasMorePapers = false;
         this.isLoadingPapers = false;
+        this.restoreSearchFieldViewportPosition();
       },
       complete: () => {
         this.isLoadingPapers = false;
@@ -717,6 +740,7 @@ export class ResearchFilterComponent implements OnInit, OnDestroy {
   }
 
   private applyFilters(): void {
+    this.captureSearchFieldViewportPosition();
     this.persistViewState();
     this.currentStateKey = this.buildStateKey();
     this.syncFiltersToUrl();
@@ -730,7 +754,11 @@ export class ResearchFilterComponent implements OnInit, OnDestroy {
       this.totalPaperCount = cachedState.totalPaperCount ?? cachedState.papers.length;
       this.isLoadingPapers = false;
       this.cdr.detectChanges();
-      this.restoreScrollPosition(cachedState.scrollY);
+      if (this.pendingSearchFieldViewportTop !== null) {
+        this.restoreSearchFieldViewportPosition();
+      } else {
+        this.restoreScrollPosition(cachedState.scrollY);
+      }
       return;
     }
 
@@ -976,5 +1004,56 @@ export class ResearchFilterComponent implements OnInit, OnDestroy {
         });
       });
     }, 0);
+  }
+
+  private syncSearchFieldHeight(): void {
+    setTimeout(() => {
+      const textarea = this.searchField?.nativeElement;
+      if (!textarea) {
+        return;
+      }
+
+      this.autoResizeTextarea(textarea);
+    }, 0);
+  }
+
+  private autoResizeTextarea(textarea: HTMLTextAreaElement): void {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.max(textarea.scrollHeight, 44)}px`;
+  }
+
+  private captureSearchFieldViewportPosition(): void {
+    const textarea = this.searchField?.nativeElement;
+    if (!textarea || typeof window === 'undefined') {
+      this.pendingSearchFieldViewportTop = null;
+      return;
+    }
+
+    this.pendingSearchFieldViewportTop = textarea.getBoundingClientRect().top;
+  }
+
+  private restoreSearchFieldViewportPosition(): void {
+    const targetTop = this.pendingSearchFieldViewportTop;
+    const textarea = this.searchField?.nativeElement;
+    if (targetTop === null || !textarea || typeof window === 'undefined') {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      const currentTop = textarea.getBoundingClientRect().top;
+      const delta = currentTop - targetTop;
+      if (Math.abs(delta) > 1) {
+        window.scrollBy({ top: delta, behavior: 'auto' });
+      }
+
+      requestAnimationFrame(() => {
+        const settledTop = textarea.getBoundingClientRect().top;
+        const settledDelta = settledTop - targetTop;
+        if (Math.abs(settledDelta) > 1) {
+          window.scrollBy({ top: settledDelta, behavior: 'auto' });
+        }
+        this.pendingSearchFieldViewportTop = null;
+      });
+    });
   }
 }
