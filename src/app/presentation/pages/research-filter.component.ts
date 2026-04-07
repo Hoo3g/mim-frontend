@@ -758,7 +758,10 @@ export class ResearchFilterComponent implements OnInit, OnDestroy, AfterViewInit
     this.syncFiltersToUrl();
     this.loadAllCounters();
 
-    const cachedState = this.researchListViewStateService.get(this.currentStateKey);
+    const shouldRestoreCachedList = !this.searchKeyword.trim();
+    const cachedState = shouldRestoreCachedList
+      ? this.researchListViewStateService.get(this.currentStateKey)
+      : null;
     if (cachedState) {
       this.allPapers = cachedState.papers;
       this.currentPage = cachedState.currentPage;

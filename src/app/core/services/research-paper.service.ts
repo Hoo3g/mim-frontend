@@ -101,6 +101,7 @@ export class ResearchPaperService {
     private readonly http = inject(HttpClient);
     private readonly papersCache = new TimedObservableCache<ResearchPaper[]>(10 * 60_000);
     private readonly pagedPapersCache = new TimedObservableCache<PagedResponse<ResearchPaper>>(10 * 60_000);
+    private readonly searchPagedPapersCache = new TimedObservableCache<PagedResponse<ResearchPaper>>(60_000);
     private readonly paperDetailCache = new TimedObservableCache<ResearchPaper | undefined>(15 * 60_000);
     private readonly myPapersCache = new TimedObservableCache<ResearchPaper[]>(2 * 60_000);
     private readonly bookmarksCache = new TimedObservableCache<Set<string>>(5 * 60_000);
@@ -129,8 +130,10 @@ export class ResearchPaperService {
         const safePage = Math.max(page, 0);
         const safeSize = Math.max(size, 1);
         const cacheKey = this.buildPageCacheKey(query, safePage, safeSize);
-        const cachedPaged$ = this.pagedPapersCache.get(cacheKey);
-        const paged$ = cachedPaged$ ?? this.pagedPapersCache.set(cacheKey,
+        const hasKeywordSearch = !!query.q?.trim();
+        const cacheStore = hasKeywordSearch ? this.searchPagedPapersCache : this.pagedPapersCache;
+        const cachedPaged$ = cacheStore.get(cacheKey);
+        const paged$ = cachedPaged$ ?? cacheStore.set(cacheKey,
             this.http.get<ApiResponse<PagedResponse<ResearchPaperApiModel> | ResearchPaperApiModel[]>>(
                 API_ENDPOINTS.RESEARCH.LIST_PAGED,
                 {
@@ -145,7 +148,7 @@ export class ResearchPaperService {
                     content: paged.content.map((paper) => this.toPaperModel(paper))
                 })),
                 catchError(() => {
-                    this.pagedPapersCache.delete(cacheKey);
+                    cacheStore.delete(cacheKey);
                     return of(emptyPagedResult<ResearchPaper>(safePage, safeSize));
                 }),
                 shareReplay({ bufferSize: 1, refCount: false })
