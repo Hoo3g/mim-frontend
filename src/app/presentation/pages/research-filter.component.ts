@@ -1003,19 +1003,26 @@ export class ResearchFilterComponent implements OnInit, OnDestroy, AfterViewInit
       return;
     }
 
+    let isSettled = false;
     const restore = () => {
+      if (isSettled) {
+        return;
+      }
       window.scrollTo({ top: scrollY, behavior: 'auto' });
+      requestAnimationFrame(() => {
+        if (Math.abs(window.scrollY - scrollY) <= 4) {
+          isSettled = true;
+        }
+      });
     };
 
-    setTimeout(() => {
-      restore();
-      requestAnimationFrame(() => {
+    const attempts = [0, 48, 180, 520];
+    attempts.forEach((delay) => {
+      window.setTimeout(() => {
         restore();
-        requestAnimationFrame(() => {
-          restore();
-        });
-      });
-    }, 0);
+        requestAnimationFrame(() => restore());
+      }, delay);
+    });
   }
 
   private syncSearchFieldHeight(): void {

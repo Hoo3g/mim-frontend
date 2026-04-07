@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { NavComponent } from '../../presentation/layout/nav.component';
 
 /**
  * Public layout wrapper — bọc Nav + RouterOutlet.
@@ -9,9 +8,8 @@ import { NavComponent } from '../../presentation/layout/nav.component';
 @Component({
     selector: 'app-public-layout',
     standalone: true,
-    imports: [NavComponent, RouterOutlet],
+    imports: [RouterOutlet],
   template: `
-    <app-nav />
     <main [style.paddingTop]="'var(--app-nav-offset, 92px)'">
       <router-outlet />
     </main>

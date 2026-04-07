@@ -128,7 +128,10 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   readonly MIN_ZOOM = 0.3;
   readonly MAX_ZOOM = 2.8;
   private readonly RESIZE_WIDTH_DELTA_THRESHOLD = 4;
-  private readonly PDF_LOAD_TIMEOUT_MS = 20000;
+  private readonly PDF_LOAD_STALL_TIMEOUT_MS = 25000;
+  private readonly PDF_LOAD_MAX_TOTAL_MS = 180000;
+  private readonly PDF_FALLBACK_FETCH_TIMEOUT_MS = 120000;
+  private readonly PDF_RANGE_CHUNK_SIZE = 64 * 1024;
   private readonly SLOW_HINT_DELAY_MS = 3500;
 
   src = input<string>('');
@@ -288,10 +291,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   }
 
   private async openDocumentWithFallback(source: string, token: number): Promise<PDFDocumentProxy> {
-    this.loadingTask = getDocument({
-      url: source,
-      withCredentials: true
-    });
+    this.loadingTask = this.createLoadingTask(source);
 
     try {
       return await this.waitForLoadingTask(this.loadingTask);
@@ -308,10 +308,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
       if (this.isWorkerBootstrapError(primaryError)) {
         try {
           await this.ensureMainThreadWorkerFallback();
-          this.loadingTask = getDocument({
-            url: source,
-            withCredentials: true
-          });
+          this.loadingTask = this.createLoadingTask(source);
           return await this.waitForLoadingTask(this.loadingTask);
         } catch {
           if (this.loadingTask) {
@@ -326,7 +323,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
           responseType: 'arraybuffer',
           withCredentials: true
         }).pipe(
-          timeout(this.PDF_LOAD_TIMEOUT_MS)
+          timeout(this.PDF_FALLBACK_FETCH_TIMEOUT_MS)
         ));
         const bytes = new Uint8Array(arrayBuffer);
         if (bytes.byteLength <= 0) {
@@ -336,10 +333,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
         return await this.waitForLoadingTask(this.loadingTask);
       } catch {
         try {
-          const fallbackTask = getDocument({
-            url: source,
-            withCredentials: true
-          });
+          const fallbackTask = this.createLoadingTask(source);
           this.loadingTask = fallbackTask;
           return await this.waitForLoadingTask(fallbackTask);
         } catch {
@@ -639,6 +633,17 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
     GlobalWorkerOptions.workerSrc = new URL('assets/pdfjs/pdf.worker.min.mjs', document.baseURI).toString();
   }
 
+  private createLoadingTask(source: string): PDFDocumentLoadingTask {
+    return getDocument({
+      url: source,
+      withCredentials: true,
+      disableRange: false,
+      disableStream: false,
+      disableAutoFetch: false,
+      rangeChunkSize: this.PDF_RANGE_CHUNK_SIZE
+    });
+  }
+
   private isWorkerBootstrapError(error: unknown): boolean {
     if (!(error instanceof Error)) {
       return false;
@@ -687,14 +692,25 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   private waitForLoadingTask(task: PDFDocumentLoadingTask): Promise<PDFDocumentProxy> {
     return new Promise<PDFDocumentProxy>((resolve, reject) => {
       let settled = false;
-      const timeoutId = setTimeout(() => {
+      const startedAt = Date.now();
+      let lastProgressAt = startedAt;
+
+      task.onProgress = () => {
+        lastProgressAt = Date.now();
+      };
+
+      const watchdogId = setInterval(() => {
         if (settled) {
           return;
         }
-        settled = true;
-        void task.destroy().catch(() => undefined);
-        reject(new Error('Tải PDF quá lâu trên kết nối hiện tại. Bạn có thể mở tài liệu ở tab mới.'));
-      }, this.PDF_LOAD_TIMEOUT_MS);
+        const now = Date.now();
+        if (now - startedAt >= this.PDF_LOAD_MAX_TOTAL_MS || now - lastProgressAt >= this.PDF_LOAD_STALL_TIMEOUT_MS) {
+          settled = true;
+          clearInterval(watchdogId);
+          void task.destroy().catch(() => undefined);
+          reject(new Error('Tải PDF quá lâu trên kết nối hiện tại. Bạn có thể mở tài liệu ở tab mới.'));
+        }
+      }, 1000);
 
       task.promise.then(
         (document) => {
@@ -702,7 +718,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
             return;
           }
           settled = true;
-          clearTimeout(timeoutId);
+          clearInterval(watchdogId);
           resolve(document);
         },
         (error) => {
@@ -710,7 +726,7 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
             return;
           }
           settled = true;
-          clearTimeout(timeoutId);
+          clearInterval(watchdogId);
           reject(error);
         }
       );

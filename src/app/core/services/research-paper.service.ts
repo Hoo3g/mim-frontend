@@ -99,11 +99,12 @@ interface ResearchBookmarkApiModel {
 })
 export class ResearchPaperService {
     private readonly http = inject(HttpClient);
-    private readonly papersCache = new TimedObservableCache<ResearchPaper[]>(60_000);
-    private readonly paperDetailCache = new TimedObservableCache<ResearchPaper | undefined>(60_000);
-    private readonly myPapersCache = new TimedObservableCache<ResearchPaper[]>(30_000);
-    private readonly bookmarksCache = new TimedObservableCache<Set<string>>(30_000);
-    private readonly bookmarkedPapersCache = new TimedObservableCache<BookmarkedResearchPaper[]>(30_000);
+    private readonly papersCache = new TimedObservableCache<ResearchPaper[]>(10 * 60_000);
+    private readonly pagedPapersCache = new TimedObservableCache<PagedResponse<ResearchPaper>>(10 * 60_000);
+    private readonly paperDetailCache = new TimedObservableCache<ResearchPaper | undefined>(15 * 60_000);
+    private readonly myPapersCache = new TimedObservableCache<ResearchPaper[]>(2 * 60_000);
+    private readonly bookmarksCache = new TimedObservableCache<Set<string>>(5 * 60_000);
+    private readonly bookmarkedPapersCache = new TimedObservableCache<BookmarkedResearchPaper[]>(5 * 60_000);
 
     getPapers(query: ResearchPaperListQuery = {}): Observable<ResearchPaper[]> {
         const cacheKey = this.buildListCacheKey(query);
@@ -127,21 +128,31 @@ export class ResearchPaperService {
     getPapersPage(query: ResearchPaperListQuery = {}, page = 0, size = 10): Observable<PagedResponse<ResearchPaper>> {
         const safePage = Math.max(page, 0);
         const safeSize = Math.max(size, 1);
-        const params = this.buildListParams(query)
-            .set('page', String(safePage))
-            .set('size', String(safeSize));
+        const cacheKey = this.buildPageCacheKey(query, safePage, safeSize);
+        const cachedPaged$ = this.pagedPapersCache.get(cacheKey);
+        const paged$ = cachedPaged$ ?? this.pagedPapersCache.set(cacheKey,
+            this.http.get<ApiResponse<PagedResponse<ResearchPaperApiModel> | ResearchPaperApiModel[]>>(
+                API_ENDPOINTS.RESEARCH.LIST_PAGED,
+                {
+                    params: this.buildListParams(query)
+                        .set('page', String(safePage))
+                        .set('size', String(safeSize))
+                }
+            ).pipe(
+                map((response) => unwrapPaged(response, safePage, safeSize)),
+                map((paged) => ({
+                    ...paged,
+                    content: paged.content.map((paper) => this.toPaperModel(paper))
+                })),
+                catchError(() => {
+                    this.pagedPapersCache.delete(cacheKey);
+                    return of(emptyPagedResult<ResearchPaper>(safePage, safeSize));
+                }),
+                shareReplay({ bufferSize: 1, refCount: false })
+            )
+        );
 
-        return this.http.get<ApiResponse<PagedResponse<ResearchPaperApiModel> | ResearchPaperApiModel[]>>(
-            API_ENDPOINTS.RESEARCH.LIST_PAGED,
-            { params }
-        ).pipe(
-            map((response) => unwrapPaged(response, safePage, safeSize)),
-            map((paged) => ({
-                ...paged,
-                content: paged.content.map((paper) => this.toPaperModel(paper))
-            })),
-            catchError(() => of(emptyPagedResult<ResearchPaper>(safePage, safeSize))),
-            switchMap((paged) => forkJoin([of(paged), this.getBookmarkedPaperIds()])),
+        return forkJoin([paged$, this.getBookmarkedPaperIds()]).pipe(
             map(([paged, bookmarkedIds]) => ({
                 ...paged,
                 content: paged.content.map((paper) => ({
@@ -356,14 +367,12 @@ export class ResearchPaperService {
 
     trackView(paperId: string): Observable<void> {
         return this.http.post<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.TRACK_VIEW(paperId), {}).pipe(
-            tap(() => this.invalidatePublicPaperCaches(paperId)),
             map(() => void 0)
         );
     }
 
     trackDownload(paperId: string): Observable<void> {
         return this.http.post<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.TRACK_DOWNLOAD(paperId), {}).pipe(
-            tap(() => this.invalidatePublicPaperCaches(paperId)),
             map(() => void 0)
         );
     }
@@ -434,6 +443,10 @@ export class ResearchPaperService {
         return `q=${keyword};type=${type};paperType=${paperType};year=${year};metric=${metric};specialization=${specializations}`;
     }
 
+    private buildPageCacheKey(query: ResearchPaperListQuery, page: number, size: number): string {
+        return `${this.buildListCacheKey(query)};page=${page};size=${size}`;
+    }
+
 
     private attachBookmarkState(papers$: Observable<ResearchPaper[]>): Observable<ResearchPaper[]> {
         return forkJoin([papers$, this.getBookmarkedPaperIds()]).pipe(
@@ -491,12 +504,14 @@ export class ResearchPaperService {
 
     private invalidatePaperCaches(): void {
         this.papersCache.clear();
+        this.pagedPapersCache.clear();
         this.paperDetailCache.clear();
         this.myPapersCache.clear();
     }
 
     private invalidatePublicPaperCaches(paperId?: string): void {
         this.papersCache.clear();
+        this.pagedPapersCache.clear();
         if (paperId) {
             this.paperDetailCache.delete((paperId ?? '').trim());
         } else {

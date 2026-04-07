@@ -508,20 +508,10 @@ export class NavComponent implements OnInit, OnDestroy {
   showMobileProfileSection = false;
   isCondensed = false;
   isDesktopViewport = true;
-  private lastScrollY = 0;
-  private scrollDirection: 'up' | 'down' | null = null;
-  private scrollTravelSinceDirectionChange = 0;
   private readonly expandedNavOffset = 92;
   private readonly condensedNavOffset = 28;
   private readonly sidebarGap = 32;
   private readonly desktopBreakpoint = 768;
-  private readonly topOnlyNavModeBreakpoint = 1024;
-  private readonly mobileShowTopThreshold = 8;
-  private readonly topResetThreshold = 24;
-  private readonly hideNavMinScrollY = 96;
-  private readonly hideNavTravelThreshold = 56;
-  private readonly showNavTravelThreshold = 36;
-  private readonly minMeaningfulScrollDelta = 2;
 
   constructor() {
     effect(() => {
@@ -549,7 +539,6 @@ export class NavComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.resetScrollTracking(this.document.defaultView?.scrollY ?? 0);
     this.syncViewportMode();
     this.syncCondensedStateWithScroll();
     this.applyStickyOffsets();
@@ -611,13 +600,6 @@ export class NavComponent implements OnInit, OnDestroy {
   onWindowResize(): void {
     this.syncViewportMode();
     this.syncCondensedStateWithScroll();
-  }
-
-  @HostListener('window:scroll')
-  onWindowScroll(): void {
-    // Keep header fully fixed/expanded on every scroll position.
-    this.setCondensed(false);
-    this.lastScrollY = this.document.defaultView?.scrollY ?? 0;
   }
 
   @HostListener('document:click', ['$event'])
@@ -728,29 +710,8 @@ export class NavComponent implements OnInit, OnDestroy {
     this.isCondensed = value;
     this.applyStickyOffsets();
   }
-
-  private resetScrollTracking(scrollY: number): void {
-    this.lastScrollY = scrollY;
-    this.scrollDirection = null;
-    this.scrollTravelSinceDirectionChange = 0;
-  }
-
-  private updateMobileCondensedState(currentScrollY: number): void {
-    // Mobile/tablet: header only appears when user is very close to top.
-    this.setCondensed(currentScrollY > this.mobileShowTopThreshold);
-    if (!this.isCondensed) {
-      this.resetScrollTracking(currentScrollY);
-    }
-  }
-
   private syncCondensedStateWithScroll(): void {
     this.setCondensed(false);
-    this.resetScrollTracking(this.document.defaultView?.scrollY ?? 0);
-  }
-
-  private shouldUseTopOnlyNavMode(): boolean {
-    const width = this.document.defaultView?.innerWidth ?? this.desktopBreakpoint;
-    return width < this.topOnlyNavModeBreakpoint;
   }
 
   private applyStickyOffsets(): void {

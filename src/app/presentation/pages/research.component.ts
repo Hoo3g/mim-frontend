@@ -21,7 +21,7 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
       <!-- Hero Banner Section -->
       <div class="bg-gray-50 border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 md:py-4">
-          <div *ngIf="hero$ | async as hero" class="relative overflow-hidden border-2 border-hus-blue/10 bg-white">
+          <div *ngIf="hero$ | async as hero; else heroSkeleton" class="relative overflow-hidden border-2 border-hus-blue/10 bg-white">
             <div class="md:hidden relative h-[280px] sm:h-[320px] overflow-hidden">
               <img [src]="hero.imageUrl"
                    alt="MIM Faculty Building"
@@ -73,6 +73,41 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
               </div>
             </div>
           </div>
+          <ng-template #heroSkeleton>
+            <div class="relative overflow-hidden border-2 border-hus-blue/10 bg-white">
+              <div class="md:hidden relative h-[280px] sm:h-[320px] overflow-hidden bg-gray-100">
+                <div class="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/40"></div>
+                <div class="absolute inset-x-0 bottom-0 p-4 space-y-3">
+                  <div class="h-7 w-52 bg-gray-200 rounded animate-pulse"></div>
+                  <div class="h-7 w-44 bg-hus-blue/15 rounded animate-pulse"></div>
+                  <div class="h-3 w-64 bg-gray-200 rounded animate-pulse"></div>
+                  <div class="mt-3 flex gap-3 items-center">
+                    <div class="h-7 w-1 bg-hus-blue/20"></div>
+                    <div class="space-y-2">
+                      <div class="h-3 w-24 bg-gray-200 rounded animate-pulse"></div>
+                      <div class="h-2.5 w-20 bg-gray-100 rounded animate-pulse"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hidden md:grid grid-cols-2 items-center">
+                <div class="p-4 md:p-6 space-y-3">
+                  <div class="h-9 w-72 bg-gray-200 rounded animate-pulse"></div>
+                  <div class="h-9 w-56 bg-hus-blue/15 rounded animate-pulse"></div>
+                  <div class="h-3 w-64 bg-gray-200 rounded animate-pulse"></div>
+                  <div class="flex gap-4 pt-1">
+                    <div class="h-7 w-1 bg-hus-blue/20"></div>
+                    <div class="space-y-2">
+                      <div class="h-3 w-24 bg-gray-200 rounded animate-pulse"></div>
+                      <div class="h-2.5 w-20 bg-gray-100 rounded animate-pulse"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="h-40 md:h-full bg-gray-100 animate-pulse"></div>
+              </div>
+            </div>
+          </ng-template>
         </div>
       </div>
       
@@ -404,19 +439,26 @@ export class ResearchComponent implements OnInit, OnDestroy {
       return;
     }
 
+    let isSettled = false;
     const restore = () => {
+      if (isSettled) {
+        return;
+      }
       window.scrollTo({ top: scrollY, behavior: 'auto' });
+      requestAnimationFrame(() => {
+        if (Math.abs(window.scrollY - scrollY) <= 4) {
+          isSettled = true;
+        }
+      });
     };
 
-    setTimeout(() => {
-      restore();
-      requestAnimationFrame(() => {
+    const attempts = [0, 48, 180, 520];
+    attempts.forEach((delay) => {
+      window.setTimeout(() => {
         restore();
-        requestAnimationFrame(() => {
-          restore();
-        });
-      });
-    }, 0);
+        requestAnimationFrame(() => restore());
+      }, delay);
+    });
   }
 
 }

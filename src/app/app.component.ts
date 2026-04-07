@@ -5,11 +5,12 @@ import { authSignal } from './core/signals/auth.signal';
 import { AuthSessionSyncService } from './core/services/auth-session-sync.service';
 import { AnalyticsTrackingService } from './core/services/analytics-tracking.service';
 import { Subscription } from 'rxjs';
+import { NavComponent } from './presentation/layout/nav.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterModule],
+  imports: [CommonModule, RouterOutlet, RouterModule, NavComponent],
   template: `
     <div class="min-h-screen bg-gray-50 flex flex-col">
       <div class="pointer-events-none fixed inset-x-0 top-0 z-[250] h-[3px]">
@@ -19,6 +20,7 @@ import { Subscription } from 'rxjs';
       </div>
 
       <div class="flex-1 flex flex-col">
+        <app-nav />
         <router-outlet></router-outlet>
       </div>
 
@@ -149,11 +151,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.clearRouteProgressTimers();
     this.routeProgress = 1;
-    this.routeProgressFinishTimeoutId = window.setTimeout(() => {
-      this.isRouteNavigating = false;
-      this.routeProgress = 0;
-      this.routeProgressFinishTimeoutId = null;
-    }, 220);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.routeProgressFinishTimeoutId = window.setTimeout(() => {
+          this.isRouteNavigating = false;
+          this.routeProgress = 0;
+          this.routeProgressFinishTimeoutId = null;
+        }, 220);
+      });
+    });
   }
 
   private clearRouteProgressTimers(): void {

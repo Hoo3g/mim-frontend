@@ -18,11 +18,14 @@ export class ResearchListViewStateService {
     private readonly ttlMs = 10 * 60 * 1000;
     private readonly lastViewedPaperStorageKey = 'research:last-viewed-paper-id';
     private readonly lastListUrlStorageKey = 'research:last-list-url';
+    private readonly listStatesStorageKey = 'research:list-view-states';
     private readonly states = new Map<string, ResearchListViewState>();
     private lastViewedPaperId: string | null = null;
     private lastListUrl: string | null = null;
+    private didHydrateStates = false;
 
     get(key: string): ResearchListViewState | null {
+        this.hydrateStatesFromSession();
         const normalizedKey = key.trim();
         if (!normalizedKey) {
             return null;
@@ -35,6 +38,7 @@ export class ResearchListViewStateService {
 
         if (state.savedAt + this.ttlMs <= Date.now()) {
             this.states.delete(normalizedKey);
+            this.persistStatesToSession();
             return null;
         }
 
@@ -42,6 +46,7 @@ export class ResearchListViewStateService {
     }
 
     set(key: string, state: Omit<ResearchListViewState, 'savedAt'>): void {
+        this.hydrateStatesFromSession();
         const normalizedKey = key.trim();
         if (!normalizedKey) {
             return;
@@ -51,15 +56,19 @@ export class ResearchListViewStateService {
             ...state,
             savedAt: Date.now()
         }));
+        this.persistStatesToSession();
     }
 
     clear(key?: string): void {
+        this.hydrateStatesFromSession();
         const normalizedKey = key?.trim();
         if (!normalizedKey) {
             this.states.clear();
+            this.persistStatesToSession();
             return;
         }
         this.states.delete(normalizedKey);
+        this.persistStatesToSession();
     }
 
     markLastViewedPaper(paperId: string, listUrl?: string): void {
@@ -120,6 +129,63 @@ export class ResearchListViewStateService {
             window.sessionStorage.setItem(key, value);
         } catch {
             // Ignore storage errors in restricted browser modes.
+        }
+    }
+
+    private hydrateStatesFromSession(): void {
+        if (this.didHydrateStates || typeof window === 'undefined') {
+            return;
+        }
+
+        this.didHydrateStates = true;
+        try {
+            const rawValue = window.sessionStorage.getItem(this.listStatesStorageKey)?.trim() ?? '';
+            if (!rawValue) {
+                return;
+            }
+
+            const parsed = JSON.parse(rawValue) as Record<string, ResearchListViewState>;
+            const now = Date.now();
+            let hasExpiredEntries = false;
+
+            for (const [key, state] of Object.entries(parsed)) {
+                if (!key.trim() || !state || typeof state !== 'object') {
+                    continue;
+                }
+
+                if (typeof state.savedAt !== 'number' || state.savedAt + this.ttlMs <= now) {
+                    hasExpiredEntries = true;
+                    continue;
+                }
+
+                this.states.set(key, this.cloneState(state));
+            }
+
+            if (hasExpiredEntries) {
+                this.persistStatesToSession();
+            }
+        } catch {
+            this.states.clear();
+        }
+    }
+
+    private persistStatesToSession(): void {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        try {
+            if (this.states.size === 0) {
+                window.sessionStorage.removeItem(this.listStatesStorageKey);
+                return;
+            }
+
+            const payload = Object.fromEntries(
+                [...this.states.entries()].map(([key, state]) => [key, this.cloneState(state)])
+            );
+            window.sessionStorage.setItem(this.listStatesStorageKey, JSON.stringify(payload));
+        } catch {
+            // Ignore storage quota errors in constrained mobile browsers.
         }
     }
 

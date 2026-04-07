@@ -9,7 +9,6 @@ import { ResearchPaperService } from '../../core/services/research-paper.service
 import { ROUTES } from '../../core/constants/route.const';
 import { authSignal } from '../../core/signals/auth.signal';
 import { API_CONFIG } from '../../core/config/api.config';
-import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading-spinner.component';
 import { PdfCanvasViewerComponent } from '../../shared/ui/pdf-canvas-viewer/pdf-canvas-viewer.component';
 
 interface PaperDetailState {
@@ -20,13 +19,9 @@ interface PaperDetailState {
 @Component({
   selector: 'app-research-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, LoadingSpinnerComponent, PdfCanvasViewerComponent],
+  imports: [CommonModule, RouterModule, PdfCanvasViewerComponent],
   template: `
     <ng-container *ngIf="paperState$ | async as state">
-      <div *ngIf="state.status === 'loading'" class="min-h-screen bg-white flex items-center justify-center px-6">
-        <app-loading-spinner [size]="54"></app-loading-spinner>
-      </div>
-
       <div *ngIf="state.status === 'not-found'" class="min-h-screen bg-white flex items-start justify-center px-6 pt-16 sm:pt-24">
         <div class="max-w-xl text-center space-y-5">
           <p class="text-[11px] font-black uppercase tracking-[0.25em] text-gray-400">
@@ -45,10 +40,11 @@ interface PaperDetailState {
         </div>
       </div>
 
-      <div *ngIf="state.paper as paper" class="min-h-screen bg-white pt-8 sm:pt-12 pb-20">
+      <div *ngIf="state.status !== 'not-found'" class="min-h-screen bg-white pt-8 sm:pt-12 pb-20">
       <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div class="max-w-4xl mx-auto">
           <header class="mb-8 sm:mb-12 border-b-2 border-hus-blue pb-8 sm:pb-12">
+            <ng-container *ngIf="state.paper as paper; else headerSkeleton">
             <div class="flex items-center gap-3 mb-6 text-[11px] font-bold uppercase tracking-tighter">
               <span class="bg-hus-blue text-white px-3 py-1">{{ paper.category === 'LECTURER' ? 'GIẢNG VIÊN' : 'SINH VIÊN' }}</span>
               <span class="border border-hus-blue/20 bg-blue-50 px-3 py-1 text-hus-blue">{{ paper.paperType === 'GRADUATION_THESIS' ? 'KHÓA LUẬN TỐT NGHIỆP' : 'NGHIÊN CỨU KHOA HỌC' }}</span>
@@ -115,6 +111,37 @@ interface PaperDetailState {
               </div>
 
             </div>
+            </ng-container>
+
+            <ng-template #headerSkeleton>
+              <div class="flex items-center gap-3 mb-6">
+                <div class="h-8 w-24 bg-hus-blue/15 rounded animate-pulse"></div>
+                <div class="h-8 w-44 bg-blue-50 rounded animate-pulse"></div>
+                <div class="h-4 w-12 bg-gray-100 rounded animate-pulse"></div>
+                <div class="h-6 w-12 bg-hus-blue/10 rounded animate-pulse"></div>
+              </div>
+
+              <div class="space-y-3 mb-6 sm:mb-8">
+                <div class="h-8 sm:h-10 w-full bg-gray-100 rounded animate-pulse"></div>
+                <div class="h-8 sm:h-10 w-5/6 bg-gray-100 rounded animate-pulse"></div>
+              </div>
+
+              <div class="flex flex-col gap-6">
+                <div class="flex flex-wrap gap-x-5 gap-y-2">
+                  <div class="h-4 w-16 bg-gray-100 rounded animate-pulse"></div>
+                  <div class="h-4 w-16 bg-gray-100 rounded animate-pulse"></div>
+                  <div class="h-4 w-16 bg-gray-100 rounded animate-pulse"></div>
+                </div>
+
+                <div class="space-y-3">
+                  <div class="h-4 w-32 bg-gray-100 rounded animate-pulse"></div>
+                  <div class="flex flex-wrap gap-3">
+                    <div class="h-5 w-36 bg-gray-100 rounded animate-pulse"></div>
+                    <div class="h-5 w-28 bg-gray-100 rounded animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            </ng-template>
           </header>
 
           <div class="space-y-10 sm:space-y-16">
@@ -122,8 +149,17 @@ interface PaperDetailState {
               <h2 class="text-[11px] font-bold text-hus-blue uppercase tracking-[0.2em] mb-6 inline-block border-b-4 border-hus-blue pb-1">
                 Tóm tắt nghiên cứu
               </h2>
-              <div class="research-rich-content max-w-full"
-                   [innerHTML]="paper.abstract"></div>
+              <ng-container *ngIf="state.paper as paper; else abstractSkeleton">
+                <div class="research-rich-content max-w-full"
+                     [innerHTML]="paper.abstract"></div>
+              </ng-container>
+              <ng-template #abstractSkeleton>
+                <div class="space-y-3">
+                  <div class="h-4 w-full bg-gray-100 rounded animate-pulse"></div>
+                  <div class="h-4 w-full bg-gray-100 rounded animate-pulse"></div>
+                  <div class="h-4 w-4/5 bg-gray-100 rounded animate-pulse"></div>
+                </div>
+              </ng-template>
             </section>
 
             <section>
@@ -134,47 +170,56 @@ interface PaperDetailState {
               </div>
 
               <div class="w-full aspect-[1/1.55] min-h-[560px] md:min-h-[720px] bg-gray-50 border-2 border-hus-blue/10">
-                <app-pdf-canvas-viewer *ngIf="canAccessPdf() && hasPdfUrl(paper.pdfUrl); else missingInlinePdf"
-                                       [src]="getDownloadUrl(paper.pdfUrl)"
-                                       [title]="paper.title"
-                                       class="block w-full h-full">
-                </app-pdf-canvas-viewer>
-                <ng-template #missingInlinePdf>
-                  <div *ngIf="hasPdfUrl(paper.pdfUrl) && !canAccessPdf(); else emptyPdfState"
-                       class="w-full h-full flex flex-col items-center justify-center text-center px-6">
-                    <p class="text-sm font-bold uppercase tracking-widest text-gray-500">
-                      Đăng nhập để xem PDF
-                    </p>
-                    <p class="mt-2 text-xs text-gray-500 max-w-md">
-                      Khách chưa đăng nhập vẫn xem được chi tiết bài nghiên cứu, nhưng cần đăng nhập để mở file PDF.
-                    </p>
-                    <a [routerLink]="ROUTES.AUTH.LOGIN"
-                       class="mt-4 inline-flex items-center justify-center border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest px-4 py-2 hover:bg-hus-blue hover:text-white transition-colors">
-                      Đăng nhập
-                    </a>
-                  </div>
-                  <ng-template #emptyPdfState>
-                    <div class="w-full h-full flex flex-col items-center justify-center text-center px-6">
-                    <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
-                      Không có file PDF.
-                    </p>
-                    <p class="mt-2 text-xs text-gray-500 max-w-md">
-                      Bài nghiên cứu này chưa được đính kèm file PDF.
-                    </p>
+                <ng-container *ngIf="state.paper as paper; else pdfSkeleton">
+                  <app-pdf-canvas-viewer *ngIf="canAccessPdf() && hasPdfUrl(paper.pdfUrl); else missingInlinePdf"
+                                         [src]="getDownloadUrl(paper.pdfUrl)"
+                                         [title]="paper.title"
+                                         class="block w-full h-full">
+                  </app-pdf-canvas-viewer>
+                  <ng-template #missingInlinePdf>
+                    <div *ngIf="hasPdfUrl(paper.pdfUrl) && !canAccessPdf(); else emptyPdfState"
+                         class="w-full h-full flex flex-col items-center justify-center text-center px-6">
+                      <p class="text-sm font-bold uppercase tracking-widest text-gray-500">
+                        Đăng nhập để xem PDF
+                      </p>
+                      <p class="mt-2 text-xs text-gray-500 max-w-md">
+                        Khách chưa đăng nhập vẫn xem được chi tiết bài nghiên cứu, nhưng cần đăng nhập để mở file PDF.
+                      </p>
+                      <a [routerLink]="ROUTES.AUTH.LOGIN"
+                         class="mt-4 inline-flex items-center justify-center border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest px-4 py-2 hover:bg-hus-blue hover:text-white transition-colors">
+                        Đăng nhập
+                      </a>
                     </div>
+                    <ng-template #emptyPdfState>
+                      <div class="w-full h-full flex flex-col items-center justify-center text-center px-6">
+                      <p class="text-sm font-bold uppercase tracking-widest text-gray-400">
+                        Không có file PDF.
+                      </p>
+                      <p class="mt-2 text-xs text-gray-500 max-w-md">
+                        Bài nghiên cứu này chưa được đính kèm file PDF.
+                      </p>
+                      </div>
+                    </ng-template>
                   </ng-template>
+                </ng-container>
+                <ng-template #pdfSkeleton>
+                  <div class="w-full h-full flex flex-col gap-4 px-3 py-3 sm:px-6 sm:py-6">
+                    <div class="h-12 bg-white border border-gray-200 rounded animate-pulse"></div>
+                    <div class="flex-1 bg-white border border-gray-200 rounded animate-pulse"></div>
+                  </div>
                 </ng-template>
               </div>
             </section>
           </div>
 
-          <footer class="mt-8 sm:mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+          <footer *ngIf="state.paper as paper; else footerSkeleton"
+                  class="mt-8 sm:mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             <button *ngIf="hasPdfUrl(paper.pdfUrl) && canAccessPdf(); else missingPdf"
-                    type="button"
-                    (click)="downloadPdf(paper)"
-                    [disabled]="isDownloadingPdf"
-                    class="inline-flex items-center justify-center bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20 w-full sm:w-auto">
-              {{ isDownloadingPdf ? 'Đang tải xuống...' : 'Tải xuống tài liệu (.PDF)' }}
+                      type="button"
+                      (click)="downloadPdf(paper)"
+                      [disabled]="isDownloadingPdf"
+                      class="inline-flex items-center justify-center bg-hus-blue text-white text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 hover:bg-hus-dark transition shadow-lg shadow-hus-blue/20 w-full sm:w-auto">
+                {{ isDownloadingPdf ? 'Đang tải xuống...' : 'Tải xuống tài liệu (.PDF)' }}
             </button>
             <ng-template #missingPdf>
               <ng-container *ngIf="hasPdfUrl(paper.pdfUrl) && !canAccessPdf(); else missingPdfFileOnly">
@@ -195,6 +240,12 @@ interface PaperDetailState {
               Liên hệ tác giả
             </button>
           </footer>
+          <ng-template #footerSkeleton>
+            <footer class="mt-8 sm:mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+              <div class="h-10 w-full sm:w-52 bg-gray-100 rounded animate-pulse"></div>
+              <div class="h-10 w-full sm:w-40 bg-gray-100 rounded animate-pulse"></div>
+            </footer>
+          </ng-template>
         </div>
       </div>
       </div>
@@ -227,12 +278,13 @@ export class ResearchDetailComponent {
         this.trackedPaperId = paperId;
       }
 
-      const trackView$ = shouldTrackView && this.isAuth()
-        ? this.paperService.trackView(paperId).pipe(catchError(() => of(void 0)))
-        : of(void 0);
+      if (shouldTrackView && this.isAuth()) {
+        this.paperService.trackView(paperId).pipe(
+          catchError(() => of(void 0))
+        ).subscribe();
+      }
 
-      return trackView$.pipe(
-        switchMap(() => this.paperService.getPaperById(paperId)),
+      return this.paperService.getPaperById(paperId).pipe(
         map((paper) => paper
           ? ({ status: 'ready', paper } as PaperDetailState)
           : ({ status: 'not-found' } as PaperDetailState)),
@@ -285,11 +337,9 @@ export class ResearchDetailComponent {
     ).subscribe({
         next: (response) => {
           this.saveBlob(response, resolved, paper.title);
-          this.reloadToken$.next(this.reloadToken$.value + 1);
         },
         error: () => {
           window.open(resolved, '_blank', 'noopener');
-          this.reloadToken$.next(this.reloadToken$.value + 1);
         }
       });
   }
