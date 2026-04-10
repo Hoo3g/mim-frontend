@@ -23,8 +23,9 @@ interface TrackHeartbeatPayload {
 @Injectable({ providedIn: 'root' })
 export class AnalyticsTrackingService implements OnDestroy {
     private static readonly VISITOR_ID_STORAGE_KEY = 'mim_analytics_visitor_id';
-    private static readonly PAGE_VIEW_TRACKED_SCOPE_STORAGE_KEY = 'mim_analytics_page_view_tracked_scope';
+    private static readonly PAGE_VIEW_LAST_TRACKED_STORAGE_KEY = 'mim_analytics_page_view_last_tracked';
     private static readonly HEARTBEAT_INTERVAL_MS = 60_000;
+    private static readonly PAGE_VIEW_DEDUP_WINDOW_MS = 60 * 60_000;
 
     private readonly http = inject(HttpClient);
     private readonly router = inject(Router);
@@ -33,8 +34,8 @@ export class AnalyticsTrackingService implements OnDestroy {
     private visitorId = '';
     private currentRouteKey = 'OTHER';
     private currentPath = '/';
-    private pageViewTracked = false;
-    private pageViewTrackedScope = '';
+    private lastTrackedPageViewPath = '';
+    private lastTrackedPageViewAt = 0;
 
     private routerEventsSub?: Subscription;
     private heartbeatSub?: Subscription;
@@ -50,9 +51,8 @@ export class AnalyticsTrackingService implements OnDestroy {
 
         this.currentPath = this.normalizePath(this.router.url);
         this.currentRouteKey = this.routeKeyFromPath(this.currentPath);
-        this.syncPageViewTrackingState();
 
-        this.trackFirstEligiblePageView(this.currentPath);
+        this.trackPageViewIfEligible(this.currentPath);
         this.trackHeartbeat();
 
         this.routerEventsSub = this.router.events.subscribe((event) => {
@@ -63,8 +63,7 @@ export class AnalyticsTrackingService implements OnDestroy {
             const path = this.normalizePath(event.urlAfterRedirects || event.url || '/');
             this.currentPath = path;
             this.currentRouteKey = this.routeKeyFromPath(path);
-            this.syncPageViewTrackingState();
-            this.trackFirstEligiblePageView(path);
+            this.trackPageViewIfEligible(path);
         });
 
         this.heartbeatSub = timer(
@@ -98,8 +97,8 @@ export class AnalyticsTrackingService implements OnDestroy {
             this.visibilityChangeHandler = undefined;
         }
 
-        this.pageViewTracked = false;
-        this.pageViewTrackedScope = '';
+        this.lastTrackedPageViewPath = '';
+        this.lastTrackedPageViewAt = 0;
         this.started = false;
     }
 
@@ -123,38 +122,26 @@ export class AnalyticsTrackingService implements OnDestroy {
             });
     }
 
-    private trackFirstEligiblePageView(path: string): void {
-        this.syncPageViewTrackingState();
-        if (this.pageViewTracked || !this.isTrackablePagePath(path)) {
+    private trackPageViewIfEligible(path: string): void {
+        if (!this.isTrackablePagePath(path)) {
             return;
         }
 
-        this.pageViewTracked = true;
-        localStorage.setItem(AnalyticsTrackingService.PAGE_VIEW_TRACKED_SCOPE_STORAGE_KEY, this.pageViewTrackedScope);
+        const now = Date.now();
+        const dedupKey = this.buildPageViewDedupKey(path);
+        const lastTrackedAt = this.resolveLastTrackedPageViewAt(dedupKey);
+        if (lastTrackedAt > 0 && now - lastTrackedAt < AnalyticsTrackingService.PAGE_VIEW_DEDUP_WINDOW_MS) {
+            return;
+        }
+
+        this.lastTrackedPageViewPath = path;
+        this.lastTrackedPageViewAt = now;
+        this.persistTrackedPageViewAt(dedupKey, now);
         this.trackPageView(path);
     }
 
     private isTrackablePagePath(path: string): boolean {
         return !path.startsWith('/auth');
-    }
-
-    private syncPageViewTrackingState(): void {
-        const currentScope = this.resolvePageViewTrackingScope();
-        if (currentScope === this.pageViewTrackedScope) {
-            return;
-        }
-
-        this.pageViewTrackedScope = currentScope;
-        const trackedScope = localStorage.getItem(AnalyticsTrackingService.PAGE_VIEW_TRACKED_SCOPE_STORAGE_KEY)?.trim();
-        this.pageViewTracked = trackedScope === currentScope;
-    }
-
-    private resolvePageViewTrackingScope(): string {
-        const authSessionId = authSignal.sessionId();
-        if (authSessionId) {
-            return `auth:${authSessionId}`;
-        }
-        return `anon:${this.visitorId}`;
     }
 
     private trackHeartbeat(): void {
@@ -265,5 +252,52 @@ export class AnalyticsTrackingService implements OnDestroy {
 
     private isPageVisible(): boolean {
         return typeof document !== 'undefined' && document.visibilityState === 'visible';
+    }
+
+    private buildPageViewDedupKey(path: string): string {
+        return `${this.visitorId}::${path}`;
+    }
+
+    private resolveLastTrackedPageViewAt(dedupKey: string): number {
+        if (this.lastTrackedPageViewPath && this.buildPageViewDedupKey(this.lastTrackedPageViewPath) === dedupKey) {
+            return this.lastTrackedPageViewAt;
+        }
+
+        try {
+            const raw = localStorage.getItem(AnalyticsTrackingService.PAGE_VIEW_LAST_TRACKED_STORAGE_KEY)?.trim();
+            if (!raw) {
+                return 0;
+            }
+
+            const parsed = JSON.parse(raw) as Record<string, number>;
+            const value = Number(parsed?.[dedupKey] ?? 0);
+            return Number.isFinite(value) && value > 0 ? value : 0;
+        } catch {
+            return 0;
+        }
+    }
+
+    private persistTrackedPageViewAt(dedupKey: string, timestamp: number): void {
+        try {
+            const raw = localStorage.getItem(AnalyticsTrackingService.PAGE_VIEW_LAST_TRACKED_STORAGE_KEY)?.trim();
+            const parsed = raw ? JSON.parse(raw) as Record<string, number> : {};
+            const cutoff = timestamp - (AnalyticsTrackingService.PAGE_VIEW_DEDUP_WINDOW_MS * 2);
+
+            const nextState: Record<string, number> = {};
+            Object.entries(parsed).forEach(([key, value]) => {
+                const numericValue = Number(value);
+                if (Number.isFinite(numericValue) && numericValue >= cutoff) {
+                    nextState[key] = numericValue;
+                }
+            });
+
+            nextState[dedupKey] = timestamp;
+            localStorage.setItem(
+                AnalyticsTrackingService.PAGE_VIEW_LAST_TRACKED_STORAGE_KEY,
+                JSON.stringify(nextState)
+            );
+        } catch {
+            // Ignore storage failures to keep UX unaffected.
+        }
     }
 }

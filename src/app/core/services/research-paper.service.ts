@@ -98,11 +98,14 @@ interface ResearchBookmarkApiModel {
     providedIn: 'root'
 })
 export class ResearchPaperService {
+    private static readonly INTERACTION_LAST_TRACKED_STORAGE_KEY = 'mim_research_interaction_last_tracked';
+    private static readonly INTERACTION_DEDUP_WINDOW_MS = 60 * 60_000;
+
     private readonly http = inject(HttpClient);
-    private readonly papersCache = new TimedObservableCache<ResearchPaper[]>(10 * 60_000);
-    private readonly pagedPapersCache = new TimedObservableCache<PagedResponse<ResearchPaper>>(10 * 60_000);
-    private readonly searchPagedPapersCache = new TimedObservableCache<PagedResponse<ResearchPaper>>(60_000);
-    private readonly paperDetailCache = new TimedObservableCache<ResearchPaper | undefined>(15 * 60_000);
+    private readonly papersCache = new TimedObservableCache<ResearchPaper[]>(60 * 60_000);
+    private readonly pagedPapersCache = new TimedObservableCache<PagedResponse<ResearchPaper>>(60 * 60_000);
+    private readonly searchPagedPapersCache = new TimedObservableCache<PagedResponse<ResearchPaper>>(60 * 60_000);
+    private readonly paperDetailCache = new TimedObservableCache<ResearchPaper | undefined>(60 * 60_000);
     private readonly myPapersCache = new TimedObservableCache<ResearchPaper[]>(2 * 60_000);
     private readonly bookmarksCache = new TimedObservableCache<Set<string>>(5 * 60_000);
     private readonly bookmarkedPapersCache = new TimedObservableCache<BookmarkedResearchPaper[]>(5 * 60_000);
@@ -369,13 +372,23 @@ export class ResearchPaperService {
     }
 
     trackView(paperId: string): Observable<void> {
+        if (this.shouldSkipInteractionTracking('view', paperId)) {
+            return of(void 0);
+        }
+
         return this.http.post<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.TRACK_VIEW(paperId), {}).pipe(
+            tap(() => this.markInteractionTracked('view', paperId)),
             map(() => void 0)
         );
     }
 
     trackDownload(paperId: string): Observable<void> {
+        if (this.shouldSkipInteractionTracking('download', paperId)) {
+            return of(void 0);
+        }
+
         return this.http.post<ApiResponse<null>>(API_ENDPOINTS.RESEARCH.TRACK_DOWNLOAD(paperId), {}).pipe(
+            tap(() => this.markInteractionTracked('download', paperId)),
             map(() => void 0)
         );
     }
@@ -396,6 +409,68 @@ export class ResearchPaperService {
                     return resolvePublicAssetUrl(response.data.fileUrl) || response.data.fileUrl;
                 })
             );
+    }
+
+    private shouldSkipInteractionTracking(type: 'view' | 'download', paperId: string): boolean {
+        const normalizedPaperId = (paperId ?? '').trim();
+        if (!normalizedPaperId) {
+            return true;
+        }
+
+        const lastTrackedAt = this.readTrackedInteractionTimestamp(this.buildInteractionTrackingKey(type, normalizedPaperId));
+        return lastTrackedAt > 0 && Date.now() - lastTrackedAt < ResearchPaperService.INTERACTION_DEDUP_WINDOW_MS;
+    }
+
+    private markInteractionTracked(type: 'view' | 'download', paperId: string): void {
+        const normalizedPaperId = (paperId ?? '').trim();
+        if (!normalizedPaperId) {
+            return;
+        }
+
+        const now = Date.now();
+        const trackingKey = this.buildInteractionTrackingKey(type, normalizedPaperId);
+
+        try {
+            const raw = localStorage.getItem(ResearchPaperService.INTERACTION_LAST_TRACKED_STORAGE_KEY)?.trim();
+            const parsed = raw ? JSON.parse(raw) as Record<string, number> : {};
+            const cutoff = now - (ResearchPaperService.INTERACTION_DEDUP_WINDOW_MS * 2);
+
+            const nextState: Record<string, number> = {};
+            Object.entries(parsed).forEach(([key, value]) => {
+                const numericValue = Number(value);
+                if (Number.isFinite(numericValue) && numericValue >= cutoff) {
+                    nextState[key] = numericValue;
+                }
+            });
+
+            nextState[trackingKey] = now;
+            localStorage.setItem(
+                ResearchPaperService.INTERACTION_LAST_TRACKED_STORAGE_KEY,
+                JSON.stringify(nextState)
+            );
+        } catch {
+            // Ignore storage failures to keep UX unaffected.
+        }
+    }
+
+    private readTrackedInteractionTimestamp(trackingKey: string): number {
+        try {
+            const raw = localStorage.getItem(ResearchPaperService.INTERACTION_LAST_TRACKED_STORAGE_KEY)?.trim();
+            if (!raw) {
+                return 0;
+            }
+
+            const parsed = JSON.parse(raw) as Record<string, number>;
+            const value = Number(parsed?.[trackingKey] ?? 0);
+            return Number.isFinite(value) && value > 0 ? value : 0;
+        } catch {
+            return 0;
+        }
+    }
+
+    private buildInteractionTrackingKey(type: 'view' | 'download', paperId: string): string {
+        const userScope = authSignal.user()?.id?.trim() || 'anonymous';
+        return `${userScope}::${type}::${paperId}`;
     }
 
 

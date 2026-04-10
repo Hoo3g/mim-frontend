@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { fakeAsync, tick } from '@angular/core/testing';
 import { provideRouter, Router, withDisabledInitialNavigation } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -38,7 +37,6 @@ describe('AnalyticsTrackingService', () => {
         });
 
         localStorage.removeItem('mim_analytics_visitor_id');
-        localStorage.removeItem('mim_analytics_page_view_tracked_scope');
         localStorage.removeItem('mim_auth_session_id');
         localStorage.removeItem('mim_auth_session_user_id');
         localStorage.removeItem('token');
@@ -54,7 +52,7 @@ describe('AnalyticsTrackingService', () => {
         httpMock.verify();
     });
 
-    it('tracks only one page-view on first eligible page in app session', fakeAsync(() => {
+    it('tracks a page-view for each eligible route change', async () => {
         service.start();
 
         const initialPageViewReq = httpMock.expectOne(API_ENDPOINTS.ANALYTICS.TRACK_PAGE_VIEW);
@@ -71,26 +69,29 @@ describe('AnalyticsTrackingService', () => {
         expect(heartbeatReq.request.body.visitorId).toBeTruthy();
         heartbeatReq.flush({ success: true, data: null, message: 'ok' });
 
-        router.navigateByUrl('/admin');
-        tick();
-        httpMock.expectNone(API_ENDPOINTS.ANALYTICS.TRACK_PAGE_VIEW);
-    }));
+        await router.navigateByUrl('/admin');
+        const adminPageViewReq = httpMock.expectOne(API_ENDPOINTS.ANALYTICS.TRACK_PAGE_VIEW);
+        expect(adminPageViewReq.request.body.path).toBe('/admin');
+        expect(adminPageViewReq.request.body.routeKey).toBe('ADMIN');
+        adminPageViewReq.flush({ success: true, data: null, message: 'ok' });
+    });
 
-    it('skips auth path and tracks first eligible path after auth', fakeAsync(() => {
+    it('skips auth path and tracks first eligible path after auth', async () => {
         vi.spyOn(router, 'url', 'get').mockReturnValue('/auth/callback');
 
         service.start();
         httpMock.expectNone(API_ENDPOINTS.ANALYTICS.TRACK_PAGE_VIEW);
         httpMock.expectOne(API_ENDPOINTS.ANALYTICS.HEARTBEAT).flush({ success: true, data: null, message: 'ok' });
 
-        router.navigateByUrl('/admin');
-        tick();
+        await router.navigateByUrl('/admin');
         const firstPageViewReq = httpMock.expectOne(API_ENDPOINTS.ANALYTICS.TRACK_PAGE_VIEW);
         expect(firstPageViewReq.request.body.path).toBe('/admin');
         firstPageViewReq.flush({ success: true, data: null, message: 'ok' });
 
-        router.navigateByUrl('/news');
-        tick();
-        httpMock.expectNone(API_ENDPOINTS.ANALYTICS.TRACK_PAGE_VIEW);
-    }));
+        await router.navigateByUrl('/news');
+        const secondPageViewReq = httpMock.expectOne(API_ENDPOINTS.ANALYTICS.TRACK_PAGE_VIEW);
+        expect(secondPageViewReq.request.body.path).toBe('/news');
+        expect(secondPageViewReq.request.body.routeKey).toBe('NEWS');
+        secondPageViewReq.flush({ success: true, data: null, message: 'ok' });
+    });
 });
