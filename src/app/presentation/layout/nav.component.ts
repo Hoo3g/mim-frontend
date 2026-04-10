@@ -495,6 +495,7 @@ export class NavComponent implements OnInit, OnDestroy {
   isAuth = authSignal.isAuth;
   isAdmin = authSignal.isAdmin;
   canAccessAdmin = authSignal.canAccessAdmin;
+  canUseAdminNotifications = authSignal.canUseAdminNotifications;
   currentUser = authSignal.user;
   readonly adminNotifications = adminNotificationSignal.notifications;
   readonly adminNotificationUnreadCount = adminNotificationSignal.unreadCount;
@@ -516,7 +517,7 @@ export class NavComponent implements OnInit, OnDestroy {
   constructor() {
     effect(() => {
       const isAuthenticated = this.isAuth();
-      const canUseAdminNotifications = this.canAccessAdmin();
+      const canUseAdminNotifications = this.canUseAdminNotifications();
 
       if (!isAuthenticated) {
         this.showNotificationPanel = false;
@@ -553,6 +554,7 @@ export class NavComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     this.showMobileMenu = false;
     this.showNotificationPanel = false;
+    this.adminNotificationService.setNotificationPanelOpen(false);
     this.showProfileMenu = !this.showProfileMenu;
   }
 
@@ -562,12 +564,14 @@ export class NavComponent implements OnInit, OnDestroy {
     this.showMobileMenu = false;
     this.showMobileProfileSection = false;
     this.showNotificationPanel = !this.showNotificationPanel;
+    this.adminNotificationService.setNotificationPanelOpen(this.showNotificationPanel);
   }
 
   toggleMobileMenu(event: Event): void {
     event.stopPropagation();
     this.showProfileMenu = false;
     this.showNotificationPanel = false;
+    this.adminNotificationService.setNotificationPanelOpen(false);
     this.showMobileMenu = !this.showMobileMenu;
     if (!this.showMobileMenu) {
       this.showMobileProfileSection = false;
@@ -584,6 +588,7 @@ export class NavComponent implements OnInit, OnDestroy {
     event?.stopPropagation();
     this.showProfileMenu = false;
     this.showNotificationPanel = false;
+    this.adminNotificationService.setNotificationPanelOpen(false);
     this.showMobileMenu = false;
     this.showMobileProfileSection = false;
     queueMicrotask(() => {
@@ -607,6 +612,7 @@ export class NavComponent implements OnInit, OnDestroy {
     if (!this.el.nativeElement.contains(event.target)) {
       this.showProfileMenu = false;
       this.showNotificationPanel = false;
+      this.adminNotificationService.setNotificationPanelOpen(false);
       this.showMobileMenu = false;
       this.showMobileProfileSection = false;
     }
@@ -615,6 +621,7 @@ export class NavComponent implements OnInit, OnDestroy {
   logout(): void {
     this.showProfileMenu = false;
     this.showNotificationPanel = false;
+    this.adminNotificationService.setNotificationPanelOpen(false);
     this.showMobileMenu = false;
     this.showMobileProfileSection = false;
     adminNotificationSignal.clearAll();
@@ -633,17 +640,17 @@ export class NavComponent implements OnInit, OnDestroy {
   }
 
   notificationUnreadCount(): number {
-    return this.canAccessAdmin()
+    return this.canUseAdminNotifications()
       ? this.adminNotificationUnreadCount()
       : this.userNotificationUnreadCount();
   }
 
   notificationPanelTitle(): string {
-    return this.canAccessAdmin() ? 'Thông báo kiểm duyệt' : 'Thông báo của bạn';
+    return this.canUseAdminNotifications() ? 'Thông báo kiểm duyệt' : 'Thông báo của bạn';
   }
 
   headerNotifications(): HeaderNotificationItem[] {
-    if (this.canAccessAdmin()) {
+    if (this.canUseAdminNotifications()) {
       return this.adminNotifications().map((notification) => ({
         id: notification.id,
         read: notification.read,
@@ -680,7 +687,7 @@ export class NavComponent implements OnInit, OnDestroy {
   }
 
   markAllNotificationsRead(): void {
-    if (this.canAccessAdmin()) {
+    if (this.canUseAdminNotifications()) {
       adminNotificationSignal.dismissAll();
       return;
     }
@@ -689,6 +696,7 @@ export class NavComponent implements OnInit, OnDestroy {
 
   openNotification(notification: HeaderNotificationItem): void {
     this.showNotificationPanel = false;
+    this.adminNotificationService.setNotificationPanelOpen(false);
 
     if (notification.isAdminNotification) {
       adminNotificationSignal.markAsRead(notification.id);

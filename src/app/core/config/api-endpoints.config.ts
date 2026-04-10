@@ -64,6 +64,9 @@ export const API_ENDPOINTS = {
     },
     ADMIN: {
         USERS: `${API_CONFIG.PREFIX}/admin/users`,
+        USER_DETAIL: (id: string) => `${API_CONFIG.PREFIX}/admin/users/${id}`,
+        USER_LOCK: (id: string) => `${API_CONFIG.PREFIX}/admin/users/${id}/lock`,
+        USER_UNLOCK: (id: string) => `${API_CONFIG.PREFIX}/admin/users/${id}/unlock`,
         MODERATION: `${API_CONFIG.PREFIX}/admin/moderation`,
         MODERATION_POSTS: `${API_CONFIG.PREFIX}/admin/moderation/posts`,
         MODERATION_PAPERS: `${API_CONFIG.PREFIX}/admin/moderation/papers`,

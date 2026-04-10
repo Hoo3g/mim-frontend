@@ -22,7 +22,7 @@ export class UserModerationNotificationService implements OnDestroy {
 
     start(): void {
         const currentUser = authSignal.user();
-        if (!currentUser || authSignal.canAccessAdmin()) {
+        if (!currentUser || authSignal.canUseAdminNotifications()) {
             this.stop();
             return;
         }
@@ -89,7 +89,7 @@ export class UserModerationNotificationService implements OnDestroy {
 
     private syncNotifications(): void {
         const currentUser = authSignal.user();
-        if (!currentUser || !this.activeUserId || currentUser.id !== this.activeUserId || authSignal.canAccessAdmin()) {
+        if (!currentUser || !this.activeUserId || currentUser.id !== this.activeUserId || authSignal.canUseAdminNotifications()) {
             return;
         }
 

@@ -17,4 +17,25 @@ export class AdminUserManagementService {
             catchError(() => of(null))
         );
     }
+
+    lockUser(userId: string): Observable<AuthApiUser | null> {
+        return this.http.patch<ApiResponse<AuthApiUser>>(API_ENDPOINTS.ADMIN.USER_LOCK(userId), {}).pipe(
+            map((response) => unwrapOr(response, null)),
+            catchError(() => of(null))
+        );
+    }
+
+    unlockUser(userId: string): Observable<AuthApiUser | null> {
+        return this.http.patch<ApiResponse<AuthApiUser>>(API_ENDPOINTS.ADMIN.USER_UNLOCK(userId), {}).pipe(
+            map((response) => unwrapOr(response, null)),
+            catchError(() => of(null))
+        );
+    }
+
+    deleteUser(userId: string): Observable<boolean> {
+        return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.ADMIN.USER_DETAIL(userId)).pipe(
+            map((response) => response.success),
+            catchError(() => of(false))
+        );
+    }
 }

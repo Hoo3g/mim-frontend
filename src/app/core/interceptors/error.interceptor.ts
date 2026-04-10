@@ -19,23 +19,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             const alreadyRetried = req.context.get(HAS_RETRIED);
 
             if (err.status === 403 && isAdminEndpoint) {
-                if (alreadyRetried || !authSignal.token()) {
+                if (router.url.startsWith(ROUTES.ADMIN) && !authSignal.canAccessAdmin()) {
                     router.navigateByUrl(ROUTES.HOME);
-                    return throwError(() => err);
                 }
-
-                return refreshCoordinator.requestRefresh().pipe(
-                    switchMap((refreshed) => {
-                        if (!refreshed || !authSignal.canAccessAdmin()) {
-                            router.navigateByUrl(ROUTES.HOME);
-                            return throwError(() => err);
-                        }
-                        const retriedRequest = req.clone({
-                            context: req.context.set(HAS_RETRIED, true)
-                        });
-                        return next(retriedRequest);
-                    })
-                );
+                return throwError(() => err);
             }
 
             if (err.status !== 401) {

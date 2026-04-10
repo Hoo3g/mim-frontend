@@ -321,9 +321,9 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 	              <div *ngIf="hasMorePosts" class="mt-4 border-t border-gray-200 pt-4 flex justify-center">
 	                <button
 	                  type="button"
-                  (click)="loadMorePosts()"
+                  (click)="loadMorePosts($event)"
                   [disabled]="isLoadingPosts"
-                  class="inline-flex items-center justify-center border border-hus-blue px-3 py-1 text-[11px] font-black leading-none text-hus-blue transition-colors hover:bg-hus-blue hover:text-white">
+                  class="inline-flex items-center justify-center border border-hus-blue px-3 py-1 text-[11px] font-black leading-none text-hus-blue transition-colors hover:bg-hus-blue hover:text-white touch-manipulation">
                   <span>Xem thêm</span>
 	                </button>
 	              </div>
@@ -471,7 +471,8 @@ export class PostsComponent implements OnInit {
     this.syncFiltersToUrl();
   }
 
-  loadMorePosts(): void {
+  loadMorePosts(event?: Event): void {
+    this.blurLoadMoreTrigger(event);
     this.loadNextPage();
   }
 
@@ -637,5 +638,16 @@ export class PostsComponent implements OnInit {
 
   private updateViewportState(): void {
     this.isMobileViewport = typeof window !== 'undefined' && window.innerWidth < this.mobileBreakpoint;
+  }
+
+  private blurLoadMoreTrigger(event?: Event): void {
+    const trigger = event?.currentTarget;
+    if (trigger instanceof HTMLElement) {
+      trigger.blur();
+    }
+
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
   }
 }

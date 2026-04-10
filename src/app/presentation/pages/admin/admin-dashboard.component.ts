@@ -32,6 +32,7 @@ import { authSignal } from '../../../core/signals/auth.signal';
 import { Post } from '../../../core/models/post.model';
 import { AdminAnalyticsOverview, AdminMonthlyTrafficPoint } from '../../../core/models/admin-analytics.model';
 import { buildLinePoints, buildMetricCoordinates, maxMetricValue } from '../../../core/utils/admin-analytics-chart.util';
+import { AuthApiUser } from '../../../features/auth/models/auth.model';
 import { PdfCanvasViewerComponent } from '../../../shared/ui/pdf-canvas-viewer/pdf-canvas-viewer.component';
 import { PostDetailComponent } from '../post-detail.component';
 
@@ -1444,6 +1445,33 @@ const MODERATION_DISPLAY_INFO_LABELS: Record<string, string> = {
                 <p class="mt-1 text-sm font-black text-gray-900 uppercase tracking-tight">{{ selected.displayName }}</p>
                 <p class="text-[11px] text-gray-500">{{ selected.email }}</p>
                 <p class="mt-2 text-[10px] text-gray-500">Vai trò hiện tại: <span class="font-bold uppercase">{{ primaryRole(selected.roles) || 'N/A' }}</span></p>
+                <p class="mt-2 text-[10px] text-gray-500">
+                  Trạng thái tài khoản:
+                  <span class="font-bold uppercase"
+                        [class.text-red-600]="isRbacUserBlocked(selected.accountStatus)"
+                        [class.text-emerald-600]="!isRbacUserBlocked(selected.accountStatus)">
+                    {{ rbacStatusLabel(selected.accountStatus) }}
+                  </span>
+                </p>
+
+                <div class="mt-4 flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    (click)="toggleSelectedRbacUserLock()"
+                    [disabled]="savingRbacUserStatus[selected.userId] || deletingRbacUser[selected.userId]"
+                    class="px-4 py-2 border border-amber-200 bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 transition-colors disabled:opacity-50">
+                    {{ savingRbacUserStatus[selected.userId]
+                        ? 'Đang xử lý...'
+                        : (isRbacUserBlocked(selected.accountStatus) ? 'Mở khóa tài khoản' : 'Khóa tài khoản') }}
+                  </button>
+                  <button
+                    type="button"
+                    (click)="deleteSelectedRbacUser()"
+                    [disabled]="savingRbacUserStatus[selected.userId] || deletingRbacUser[selected.userId]"
+                    class="px-4 py-2 border border-red-200 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-colors disabled:opacity-50">
+                    {{ deletingRbacUser[selected.userId] ? 'Đang xóa...' : 'Xóa tài khoản' }}
+                  </button>
+                </div>
               </div>
 
               <div class="border border-gray-100 p-4 space-y-3">
@@ -1762,6 +1790,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     rbacUsers: RbacUserAssignment[] = [];
     rbacOverrideDrafts: Record<string, Record<string, PermissionOverrideDraftEffect>> = {};
     savingRbacUser: Record<string, boolean> = {};
+    savingRbacUserStatus: Record<string, boolean> = {};
+    deletingRbacUser: Record<string, boolean> = {};
     rbacUserSearch = '';
     selectedRbacUserId: string | null = null;
     permissionToAdd = '';
@@ -2302,6 +2332,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         forkJoin(ids.map((id) => this.moderationService.approvePost(id).pipe(take(1))))
             .pipe(finalize(() => {
                 this.isApprovingSelectedPosts = false;
+                this.renderAdminUi();
             }))
             .subscribe((results) => {
                 const approvedIds = ids.filter((id, index) => results[index]);
@@ -2316,6 +2347,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                     this.errorMessage = `Có ${failedCount} bài tuyển dụng đã bị xóa hoặc không còn ở trạng thái chờ duyệt.`;
                     this.loadPendingModeration();
                 }
+                this.renderAdminUi();
             });
     }
 
@@ -2332,6 +2364,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         forkJoin(ids.map((id) => this.moderationService.approvePaper(id).pipe(take(1))))
             .pipe(finalize(() => {
                 this.isApprovingSelectedPapers = false;
+                this.renderAdminUi();
             }))
             .subscribe((results) => {
                 const approvedIds = ids.filter((id, index) => results[index]);
@@ -2346,6 +2379,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                     this.errorMessage = `Có ${failedCount} bài nghiên cứu đã bị xóa hoặc không còn ở trạng thái chờ duyệt.`;
                     this.loadPendingModeration();
                 }
+                this.renderAdminUi();
             });
     }
 
@@ -2356,10 +2390,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             if (!ok) {
                 this.errorMessage = 'Bài tuyển dụng đã bị xóa hoặc không còn ở trạng thái chờ duyệt.';
                 this.loadPendingModeration();
+                this.renderAdminUi();
                 return;
             }
             this.removePostsFromQueue([id]);
             this.moderationNotice = 'Đã duyệt bài tuyển dụng.';
+            this.renderAdminUi();
         });
     }
 
@@ -2371,10 +2407,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             if (!ok) {
                 this.errorMessage = 'Bài tuyển dụng đã bị xóa hoặc không còn ở trạng thái chờ duyệt.';
                 this.loadPendingModeration();
+                this.renderAdminUi();
                 return;
             }
             this.removePostsFromQueue([id]);
             this.moderationNotice = 'Đã từ chối bài tuyển dụng.';
+            this.renderAdminUi();
         });
     }
 
@@ -2390,10 +2428,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             if (!ok) {
                 this.errorMessage = 'Không thể xóa bài tuyển dụng đã chọn.';
                 this.loadPendingModeration();
+                this.renderAdminUi();
                 return;
             }
             this.removePostsFromQueue([id]);
             this.moderationNotice = 'Đã xóa bài tuyển dụng khỏi hệ thống.';
+            this.renderAdminUi();
         });
     }
 
@@ -2404,10 +2444,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             if (!ok) {
                 this.errorMessage = 'Bài nghiên cứu đã bị xóa hoặc không còn ở trạng thái chờ duyệt.';
                 this.loadPendingModeration();
+                this.renderAdminUi();
                 return;
             }
             this.removePapersFromQueue([id]);
             this.moderationNotice = 'Đã duyệt bài nghiên cứu.';
+            this.renderAdminUi();
         });
     }
 
@@ -2419,10 +2461,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             if (!ok) {
                 this.errorMessage = 'Bài nghiên cứu đã bị xóa hoặc không còn ở trạng thái chờ duyệt.';
                 this.loadPendingModeration();
+                this.renderAdminUi();
                 return;
             }
             this.removePapersFromQueue([id]);
             this.moderationNotice = 'Đã từ chối bài nghiên cứu.';
+            this.renderAdminUi();
         });
     }
 
@@ -2438,10 +2482,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             if (!ok) {
                 this.errorMessage = 'Không thể xóa bài nghiên cứu đã chọn.';
                 this.loadPendingModeration();
+                this.renderAdminUi();
                 return;
             }
             this.removePapersFromQueue([id]);
             this.moderationNotice = 'Đã xóa bài nghiên cứu khỏi hệ thống.';
+            this.renderAdminUi();
         });
     }
 
@@ -2461,24 +2507,29 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             finalize(() => {
                 this.isUploadingHeroImage = false;
                 input.value = '';
+                this.renderAdminUi();
             })
         ).subscribe({
             next: (imageUrl) => {
                 this.heroForm.imageUrl = imageUrl;
                 this.heroNotice = 'Đã tải ảnh hero lên thành công.';
+                this.renderAdminUi();
             },
             error: (error: unknown) => {
                 if (error instanceof HttpErrorResponse) {
                     if (error.status === 413) {
                         this.errorMessage = 'Ảnh tải lên quá lớn. Vui lòng chọn file nhỏ hơn giới hạn cho phép.';
+                        this.renderAdminUi();
                         return;
                     }
                     if (error.status === 401 || error.status === 403) {
                         this.errorMessage = 'Phiên đăng nhập đã hết hạn hoặc không đủ quyền. Vui lòng đăng nhập lại.';
+                        this.renderAdminUi();
                         return;
                     }
                 }
                 this.errorMessage = 'Không thể tải ảnh hero lên. Vui lòng thử lại.';
+                this.renderAdminUi();
             }
         });
     }
@@ -2513,6 +2564,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             this.isSavingHero = false;
             if (!saved) {
                 this.errorMessage = 'Không thể lưu cấu hình trang nghiên cứu.';
+                this.renderAdminUi();
                 return;
             }
 
@@ -2524,6 +2576,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 imageUrl: saved.imageUrl
             };
             this.heroNotice = 'Đã cập nhật hero trang nghiên cứu.';
+            this.renderAdminUi();
         });
     }
 
@@ -2725,6 +2778,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                         ? 'Không thể cập nhật thông báo.'
                         : 'Không thể tạo thông báo.';
                 }
+                this.renderAdminUi();
                 return;
             }
 
@@ -2733,6 +2787,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 : 'Đã đăng thông báo mới.';
             this.startCreateNews();
             this.newsNotice = notice;
+            this.renderAdminUi();
             this.loadNews();
         });
     }
@@ -2749,7 +2804,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             if (!ok) {
                 this.newsItems = previousNewsItems;
                 this.errorMessage = 'Không thể xóa thông báo đã chọn.';
-                this.cdr.detectChanges();
+                this.renderAdminUi();
                 return;
             }
             this.newsItems = this.newsItems.filter((news) => news.id !== newsId);
@@ -2757,7 +2812,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 this.startCreateNews();
             }
             this.newsNotice = 'Đã xóa thông báo.';
-            this.cdr.detectChanges();
+            this.renderAdminUi();
             this.loadNews();
         });
     }
@@ -2879,12 +2934,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         request$.pipe(
             finalize(() => {
                 this.isSavingSpecialization = false;
+                this.renderAdminUi();
             })
         ).subscribe((saved) => {
             if (!saved) {
                 this.errorMessage = this.editingSpecializationId
                     ? 'Không thể cập nhật chuyên ngành.'
                     : 'Không thể tạo chuyên ngành.';
+                this.renderAdminUi();
                 return;
             }
 
@@ -2893,6 +2950,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 : 'Đã thêm chuyên ngành mới.';
             this.startCreateSpecialization();
             this.specializationNotice = notice;
+            this.renderAdminUi();
             this.loadSpecializations();
         });
     }
@@ -2908,12 +2966,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.adminSpecializationService.delete(specializationId).subscribe((ok) => {
             if (!ok) {
                 this.errorMessage = 'Không thể xóa chuyên ngành đã chọn.';
+                this.renderAdminUi();
                 return;
             }
             if (this.editingSpecializationId === specializationId) {
                 this.startCreateSpecialization();
             }
             this.specializationNotice = 'Đã xóa chuyên ngành.';
+            this.renderAdminUi();
             this.loadSpecializations();
         });
     }
@@ -2967,12 +3027,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         request$.pipe(
             finalize(() => {
                 this.isSavingRecruitmentCategory = false;
+                this.renderAdminUi();
             })
         ).subscribe((saved) => {
             if (!saved) {
                 this.errorMessage = this.editingRecruitmentCategoryId
                     ? 'Không thể cập nhật danh mục tuyển dụng.'
                     : 'Không thể tạo danh mục tuyển dụng.';
+                this.renderAdminUi();
                 return;
             }
 
@@ -2981,6 +3043,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 : 'Đã thêm danh mục tuyển dụng mới.';
             this.startCreateRecruitmentCategory();
             this.recruitmentCategoryNotice = notice;
+            this.renderAdminUi();
             this.loadRecruitmentCategories();
         });
     }
@@ -2996,12 +3059,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.adminRecruitmentCategoryService.delete(categoryId).subscribe((ok) => {
             if (!ok) {
                 this.errorMessage = 'Không thể xóa danh mục tuyển dụng đã chọn.';
+                this.renderAdminUi();
                 return;
             }
             if (this.editingRecruitmentCategoryId === categoryId) {
                 this.startCreateRecruitmentCategory();
             }
             this.recruitmentCategoryNotice = 'Đã xóa danh mục tuyển dụng.';
+            this.renderAdminUi();
             this.loadRecruitmentCategories();
         });
     }
@@ -3055,12 +3120,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         request$.pipe(
             finalize(() => {
                 this.isSavingPaperCategory = false;
+                this.renderAdminUi();
             })
         ).subscribe((saved) => {
             if (!saved) {
                 this.errorMessage = this.editingPaperCategoryId
                     ? 'Không thể cập nhật phân loại bài nghiên cứu.'
                     : 'Không thể tạo phân loại bài nghiên cứu.';
+                this.renderAdminUi();
                 return;
             }
 
@@ -3069,6 +3136,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 : 'Đã thêm phân loại bài nghiên cứu mới.';
             this.startCreatePaperCategory();
             this.paperCategoryNotice = notice;
+            this.renderAdminUi();
             this.loadResearchCategories();
         });
     }
@@ -3084,12 +3152,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.adminResearchCategoryService.delete(categoryId).subscribe((ok) => {
             if (!ok) {
                 this.errorMessage = 'Không thể xóa phân loại bài viết đã chọn.';
+                this.renderAdminUi();
                 return;
             }
             if (this.editingPaperCategoryId === categoryId) {
                 this.startCreatePaperCategory();
             }
             this.paperCategoryNotice = 'Đã xóa phân loại bài viết.';
+            this.renderAdminUi();
             this.loadResearchCategories();
         });
     }
@@ -3126,10 +3196,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.adminRbacService.updateUserOverrides(userId, { grants, denies })
             .pipe(finalize(() => {
                 this.savingRbacUser[userId] = false;
+                this.renderAdminUi();
             }))
             .subscribe((updated) => {
                 if (!updated) {
                     this.errorMessage = 'Không thể cập nhật phân quyền RBAC cho tài khoản đã chọn.';
+                    this.renderAdminUi();
                     return;
                 }
 
@@ -3139,6 +3211,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 }
                 this.initializeRbacDraftForUser(updated);
                 this.rbacNotice = `Đã cập nhật phân quyền cho ${updated.displayName}.`;
+                this.renderAdminUi();
             });
     }
 
@@ -3202,6 +3275,104 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.setDraftEffect(this.selectedRbacUserId, permissionName, 'INHERIT');
     }
 
+    isRbacUserBlocked(status?: string | null): boolean {
+        return (status ?? '').trim().toUpperCase() === 'BLOCKED';
+    }
+
+    rbacStatusLabel(status?: string | null): string {
+        const normalized = (status ?? '').trim().toUpperCase();
+        if (normalized === 'BLOCKED') {
+            return 'Đã khóa';
+        }
+        if (normalized === 'PENDING') {
+            return 'Chờ duyệt';
+        }
+        if (normalized === 'APPROVED') {
+            return 'Đang hoạt động';
+        }
+        return normalized || 'Không rõ';
+    }
+
+    toggleSelectedRbacUserLock(): void {
+        const selected = this.selectedRbacUser;
+        if (!selected) {
+            return;
+        }
+
+        const isBlocked = this.isRbacUserBlocked(selected.accountStatus);
+        this.errorMessage = '';
+        this.rbacNotice = '';
+        this.savingRbacUserStatus[selected.userId] = true;
+
+        const request$ = isBlocked
+            ? this.adminUserManagementService.unlockUser(selected.userId)
+            : this.adminUserManagementService.lockUser(selected.userId);
+
+        request$
+            .pipe(finalize(() => {
+                this.savingRbacUserStatus[selected.userId] = false;
+                this.renderAdminUi();
+            }))
+            .subscribe((updated) => {
+                if (!updated) {
+                    this.errorMessage = isBlocked
+                        ? 'Không thể mở khóa tài khoản đã chọn.'
+                        : 'Không thể khóa tài khoản đã chọn.';
+                    this.renderAdminUi();
+                    return;
+                }
+
+                this.applyUserAccountMutation(selected.userId, updated);
+                this.rbacNotice = isBlocked
+                    ? `Đã mở khóa tài khoản ${selected.displayName}.`
+                    : `Đã khóa tài khoản ${selected.displayName}.`;
+                this.renderAdminUi();
+            });
+    }
+
+    deleteSelectedRbacUser(): void {
+        const selected = this.selectedRbacUser;
+        if (!selected) {
+            return;
+        }
+
+        const confirmed = window.confirm(`Xóa tài khoản ${selected.displayName}? Thao tác này không thể hoàn tác.`);
+        if (!confirmed) {
+            return;
+        }
+
+        this.errorMessage = '';
+        this.rbacNotice = '';
+        this.deletingRbacUser[selected.userId] = true;
+
+        this.adminUserManagementService.deleteUser(selected.userId)
+            .pipe(finalize(() => {
+                this.deletingRbacUser[selected.userId] = false;
+                this.renderAdminUi();
+            }))
+            .subscribe((ok) => {
+                if (!ok) {
+                    this.errorMessage = 'Không thể xóa tài khoản đã chọn.';
+                    this.renderAdminUi();
+                    return;
+                }
+
+                const deletedUserId = selected.userId;
+                const deletedName = selected.displayName;
+                this.rbacUsers = this.rbacUsers.filter((user) => user.userId !== deletedUserId);
+                delete this.rbacOverrideDrafts[deletedUserId];
+                delete this.savingRbacUser[deletedUserId];
+                delete this.savingRbacUserStatus[deletedUserId];
+                delete this.deletingRbacUser[deletedUserId];
+                if (this.selectedRbacUserId === deletedUserId) {
+                    this.selectedRbacUserId = this.rbacUsers.length > 0 ? this.rbacUsers[0].userId : null;
+                }
+                this.permissionToAdd = '';
+                this.rbacNotice = `Đã xóa tài khoản ${deletedName}.`;
+                this.renderAdminUi();
+            });
+    }
+
     createUserByAdmin(): void {
         const validationError = this.validateAdminManagedUserForm();
         if (validationError) {
@@ -3222,15 +3393,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.adminUserManagementService.createUser(payload)
             .pipe(finalize(() => {
                 this.creatingAdminManagedUser = false;
+                this.renderAdminUi();
             }))
             .subscribe((createdUser) => {
                 if (!createdUser) {
                     this.errorMessage = 'Không thể tạo tài khoản theo yêu cầu.';
+                    this.renderAdminUi();
                     return;
                 }
 
                 this.adminCreatedUserNotice = `Đã tạo tài khoản ${createdUser.email}.`;
                 this.resetAdminManagedUserForm();
+                this.renderAdminUi();
                 this.loadRbacData();
             });
     }
@@ -3696,46 +3870,52 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private loadNews(): void {
         if (!this.can('RESEARCH_HERO_EDIT')) {
             this.newsItems = [];
-            this.cdr.detectChanges();
+            this.renderAdminUi();
             return;
         }
 
         this.adminNewsService.getAll().subscribe((items) => {
             this.newsItems = items;
-            this.cdr.detectChanges();
+            this.renderAdminUi();
         });
     }
 
     private loadSpecializations(): void {
         if (!this.can('RESEARCH_CATEGORY_MANAGE')) {
             this.specializations = [];
+            this.renderAdminUi();
             return;
         }
 
         this.adminSpecializationService.getAll().subscribe((items) => {
             this.specializations = items;
+            this.renderAdminUi();
         });
     }
 
     private loadRecruitmentCategories(): void {
         if (!this.can('RESEARCH_CATEGORY_MANAGE')) {
             this.recruitmentCategories = [];
+            this.renderAdminUi();
             return;
         }
 
         this.adminRecruitmentCategoryService.getAll().subscribe((items) => {
             this.recruitmentCategories = items;
+            this.renderAdminUi();
         });
     }
 
     private loadResearchCategories(): void {
         if (!this.can('RESEARCH_CATEGORY_MANAGE')) {
             this.researchCategories = [];
+            this.renderAdminUi();
             return;
         }
 
         this.adminResearchCategoryService.getAll().subscribe((categories) => {
             this.researchCategories = categories;
+            this.renderAdminUi();
         });
     }
 
@@ -3764,7 +3944,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 this.selectedRbacUserId = this.rbacUsers.length > 0 ? this.rbacUsers[0].userId : null;
             }
             this.permissionToAdd = '';
+            this.renderAdminUi();
         });
+    }
+
+    private renderAdminUi(): void {
+        this.cdr.detectChanges();
     }
 
     private rolePriority(roleName: string): number {
@@ -3873,5 +4058,19 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
 
         this.rbacOverrideDrafts[user.userId] = draft;
+    }
+
+    private applyUserAccountMutation(userId: string, updated: AuthApiUser): void {
+        const idx = this.rbacUsers.findIndex((user) => user.userId === userId);
+        if (idx < 0) {
+            return;
+        }
+
+        this.rbacUsers[idx] = {
+            ...this.rbacUsers[idx],
+            email: updated.email || this.rbacUsers[idx].email,
+            accountStatus: updated.status || this.rbacUsers[idx].accountStatus,
+            roles: updated.roles?.length ? updated.roles : this.rbacUsers[idx].roles
+        };
     }
 }

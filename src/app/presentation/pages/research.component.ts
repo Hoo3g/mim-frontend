@@ -196,9 +196,9 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 
               <div *ngIf="hasMorePapers" class="mt-4 border-t border-gray-200 pt-4 flex justify-center">
                 <button type="button"
-                        (click)="loadMorePapers()"
+                        (click)="loadMorePapers($event)"
                         [disabled]="isLoadingPapers"
-                        class="inline-flex items-center justify-center border border-hus-blue px-3 py-2 text-[11px] font-black leading-none text-hus-blue transition-colors hover:bg-hus-blue hover:text-white">
+                        class="inline-flex items-center justify-center border border-hus-blue px-3 py-2 text-[11px] font-black leading-none text-hus-blue transition-colors hover:bg-hus-blue hover:text-white touch-manipulation">
                   <span>{{ isLoadingPapers ? 'Đang tải...' : 'Xem thêm' }}</span>
                 </button>
               </div>
@@ -330,7 +330,8 @@ export class ResearchComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadMorePapers(): void {
+  loadMorePapers(event?: Event): void {
+    this.blurLoadMoreTrigger(event);
     this.loadNextPage();
   }
 
@@ -459,6 +460,17 @@ export class ResearchComponent implements OnInit, OnDestroy {
         requestAnimationFrame(() => restore());
       }, delay);
     });
+  }
+
+  private blurLoadMoreTrigger(event?: Event): void {
+    const trigger = event?.currentTarget;
+    if (trigger instanceof HTMLElement) {
+      trigger.blur();
+    }
+
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
   }
 
 }

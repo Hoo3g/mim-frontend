@@ -28,6 +28,14 @@ const ADMIN_UI_PERMISSIONS = [
     'RBAC_MANAGE'
 ] as const;
 
+const ADMIN_NOTIFICATION_PERMISSIONS = [
+    'ADMIN_DASHBOARD_VIEW',
+    'MODERATION_POSTS_VIEW',
+    'MODERATION_POSTS_ACTION',
+    'MODERATION_PAPERS_VIEW',
+    'MODERATION_PAPERS_ACTION'
+] as const;
+
 export const authSignal = {
     user: _user.asReadonly(),
     token: _token.asReadonly(),
@@ -50,6 +58,16 @@ export const authSignal = {
             return true;
         }
         return ADMIN_UI_PERMISSIONS.some((permission) => user.permissions.includes(permission));
+    }),
+    canUseAdminNotifications: computed(() => {
+        const user = _user();
+        if (!user || !_token()) {
+            return false;
+        }
+        if (user.role === Role.ADMIN) {
+            return true;
+        }
+        return ADMIN_NOTIFICATION_PERMISSIONS.some((permission) => user.permissions.includes(permission));
     }),
 
     setAuth(user: AuthUser, token: string): void {
