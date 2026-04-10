@@ -23,6 +23,7 @@ import {
   type RenderTask
 } from 'pdfjs-dist';
 import { LoadingSpinnerComponent } from '../loading-spinner/loading-spinner.component';
+import { authSignal } from '../../../core/signals/auth.signal';
 
 @Component({
   selector: 'app-pdf-canvas-viewer',
@@ -634,14 +635,22 @@ export class PdfCanvasViewerComponent implements AfterViewInit, OnDestroy {
   }
 
   private createLoadingTask(source: string): PDFDocumentLoadingTask {
-    return getDocument({
+    return getDocument(this.buildDocumentInit(source));
+  }
+
+  private buildDocumentInit(source: string): Parameters<typeof getDocument>[0] {
+    const token = authSignal.token();
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+
+    return {
       url: source,
       withCredentials: true,
+      httpHeaders: headers,
       disableRange: false,
       disableStream: false,
       disableAutoFetch: false,
       rangeChunkSize: this.PDF_RANGE_CHUNK_SIZE
-    });
+    };
   }
 
   private isWorkerBootstrapError(error: unknown): boolean {
