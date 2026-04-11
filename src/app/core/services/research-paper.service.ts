@@ -13,6 +13,7 @@ import { ApprovalStatus } from '../enums/post-status.enum';
 import { Role } from '../enums/role.enum';
 import { UI_LABELS } from '../constants/ui-labels.const';
 import { resolvePublicAssetUrl } from '../utils/public-asset-url.util';
+import { ResearchListViewStateService } from './research-list-view-state.service';
 
 export interface ResearchEditorPayload {
     id?: string;
@@ -99,9 +100,11 @@ interface ResearchBookmarkApiModel {
 })
 export class ResearchPaperService {
     private static readonly INTERACTION_LAST_TRACKED_STORAGE_KEY = 'mim_research_interaction_last_tracked';
-    private static readonly INTERACTION_DEDUP_WINDOW_MS = 60 * 60_000;
+    private static readonly VIEW_INTERACTION_DEDUP_WINDOW_MS = 2 * 60 * 60_000;
+    private static readonly DOWNLOAD_INTERACTION_DEDUP_WINDOW_MS = 60 * 60_000;
 
     private readonly http = inject(HttpClient);
+    private readonly researchListViewStateService = inject(ResearchListViewStateService);
     private readonly papersCache = new TimedObservableCache<ResearchPaper[]>(60 * 60_000);
     private readonly pagedPapersCache = new TimedObservableCache<PagedResponse<ResearchPaper>>(60 * 60_000);
     private readonly searchPagedPapersCache = new TimedObservableCache<PagedResponse<ResearchPaper>>(60 * 60_000);
@@ -418,7 +421,8 @@ export class ResearchPaperService {
         }
 
         const lastTrackedAt = this.readTrackedInteractionTimestamp(this.buildInteractionTrackingKey(type, normalizedPaperId));
-        return lastTrackedAt > 0 && Date.now() - lastTrackedAt < ResearchPaperService.INTERACTION_DEDUP_WINDOW_MS;
+        return lastTrackedAt > 0
+            && Date.now() - lastTrackedAt < this.getInteractionDedupWindowMs(type);
     }
 
     private markInteractionTracked(type: 'view' | 'download', paperId: string): void {
@@ -433,7 +437,11 @@ export class ResearchPaperService {
         try {
             const raw = localStorage.getItem(ResearchPaperService.INTERACTION_LAST_TRACKED_STORAGE_KEY)?.trim();
             const parsed = raw ? JSON.parse(raw) as Record<string, number> : {};
-            const cutoff = now - (ResearchPaperService.INTERACTION_DEDUP_WINDOW_MS * 2);
+            const maxDedupWindowMs = Math.max(
+                ResearchPaperService.VIEW_INTERACTION_DEDUP_WINDOW_MS,
+                ResearchPaperService.DOWNLOAD_INTERACTION_DEDUP_WINDOW_MS
+            );
+            const cutoff = now - (maxDedupWindowMs * 2);
 
             const nextState: Record<string, number> = {};
             Object.entries(parsed).forEach(([key, value]) => {
@@ -471,6 +479,12 @@ export class ResearchPaperService {
     private buildInteractionTrackingKey(type: 'view' | 'download', paperId: string): string {
         const userScope = authSignal.user()?.id?.trim() || 'anonymous';
         return `${userScope}::${type}::${paperId}`;
+    }
+
+    private getInteractionDedupWindowMs(type: 'view' | 'download'): number {
+        return type === 'view'
+            ? ResearchPaperService.VIEW_INTERACTION_DEDUP_WINDOW_MS
+            : ResearchPaperService.DOWNLOAD_INTERACTION_DEDUP_WINDOW_MS;
     }
 
 
@@ -583,17 +597,21 @@ export class ResearchPaperService {
     private invalidatePaperCaches(): void {
         this.papersCache.clear();
         this.pagedPapersCache.clear();
+        this.searchPagedPapersCache.clear();
         this.paperDetailCache.clear();
         this.myPapersCache.clear();
+        this.researchListViewStateService.clear();
     }
 
     private invalidatePublicPaperCaches(paperId?: string): void {
         this.papersCache.clear();
         this.pagedPapersCache.clear();
+        this.searchPagedPapersCache.clear();
         if (paperId) {
             this.paperDetailCache.delete((paperId ?? '').trim());
         } else {
             this.paperDetailCache.clear();
         }
+        this.researchListViewStateService.clear();
     }
 }

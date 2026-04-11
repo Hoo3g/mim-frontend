@@ -719,6 +719,7 @@ export class ResearchFilterComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   private loadPapersPage(page: number): void {
+    const pageToLoad = page;
     this.researchPaperService.getPapersPage({
       type: this.roleFilter,
       paperType: this.paperTypeFilter,
@@ -726,28 +727,30 @@ export class ResearchFilterComponent implements OnInit, OnDestroy, AfterViewInit
       year: this.yearFilter,
       q: this.searchKeyword,
       metric: this.metricSort
-    }, page, this.pageSize).subscribe({
+    }, pageToLoad, this.pageSize).subscribe({
       next: (result) => {
         const incoming = result.content ?? [];
-        this.allPapers = page === 0 ? incoming : [...this.allPapers, ...incoming];
+        this.allPapers = pageToLoad === 0 ? incoming : [...this.allPapers, ...incoming];
         this.totalPaperCount = result.pageInfo?.totalElements ?? this.allPapers.length;
         this.hasMorePapers = this.allPapers.length < this.totalPaperCount;
-        this.currentPage = page + 1;
+        this.currentPage = pageToLoad + 1;
         this.persistViewState();
         this.cdr.detectChanges();
         this.restoreSearchFieldViewportPosition();
       },
       error: () => {
-        if (page === 0) {
+        if (pageToLoad === 0) {
           this.allPapers = [];
           this.totalPaperCount = 0;
         }
         this.hasMorePapers = false;
         this.isLoadingPapers = false;
         this.restoreSearchFieldViewportPosition();
+        this.cdr.detectChanges();
       },
       complete: () => {
         this.isLoadingPapers = false;
+        this.cdr.detectChanges();
       }
     });
   }

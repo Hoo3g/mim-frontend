@@ -183,7 +183,7 @@ interface PaperDetailState {
                         Đăng nhập để xem PDF
                       </p>
                       <p class="mt-2 text-xs text-gray-500 max-w-md">
-                        Khách chưa đăng nhập vẫn xem được chi tiết bài nghiên cứu, nhưng cần đăng nhập để mở file PDF.
+                        Để xem nội dung chi tiết của bài nghiên cứu, vui lòng đăng nhập.
                       </p>
                       <a [routerLink]="ROUTES.AUTH.LOGIN"
                          class="mt-4 inline-flex items-center justify-center border border-hus-blue text-hus-blue text-[10px] font-black uppercase tracking-widest px-4 py-2 hover:bg-hus-blue hover:text-white transition-colors">
