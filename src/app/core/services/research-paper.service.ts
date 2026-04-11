@@ -396,6 +396,10 @@ export class ResearchPaperService {
         );
     }
 
+    clearPublicResearchCaches(paperId?: string): void {
+        this.invalidatePublicPaperCaches(paperId);
+    }
+
     uploadPdfToMinio(file: File): Observable<string> {
         const formData = new FormData();
         formData.append('file', file);

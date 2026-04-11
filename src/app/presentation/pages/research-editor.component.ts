@@ -35,6 +35,18 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
             Điền đầy đủ thông tin bài viết, đối tượng tác giả, năm công bố, thể loại và file PDF nếu cần.
           </p>
 
+          <div *ngIf="errorMessage || successMessage" class="mt-4 space-y-2">
+            <p *ngIf="errorMessage"
+               class="border border-red-200 bg-red-50 px-3 py-3 text-[10px] sm:text-[11px] font-bold text-red-600 uppercase tracking-wider">
+              {{ errorMessage }}
+            </p>
+
+            <p *ngIf="successMessage"
+               class="border border-emerald-200 bg-emerald-50 px-3 py-3 text-[10px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
+              {{ successMessage }}
+            </p>
+          </div>
+
           <ng-container *ngIf="!isLoadingPaper; else loadingPaperTpl">
             <form class="mt-6 sm:mt-8 space-y-4 sm:space-y-5" (ngSubmit)="save()">
               <article class="py-3 sm:py-5 space-y-4">
@@ -308,14 +320,6 @@ import { resolvePublicAssetUrl } from '../../core/utils/public-asset-url.util';
                   </div>
                 </div>
               </article>
-
-              <p *ngIf="errorMessage" class="text-[10px] sm:text-[11px] font-bold text-red-600 uppercase tracking-wider">
-                {{ errorMessage }}
-              </p>
-
-              <p *ngIf="successMessage" class="text-[10px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
-                {{ successMessage }}
-              </p>
 
               <div class="pt-4 border-t border-gray-100">
                 <div class="flex items-center gap-2 sm:justify-between lg:justify-end lg:gap-3">
@@ -638,9 +642,18 @@ export class ResearchEditorComponent implements OnInit, OnDestroy {
             return;
           }
 
-          this.resetEditorForm(currentUser.role);
-          this.successMessage = 'Đăng bài thành công. Bạn có thể tiếp tục tạo bài viết mới.';
-          this.scrollToTop();
+          if (this.isAdminEditor) {
+            this.resetEditorForm(currentUser.role);
+            this.successMessage = 'Đăng bài thành công. Bạn có thể tiếp tục tạo bài viết mới.';
+            this.scrollToTop();
+            return;
+          }
+
+          this.redirectToMyPapers(
+            savedPaper.approvalStatus === 'PENDING'
+              ? 'Đã tạo bài nghiên cứu mới. Bài viết đang chờ duyệt.'
+              : 'Đã tạo bài nghiên cứu mới.'
+          );
         },
         error: (error: { error?: { message?: string } }) => {
           this.errorMessage = error?.error?.message || 'Lưu bài viết thất bại. Vui lòng thử lại.';

@@ -17,6 +17,7 @@ import { AdminSpecializationService } from '../../../core/services/admin-special
 import { AdminRecruitmentCategoryService } from '../../../core/services/admin-recruitment-category.service';
 import { AdminNewsService } from '../../../core/services/admin-news.service';
 import { AdminAnalyticsService } from '../../../core/services/admin-analytics.service';
+import { ResearchPaperService } from '../../../core/services/research-paper.service';
 import { ModerationPaperItem, ModerationPostItem } from '../../../core/models/admin-moderation.model';
 import { API_CONFIG } from '../../../core/config/api.config';
 import {
@@ -1667,6 +1668,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private readonly adminSpecializationService = inject(AdminSpecializationService);
     private readonly adminRecruitmentCategoryService = inject(AdminRecruitmentCategoryService);
     private readonly adminAnalyticsService = inject(AdminAnalyticsService);
+    private readonly researchPaperService = inject(ResearchPaperService);
 
     currentTab: AdminTabKey = 'POSTS';
     readonly adminTabs: AdminTabConfig[] = [
@@ -2372,6 +2374,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
                 if (approvedIds.length > 0) {
                     this.removePapersFromQueue(approvedIds);
+                    this.researchPaperService.clearPublicResearchCaches();
                     this.moderationNotice = `Đã duyệt ${approvedIds.length} bài nghiên cứu.`;
                 }
 
@@ -2448,6 +2451,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 return;
             }
             this.removePapersFromQueue([id]);
+            this.researchPaperService.clearPublicResearchCaches(id);
             this.moderationNotice = 'Đã duyệt bài nghiên cứu.';
             this.renderAdminUi();
         });
@@ -2465,6 +2469,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 return;
             }
             this.removePapersFromQueue([id]);
+            this.researchPaperService.clearPublicResearchCaches(id);
             this.moderationNotice = 'Đã từ chối bài nghiên cứu.';
             this.renderAdminUi();
         });
@@ -2486,6 +2491,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 return;
             }
             this.removePapersFromQueue([id]);
+            this.researchPaperService.clearPublicResearchCaches(id);
             this.moderationNotice = 'Đã xóa bài nghiên cứu khỏi hệ thống.';
             this.renderAdminUi();
         });
